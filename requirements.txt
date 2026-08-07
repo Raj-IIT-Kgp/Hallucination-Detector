@@ -1,0 +1,6 @@
+google-genai
+python-dotenv
+faiss-cpu
+sentence-transformers
+transformers
+torch
