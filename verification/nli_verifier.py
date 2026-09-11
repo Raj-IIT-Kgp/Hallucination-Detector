@@ -43,12 +43,16 @@ def verify_claim(claim, evidence):
     )
 
 
-    prediction = torch.argmax(
-        probabilities
-    ).item()
-
+    prediction = torch.argmax(probabilities).item()
+    confidence = probabilities[0][prediction].item()
+    
+    label = labels[prediction]
+    
+    # If the model is uncertain, default to unknown to prevent false positives
+    if confidence < 0.75:
+        label = "unknown"
 
     return {
-        "label": labels[prediction],
-        "confidence": probabilities[0][prediction].item()
+        "label": label,
+        "confidence": confidence
     }

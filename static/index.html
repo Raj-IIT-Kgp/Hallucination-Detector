@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hallucination Detector</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=3">
+</head>
+<body>
+    <div class="background-elements">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>AI Hallucination Detector</h1>
+            <p>Powered by Multi-Agent RAG Debate Framework</p>
+        </header>
+
+        <main>
+            <div class="card input-section">
+                <textarea id="inputText" placeholder="Paste an AI-generated paragraph here to check for hallucinations... (e.g. 'Raj invented facebook in 2005. Messi won 2 ballon-dor in his career.')"></textarea>
+                <div class="controls">
+                    <button id="analyzeBtn" class="btn-primary">
+                        <span class="btn-text">Detect Hallucinations</span>
+                        <div class="spinner" style="display: none;"></div>
+                    </button>
+                </div>
+            </div>
+
+            <div id="progressSection" class="progress-section hidden card">
+                <div class="progress-spinner"></div>
+                <div id="progressText" class="progress-text">Initializing...</div>
+            </div>
+
+            <div id="resultsSection" class="results-section hidden">
+                <div class="card analysis-card">
+                    <h2>Analysis Report</h2>
+                    <div class="metrics">
+                        <div class="metric-box">
+                            <span class="metric-value" id="totalClaims">0</span>
+                            <span class="metric-label">Total Claims</span>
+                        </div>
+                        <div class="metric-box warning">
+                            <span class="metric-value" id="hallucinatedClaims">0</span>
+                            <span class="metric-label">Hallucinations</span>
+                        </div>
+                        <div class="metric-box success">
+                            <span class="metric-value" id="supportedClaims">0</span>
+                            <span class="metric-label">Supported</span>
+                        </div>
+                    </div>
+
+                    <div class="text-display">
+                        <h3>Original Text Analysis</h3>
+                        <p class="instruction">Hover over red text to view proof and corrections.</p>
+                        <div id="annotatedText" class="annotated-text"></div>
+                    </div>
+                </div>
+
+                <div class="card rewritten-card">
+                    <h2>Corrected Output</h2>
+                    <p id="rewrittenText" class="rewritten-text"></p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Tooltip -->
+    <div id="tooltip" class="tooltip hidden">
+        <div class="tooltip-header">
+            <span class="status-badge">Contradicted</span>
+            <span class="confidence-badge" id="ttConfidence">99%</span>
+        </div>
+        <div class="tooltip-body">
+            <div class="tooltip-section">
+                <h4>Correction</h4>
+                <p id="ttCorrection"></p>
+            </div>
+            <div class="tooltip-section">
+                <h4>Wikipedia Evidence</h4>
+                <p id="ttEvidence" class="evidence-text"></p>
+                <a id="ttSource" href="#" target="_blank" class="source-link">
+                    View Source ↗
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js?v=4"></script>
+</body>
+</html>
