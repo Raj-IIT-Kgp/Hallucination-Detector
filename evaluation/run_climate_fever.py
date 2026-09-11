@@ -99,4 +99,4 @@ def run_climate_fever_benchmark(num_samples=10):
             print("-" * 30)
 
 if __name__ == "__main__":
-    run_climate_fever_benchmark(num_samples=10)
+    run_climate_fever_benchmark(num_samples=20)
