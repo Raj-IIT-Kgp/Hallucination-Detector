@@ -22,7 +22,7 @@ labels = [
 ]
 
 
-def verify_claim(claim, evidence):
+def verify_claim(claim, evidence, domain="general"):
 
     inputs = tokenizer(
         evidence,
@@ -48,8 +48,11 @@ def verify_claim(claim, evidence):
     
     label = labels[prediction]
     
+    # Dynamic confidence thresholding
+    threshold = 0.55 if domain == "scientific" else 0.75
+    
     # If the model is uncertain, default to unknown to prevent false positives
-    if confidence < 0.75:
+    if confidence < threshold:
         label = "unknown"
 
     return {

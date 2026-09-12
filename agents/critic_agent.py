@@ -44,11 +44,16 @@ Reasoning and Verdict:
                 feedback = parts[1].strip(" :-")
         return {"is_accurate": False, "feedback": feedback}
 
-def nli_override(claim, evidence):
+def nli_override(claim, evidence, domain="general"):
     """
     Uses the LLM's common sense reasoning to override the rigid NLI model
     when the NLI model outputs 'unknown'.
     """
+    
+    academic_rule = ""
+    if domain == "scientific":
+        academic_rule = "\nCRITICAL RULE: You are evaluating peer-reviewed scientific abstracts. Academic literature uses cautious, probabilistic language (e.g., 'suggests', 'likely', 'potential'). You must interpret this cautious language as affirmative support (SUPPORTED) if the underlying statistical finding aligns with the claim.\n"
+        
     prompt = f"""
 You are an expert fact-checker with deep reading comprehension skills.
 You need to determine if a claim is SUPPORTED or CONTRADICTED by the provided evidence.
@@ -60,7 +65,7 @@ CHAIN OF THOUGHT REASONING:
 Step 1: Identify all entities and the core relationship/action in the Claim.
 Step 2: Read the Evidence. Does it contain the same entities?
 Step 3: Check if the relationship/action in the Evidence matches or contradicts the Claim. Be extremely precise about subtle word changes.
-
+{academic_rule}
 RULES:
 1. Show your step-by-step reasoning first.
 2. The LAST line of your response must be exactly "VERDICT: SUPPORTED", "VERDICT: CONTRADICTED", or "VERDICT: UNKNOWN".

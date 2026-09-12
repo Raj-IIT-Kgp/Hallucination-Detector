@@ -16,12 +16,15 @@ class HallucinationDetector:
         results = []
 
         for claim in claims:
-            search_queries = generate_queries(claim, context=answer)
-            print(f"Generated search queries: {search_queries} for claim: '{claim}'")
+            query_info = generate_queries(claim, context=answer)
+            search_queries = query_info["queries"]
+            domain = query_info["domain"]
+            print(f"Generated search queries: {search_queries} for claim: '{claim}' (Domain: {domain})")
             
             evidence = self.retriever.search(
                 search_queries,
                 claim=claim,
+                domain=domain,
                 k=3
             )
 
@@ -40,13 +43,14 @@ class HallucinationDetector:
 
             verification = verify_claim(
                 claim,
-                evidence_text
+                evidence_text,
+                domain=domain
             )
             
             # CRITIC LLM OVERRIDE: If NLI returns UNKNOWN, use LLM to double check
             if verification["label"] == "unknown":
                 print(f"    NLI returned UNKNOWN. Triggering Critic LLM Override...")
-                llm_label = nli_override(claim, evidence_text)
+                llm_label = nli_override(claim, evidence_text, domain=domain)
                 print(f"    Critic LLM decided: {llm_label.upper()}")
                 verification["label"] = llm_label
 
@@ -107,12 +111,15 @@ class HallucinationDetector:
         for i, claim in enumerate(claims):
             yield json.dumps({"status": "progress", "message": f"Processing claim {i+1} of {len(claims)}..."}) + "\n"
             
-            search_queries = generate_queries(claim, context=answer)
-            yield json.dumps({"status": "progress", "message": f"Searching Wikipedia for {search_queries}..."}) + "\n"
+            query_info = generate_queries(claim, context=answer)
+            search_queries = query_info["queries"]
+            domain = query_info["domain"]
+            yield json.dumps({"status": "progress", "message": f"Searching ({domain} domain) for {search_queries}..."}) + "\n"
             
             evidence = self.retriever.search(
                 search_queries,
                 claim=claim,
+                domain=domain,
                 k=3
             )
 
@@ -132,12 +139,13 @@ class HallucinationDetector:
             yield json.dumps({"status": "progress", "message": f"Verifying claim against evidence..."}) + "\n"
             verification = verify_claim(
                 claim,
-                evidence_text
+                evidence_text,
+                domain=domain
             )
             
             if verification["label"] == "unknown":
                 yield json.dumps({"status": "progress", "message": "NLI returned UNKNOWN. Triggering Critic LLM Override..."}) + "\n"
-                llm_label = nli_override(claim, evidence_text)
+                llm_label = nli_override(claim, evidence_text, domain=domain)
                 verification["label"] = llm_label
 
             if verification["label"] == "unknown":

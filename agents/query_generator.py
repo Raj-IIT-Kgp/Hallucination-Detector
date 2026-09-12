@@ -12,21 +12,19 @@ Use the Context paragraph to figure out what pronouns refer to.
 
 CRITICAL RULE 1: You MUST forcefully disambiguate ambiguous words. If an entity is just a single word (e.g., 'no', 'reconstructions', 'Pixels', 'Apple'), you MUST add contextual keywords to the query, such as 'Temperature reconstructions (climate)', or 'Pixels (2015 film)'. Do not allow single-word vague queries.
 CRITICAL RULE 2: You MUST return at least one query. NEVER return an empty array []. If the claim is a weird fragment, output that exact fragment as the query!
+CRITICAL RULE 3: You MUST classify the domain of the claim. If the claim contains highly specific scientific metrics (like climate data, physics, or biology), output "scientific". Otherwise, output "general".
 
-Output ONLY a valid JSON array of strings (e.g. ["Entity 1", "Entity 2"]). Do NOT include markdown blocks, explanation, or extra text.
+Output ONLY a valid JSON object in this format: {{"queries": ["Entity 1", "Entity 2"], "domain": "scientific"}}. Do NOT include markdown blocks, explanation, or extra text.
 
 EXAMPLES:
 Claim: "Albert Einstein was born in 1950."
-Output: ["Albert Einstein"]
+Output: {{"queries": ["Albert Einstein"], "domain": "general"}}
 
 Claim: "Raj invented facebook in 2005."
-Output: ["Facebook", "Raj"]
+Output: {{"queries": ["Facebook", "Raj"], "domain": "general"}}
 
-Claim: "France and Argentina played in the 2022 World Cup Final."
-Output: ["2022 FIFA World Cup", "France national football team", "Argentina national football team"]
-
-Claim: "DreamWorks Animation produced Pixels."
-Output: ["Pixels (2015 film)", "DreamWorks Animation"]
+Claim: "Global surface temperatures have continued to rise steadily beneath short-term natural cooling effects."
+Output: {{"queries": ["Global surface temperatures", "Natural cooling effects"], "domain": "scientific"}}
 
 Context: {context if context else claim}
 Claim: {claim}
@@ -45,20 +43,25 @@ Output:
         if cleaned.endswith("```"):
             cleaned = cleaned[:-3]
         
-        queries = json.loads(cleaned.strip())
+        parsed = json.loads(cleaned.strip())
         
-        if not isinstance(queries, list):
-            queries = [str(queries)]
+        # Handle backward compatibility if the LLM still returns a list
+        if isinstance(parsed, list):
+            queries = parsed
+            domain = "general"
+        else:
+            queries = parsed.get("queries", [])
+            domain = parsed.get("domain", "general")
             
         if not queries or len(queries) == 0:
             queries = [claim]
             
-        return queries
+        return {"queries": queries, "domain": domain}
     except Exception as e:
         print(f"[QueryGenerator] Failed to parse JSON. Falling back. Error: {e}")
-        # Fallback to a single string query if parsing fails
+        # Fallback if parsing fails
         query = response.strip()
         if query.startswith('"') and query.endswith('"'):
             query = query[1:-1]
-        return [query]
+        return {"queries": [query], "domain": "general"}
 

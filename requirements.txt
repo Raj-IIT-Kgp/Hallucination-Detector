@@ -9,3 +9,4 @@ wikipedia
 nltk
 Flask
 duckduckgo-search
+arxiv

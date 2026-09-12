@@ -1,5 +1,6 @@
 import wikipedia
 from duckduckgo_search import DDGS
+import arxiv
 from sentence_transformers import SentenceTransformer, util
 import warnings
 warnings.filterwarnings("ignore")
@@ -15,9 +16,9 @@ class WebRetriever:
         print("Loading Semantic Search Model (all-MiniLM-L6-v2)...")
         self.encoder = SentenceTransformer("all-MiniLM-L6-v2")
 
-    def search(self, queries, claim, k=3):
+    def search(self, queries, claim, domain="general", k=3):
         """
-        Searches Wikipedia for multiple queries, downloads all page contents, chunks into paragraphs,
+        Searches Wikipedia/DuckDuckGo or ArXiv, downloads all page contents, chunks into paragraphs,
         and uses Cosine Similarity to find the absolute best paragraph across all pages.
         """
         if not isinstance(queries, list):
@@ -26,6 +27,22 @@ class WebRetriever:
         all_paragraphs = []
         
         for query in queries:
+            if domain == "scientific":
+                try:
+                    client = arxiv.Client()
+                    search_obj = arxiv.Search(
+                        query=query,
+                        max_results=3,
+                        sort_by=arxiv.SortCriterion.Relevance
+                    )
+                    for paper in client.results(search_obj):
+                        if paper.summary:
+                            all_paragraphs.append({"text": paper.summary, "url": paper.entry_id})
+                except Exception as e:
+                    print(f"[WebRetriever] ArXiv search failed for '{query}': {e}")
+                    pass
+                # Also fall back to DuckDuckGo just in case ArXiv misses it
+                
             try:
                 search_results = wikipedia.search(query)
                 if not search_results:
