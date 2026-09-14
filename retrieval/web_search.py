@@ -4,6 +4,9 @@ import arxiv
 from sentence_transformers import SentenceTransformer, util
 import warnings
 warnings.filterwarnings("ignore")
+from rank_bm25 import BM25Okapi
+from nltk.tokenize import sent_tokenize
+import numpy as np
 
 class WebRetriever:
     """
@@ -73,14 +76,30 @@ class WebRetriever:
                         if section in content:
                             content = content.split(section)[0]
                             
-                    # Chunk into paragraphs (ignore headers and very short fragments)
-                    paragraphs = [p.strip() for p in content.split("\n\n") if len(p.strip()) > 100 and not p.strip().startswith("==")]
+                    # Chunk using sliding window of sentences
+                    try:
+                        sentences = sent_tokenize(content)
+                    except Exception:
+                        import nltk
+                        nltk.download('punkt', quiet=True)
+                        nltk.download('punkt_tab', quiet=True)
+                        sentences = sent_tokenize(content)
+
+                    # Remove short/bad sentences
+                    sentences = [s.strip() for s in sentences if len(s.strip()) > 20 and not s.strip().startswith("==")]
                     
-                    if not paragraphs:
+                    if not sentences:
                         all_paragraphs.append({"text": page.summary, "url": page.url})
                     else:
-                        for p in paragraphs:
-                            all_paragraphs.append({"text": p, "url": page.url})
+                        window_size = 5
+                        overlap = 2
+                        i = 0
+                        while i < len(sentences):
+                            chunk_sentences = sentences[i:i+window_size]
+                            chunk_text = " ".join(chunk_sentences)
+                            if len(chunk_text) > 100:
+                                all_paragraphs.append({"text": chunk_text, "url": page.url})
+                            i += (window_size - overlap)
                             
             except Exception as e:
                 print(f"[WebRetriever] Could not fetch semantic evidence for '{query}': {e}")
@@ -98,23 +117,44 @@ class WebRetriever:
         if not all_paragraphs:
             return []
 
-        # Encode claim and all paragraphs
+        # Deduplicate identical chunks
+        unique_paragraphs = []
+        seen = set()
+        for p in all_paragraphs:
+            if p["text"] not in seen:
+                seen.add(p["text"])
+                unique_paragraphs.append(p)
+        all_paragraphs = unique_paragraphs
+
+        # 1. DENSE SCORING (Cosine Similarity)
         claim_emb = self.encoder.encode(claim)
-        
-        # Extract just the text strings for embedding
         para_texts = [item["text"] for item in all_paragraphs]
         para_embs = self.encoder.encode(para_texts)
+        dense_scores = util.cos_sim(claim_emb, para_embs)[0].cpu().numpy()
         
-        # Compute cosine similarity
-        scores = util.cos_sim(claim_emb, para_embs)[0]
+        # Calculate dense ranks (0 is the best)
+        dense_ranks = np.argsort(np.argsort(-dense_scores))
         
-        # Get the best paragraph
-        best_idx = scores.argmax().item()
-        best_score = scores[best_idx].item()
+        # 2. SPARSE SCORING (BM25)
+        tokenized_corpus = [doc.lower().split() for doc in para_texts]
+        bm25 = BM25Okapi(tokenized_corpus)
+        tokenized_query = claim.lower().split()
+        sparse_scores = bm25.get_scores(tokenized_query)
         
-        if best_score < 0.30:
-            return []
+        # Calculate sparse ranks (0 is the best)
+        sparse_ranks = np.argsort(np.argsort(-sparse_scores))
+        
+        # 3. RECIPROCAL RANK FUSION (RRF)
+        rrf_scores = []
+        for i in range(len(all_paragraphs)):
+            rrf_score = (1.0 / (60.0 + dense_ranks[i] + 1)) + (1.0 / (60.0 + sparse_ranks[i] + 1))
+            rrf_scores.append(rrf_score)
             
-        best_paragraph_data = all_paragraphs[best_idx]
+        sorted_indices = np.argsort(-np.array(rrf_scores))
         
-        return [best_paragraph_data]
+        top_k = []
+        for i in sorted_indices[:k]:
+            if dense_scores[i] >= 0.20 or sparse_scores[i] > 1.0:
+                top_k.append(all_paragraphs[i])
+                
+        return top_k

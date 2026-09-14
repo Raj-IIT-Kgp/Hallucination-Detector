@@ -92,8 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const annotatedContainer = document.getElementById('annotatedText');
         annotatedContainer.innerHTML = '';
         
-        let rewrittenOutput = [];
-
         report.claims.forEach((item, index) => {
             const span = document.createElement('span');
             span.textContent = item.claim + " ";
@@ -112,11 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         window.open(item.source_url, '_blank');
                     });
                 }
-                
-                rewrittenOutput.push(item.correction || item.claim);
             } else if (item.verification.label === "supported") {
                 span.classList.add("claim-supported");
-                rewrittenOutput.push(item.claim);
             } else {
                 // Unknown label
                 span.classList.add("claim-unknown");
@@ -131,15 +126,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         window.open(item.source_url, '_blank');
                     });
                 }
-                
-                rewrittenOutput.push(item.claim);
             }
             
             annotatedContainer.appendChild(span);
         });
-
-        // Update Rewritten Text
-        document.getElementById('rewrittenText').textContent = rewrittenOutput.join(" ");
         
         resultsSection.classList.remove('hidden');
     }
@@ -170,7 +160,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         document.getElementById('ttConfidence').textContent = `${(data.verification.confidence * 100).toFixed(1)}% Confidence`;
-        document.getElementById('ttCorrection').textContent = data.correction || "No correction available.";
         document.getElementById('ttEvidence').textContent = `"...${data.evidence}..."`;
         
         const sourceLink = document.getElementById('ttSource');

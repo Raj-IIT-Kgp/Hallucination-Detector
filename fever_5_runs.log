@@ -1,0 +1,479 @@
+=== Test 1 ===
+Loading FEVER dataset...
+Loading Semantic Search Model (all-MiniLM-L6-v2)...
+
+Evaluating FULL PIPELINE on 20 live Wikipedia searches...
+WARNING: This will make live HTTP requests. Please be patient to avoid API rate limits.
+
+Generated search queries: ['Humphrey Bogart does acting.'] for claim: 'Humphrey Bogart does acting.' (Domain: None)
+Generated search queries: ['Luke Cage was featured as the title character of a comic book.'] for claim: 'Luke Cage was featured as the title character of a comic book.' (Domain: None)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Margaret Thatcher was active in politics.'] for claim: 'Margaret Thatcher was active in politics.' (Domain: None)
+Generated search queries: ['Bessie Smith', 'blues singer'] for claim: 'Bessie Smith was a blues singer.' (Domain: general)
+Generated search queries: ['Carlos Santana exclusively played Britpop.'] for claim: 'Carlos Santana exclusively played Britpop.' (Domain: None)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: CONTRADICTED
+Generated search queries: ['How to Train Your Dragons (film)', 'new filming software'] for claim: 'How to Train Your Dragon 2 used new filming software.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Melancholia is only a romance film.'] for claim: 'Melancholia is only a romance film.' (Domain: None)
+Generated search queries: ['Cadet Kelly is only a painting.'] for claim: 'Cadet Kelly is only a painting.' (Domain: None)
+Generated search queries: ["Psych's protagonist is not Shawn Spencer."] for claim: 'Psych's protagonist is not Shawn Spencer.' (Domain: )
+Generated search queries: ['Chris Kyle died on February 2, 2013.'] for claim: 'Chris Kyle died on February 2, 2013.' (Domain: None)
+Generated search queries: ['Premam', 'Chennai'] for claim: 'Premam didn't have a theatrical run in Chennai.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Shane Black', 'December 16th, 1961'] for claim: 'Shane Black was born on December 16th, 1961.' (Domain: general)
+Generated search queries: ['Luke Cage', 'Iron Fist'] for claim: 'Luke Cage did not team up with Iron Fist.' (Domain: general)
+Generated search queries: ['Diwali spiritually signifies the defeat of light over darkness only.'] for claim: 'Diwali spiritually signifies the defeat of light over darkness only.' (Domain: general)
+Generated search queries: ['Ian Brennan directs.'] for claim: 'Ian Brennan directs.' (Domain: None)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Osamu Tezuka', 'Time Warner'] for claim: 'Osamu Tezuka is often considered the Japanese equivalent to Time Warner.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Avenged Sevenfold was released in 2002.'] for claim: 'Avenged Sevenfold was released in 2002.' (Domain: general)
+Generated search queries: ['Britt Robertson is not an actress.'] for claim: 'Britt Robertson is not an actress.' (Domain: )
+Generated search queries: ['Oscar de la Hoya', 'The Ring magazine'] for claim: 'Oscar de la Hoya was The Ring magazine's top-rated fighter in the world in 1998.' (Domain: general)
+Generated search queries: ['Daag (film)'] for claim: 'There is a film called Daag.' (Domain: general)
+
+==================================================
+          END-TO-END PIPELINE RESULTS          
+==================================================
+Overall Accuracy: 75.00%
+
+Hallucination Detection (Contradiction Class):
+  Precision: 0.88
+  Recall:    0.70
+  F1 Score:  0.78
+==================================================
+
+--- FAILURE LOG ---
+
+Claim: Luke Cage was featured as the title character of a comic book.
+True: SUPPORTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: It was also included on un-ranked lists from The Huffington Post, The Plain Dealer, TheWrap, and Yahoo! Comic Book Resources named "Just to Get a Rep" as the 9th best episode in 2016 among comic book-related television series. Additionally, Luke Cage was the third most trending television series search on Google for 2016, and the second highest rated in the science-fiction, fantasy and horror series category on Rotten Tomatoes for the year.
+
+Evidence 2: Each episode title of the series is named after a song title from hip-hop duos: the first season's from Gang Starr, and the second season's from Pete Rock & CL Smooth. When asked whether the series would feel as "adult" as Jessica Jones, Colter replied, "if you think Jessica is adult then we're still keeping up with that pace ... we'll continue along those lines of PG-16+". On whether Luke Cage would address current race issues, including Black Lives Matter, given the character's past (a wrongfully imprisoned black man), Colter said, "this is not necessarily the platform to hit it head on" but "the things that he's going through will ring true for a lot of people in law enforcement" and on the street. Loeb said on the issue, "Luke Cage, when he came on the scene in the early 70s was for all intents and purposes the first black superhero. Given what's going on present day, it just resonates."
+
+Evidence 3: Luke later tells Jessica Jones he had Stryker sent to the Raft. In March 2016, set photos revealed that Harvey had been cast as Stryker in the series. This was not officially announced by Marvel prior to the series' release, and Harvey agreed not to do any publicity for the show, to not "ruin the twist" of Stryker being the series' main villain. Harvey chose not to read the comics to learn more about the character in order to not "interfere with what we were trying to do and cloud my judgment," instead relying on Coker to develop the 2016 version of Stryker, including adjusting his backstory to be the half-brother of Carl Lucas. However, Coker did try to bring as much of the comics' version of the character to the series as he could, including adapting the character's comic costume into armor that allows Stryker to match Cage's super strength.
+------------------------------
+
+Claim: How to Train Your Dragon 2 used new filming software.
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: How to Train Your Dragon 2 is an upcoming American fantasy adventure film and a live-action remake of the 2014 animated film by DreamWorks Animation, itself loosely based on Cressida Cowell's book series. It will be the second installment of the live-action How to Train Your Dragon film series following How to Train Your Dragon (2025), and the fifth film overall in the franchise. Written and directed by Dean DeBlois, the film stars Mason Thames, Nico Parker, Gabriel Howell, Julian Dennison, Bronwyn James, Harry Trevaldwyn, Nick Frost, and Gerard Butler, all reprising their roles from the first film, with Cate Blanchett reprising her role as Valka from the animated films and Ólafur Darri Ólafsson joining the cast alongside Phil Dunster. How to Train Your Dragon 2 is scheduled to be theatrically released in the United States by Universal Pictures on June 11, 2027. Nico Parker as Astrid Hofferson, Hiccup's girlfriend-turned-wife.
+
+Evidence 2: The sequel, How to Train Your Dragon 2, was officially announced and scheduled for release on June 11, 2027. Filming began on January 26, 2026 in London.
+
+Evidence 3: Radheyan Simonpillai of The Guardian gave the film two stars out of five and said, "DreamWorks tries to find success with the Disney live-action remake template but falls short." Brian Tallerico of RogerEbert.com gave the film two stars out of four and wrote, "the new version of How to Train Your Dragon doesn't do a single thing better than the original. It's not quite as soulless as the worst of these live-action remakes." The sequel, How to Train Your Dragon 2, was officially announced and scheduled for release on June 11, 2027. Filming began on January 26, 2026 in London.
+------------------------------
+
+Claim: Premam didn't have a theatrical run in Chennai.
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: Anend C. Chandran and Rajesh Murugan handled the cinematography and music. The film was produced on a budget of ₹4 crore. Premam was released on May 29, 2015 to widespread critical acclaim with praise towards the cast performance (especially Nivin and Pallavi), story, screenplay, cinematography, music, background score, editing and direction by Alphonse Puthren. The film emerged as a major commercial success grossing ₹73 crore. The film had a theatrical run of 175 days in Kerala and over 300 days in Tamil Nadu.
+
+Evidence 2: The film collected $159,398 (₹1.01 crore) in second weekend from Australia. In its final run, Premam film becomes the highest grossing Malayalam film in UAE-GCC territory by collecting ₹24 crore, in United States by collecting US$236,000 (₹1.76 crore) and also Rest of India box office at that time. The film collected ₹2 crore from Tamil Nadu box office in its 200 days theatrical run making it the highest grossing Malayalam film in Tamil Nadu at that time. The final box office collection is estimated as ₹60 crore (US$6.2 million) worldwide. The film had theatrical run over 151 days in Kerala.
+
+Evidence 3: At least 60 students of various local colleges were caught on Monday, 15 June, by the police for bunking classes to watch Premam. The police action was a part of Operation Gurukulam following complaints that students of various schools and colleges were skipping classes to watch the film. The demand for the tickets led Premam to be the film with maximum additional shows in theatres after Rajamanikyam starring Mammootty. The film stars Naga Chaitanya and Shruthi Hassan in the lead role reprising Nivin and Pallavi and was directed by Chandoo Mondeti. However, Dhanush had claimed that he did not have the rights for the film.
+------------------------------
+
+Claim: Luke Cage did not team up with Iron Fist.
+True: SUPPORTED | Pred: CONTRADICTED
+Evidence Found: Evidence 1: Like these heroes, Cage was defined by his Blackness when he was introduced and was portrayed in a stereotypical manner, which received mixed responses from critics. Cage did not have significant effect on the Marvel Universe, leaving the niche of an influential African-American superhero unfilled for the time. Several individual Luke Cage stories have received critical praise. Hero for Hire #9 (1973) depicted Cage pursuing one of Marvel's most imposing supervillains, Doctor Doom, over a $200 debt. Power Man and Iron Fist #50 (1978) saw Cage clear his name as a fugitive and marked the beginning of his sharing a series with Iron Fist as the Heroes for Hire.
+
+Evidence 2: Iron Fist's appearances outside his own title include three Iron Fist stories in Marvel's black-and-white comics magazine The Deadly Hands of Kung Fu #10 (March 1975), an additional story co-starring the Sons of the Tiger in issue #18 (November 1975), and a six-part serial, "The Living Weapon", in #19–24 (December 1975 – May 1976). To rescue the character from cancellation, Marvel paired Iron Fist with another character who was no longer popular enough to sustain his own series, Luke Cage. The two characters were partnered in a three-part story in Cage's series Power Man #48–50. The title of the series changed to Power Man and Iron Fist with issue #50 (April 1978), although the indicia did not reflect this change until issue #67. Jo Duffy, a fan of both characters, was appointed as its writer at her request beginning with issue #56.
+
+Evidence 3: It was canceled in 2018 after issue #170. Brian Michael Bendis wrote The Defenders with artist David Marquez in 2017, placing Cage in a team alongside Iron Fist, Jessica Jones, and Daredevil to coincide with the television adaptations of these characters. The same year, Cage also appeared in a new team led by Black Panther, The Crew in a series written by Ta-Nehisi Coates. Cage worked alongside Storm, Misty Knight, and Manifold. The three-issue series Luke Cage: Everyman was released in 2018 as the second publication in the Marvel Digital Original line, written by Anthony Del Col and illustrated by Jahnoy Lindsay.
+------------------------------
+
+Claim: Osamu Tezuka is often considered the Japanese equivalent to Time Warner.
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: Osamu Tezuka (手塚 治虫, born 手塚 治, Tezuka Osamu, (1928-11-03)3 November 1928 – 9 February 1989) was a Japanese manga artist, cartoonist and animator. Considered to be among the greatest and most influential cartoonists of all time, his prolific output, pioneering techniques and innovative redefinitions of genres earned him such titles as "the Father of Manga" (マンガの父, Manga no Chichi), "the Godfather of Manga" (マンガの教父, Manga no Kyōfu) and "the God of Manga" (マンガの神様, Manga no Kami-sama). Additionally, he is often considered the Japanese equivalent to Walt Disney, who served as a major inspiration during Tezuka's formative years. Though this phrase praises the quality of his early manga works for children and animations, it also blurs the significant influence of his later, more literary, gekiga works. Inspired by the early Chinese animated film Princess Iron Fan, Tezuka began what was known as the manga revolution in Japan with his New Treasure Island published in 1947.
+
+Evidence 2: This is a list of Osamu Tezuka's notable anime work in chronological order. Some of the works have been done after Tezuka's death in February 1989. This list of anime includes all those listed on Tezuka's official site, as well as others that are directly based on his work, but not listed on the site yet. The English translations of the names used are from the original names found on the official Osamu Tezuka website.
+
+Evidence 3: Named after Osamu Tezuka, the Tezuka Osamu Cultural Prize (Japanese: 手塚治虫文化賞, Hepburn: Tezuka Osamu Bunkashō) is a yearly manga prize awarded to manga artists or their works that follow the Osamu Tezuka manga approach founded and sponsored by Asahi Shimbun. The prize has been awarded since 1997, in Tokyo, Japan. Short story Award: Risa Itō for One Woman, Two Cats, Oi Piitan!! ), Onna no mado (A Woman's Window) and other works
+Special Award: Kousei Ono for the long years of the introduction of comics from abroad to Japan as a commentator for manga
+
+
+=== 2007 ===
+Grand Prize: Ryoko Yamagishi for Terpsichora (The Dancing Girl; Maihime Τερψιχόρα)
+Creative Award: Nobuhisa Nozoe, Kazuhisa Iwata and Kyojin Ōnishi for Shinsei Kigeki (Divine Comedy)
+Short story Award: Hiromi Morishita for Ōsaka Hamlet
+
+
+=== 2008 ===
+
+Grand Prize: Masayuki Ishikawa for Moyashimon
+Creative Award: Toranosuke Shimada for Träumerei
+Short story Award: Yumiko Ōshima for GūGū Datte Neko De Aru (Cher Gou-Gou...mon petit chat, mon petit ami.) Special Award: International Institute for Children's Literature, Osaka Prefecture (English Official site)
+
+
+=== 2009 ===
+Grand Prize: Fumi Yoshinaga for Ōoku: The Inner Chambers
+Grand Prize: Yoshihiro Tatsumi for A Drifting Life
+Short story Award: Hikaru Nakamura for Saint Young Men
+New Artist Prize: Suehiro Maruo for Panorama-tō Kitan (Anecdote of the Panorama Island)
+
+
+=== 2010 ===
+Grand Prize: Yoshihiro Yamada for Hyouge Mono
+Short story Award: Mari Yamazaki for Thermae Romae
+New Artist Prize: Haruko Ichikawa for Mushi to Uta
+Special Award: Yoshihiro Yonezawa  to wide achievements of the collection and the commentary activity of basic material of the cartoon research.
+------------------------------
+=== Test 2 ===
+Loading FEVER dataset...
+Loading Semantic Search Model (all-MiniLM-L6-v2)...
+
+Evaluating FULL PIPELINE on 20 live Wikipedia searches...
+WARNING: This will make live HTTP requests. Please be patient to avoid API rate limits.
+
+Generated search queries: ['Kenneth Lonergan is only a producer.'] for claim: 'Kenneth Lonergan is only a producer.' (Domain: )
+Generated search queries: ['Illumination Entertainment', 'Despicable Me 2'] for claim: 'Despicable Me 2 was produced by Illumination Entertainment in 2014.' (Domain: general)
+Generated search queries: ['Trollhunters', 'cats'] for claim: 'Trollhunters was created for cats.' (Domain: general)
+Generated search queries: ['DNA is a collection of songs.'] for claim: 'DNA is a collection of songs.' (Domain: )
+Generated search queries: ["Palo Alto, California's location is the United States."] for claim: 'Palo Alto, California's location is the United States.' (Domain: )
+Generated search queries: ['The Armenian Genocide was an extermination.'] for claim: 'The Armenian Genocide was an extermination.' (Domain: )
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Marco Polo', 'China'] for claim: 'Marco Polo did not travel to China.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['The Sterile Cuckoo was adapted from a biography by John Nichols.'] for claim: 'The Sterile Cuckoo was adapted from a biography by John Nichols.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Mary-Kate Olsen', 'Ashley Olsen'] for claim: 'On June 13th, 1986, Mary-Kate Olsen and Ashley Olsen were born.' (Domain: general)
+Generated search queries: ['No Country for Old Men was selected.'] for claim: 'No Country for Old Men was selected.' (Domain: None)
+Generated search queries: ['Emma Watson was killed in 1990.'] for claim: 'Emma Watson was killed in 1990.' (Domain: None)
+Generated search queries: ['Premam is only a book.'] for claim: 'Premam is only a book.' (Domain: None)
+Generated search queries: ['Saturn Corporation is also known as Toyota LLC.'] for claim: 'Saturn Corporation is also known as Toyota LLC.' (Domain: None)
+Generated search queries: ['Shinji Mikami'] for claim: 'Shinji Mikami is a director.' (Domain: general)
+Generated search queries: ['Syracuse', 'New York'] for claim: 'In 2010, the metropolitan area of Syracuse, New York, had a metropolitan population of more than 600,000.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Sandra Bullock', 'film industry'] for claim: 'Sandra Bullock worked in the film industry.' (Domain: general)
+Generated search queries: ['Alexandra Daddario is not an actress.'] for claim: 'Alexandra Daddario is not an actress.' (Domain: )
+Generated search queries: ['In 1978, Christian Gottlob Neefe was born.'] for claim: 'In 1978, Christian Gottlob Neefe was born.' (Domain: None)
+Generated search queries: ["Sarawak's city with the most people is Kuching."] for claim: 'Sarawak's city with the most people is Kuching.' (Domain: general)
+Generated search queries: ['Veeram is a film.'] for claim: 'Veeram is a film.' (Domain: )
+
+==================================================
+          END-TO-END PIPELINE RESULTS          
+==================================================
+Overall Accuracy: 85.00%
+
+Hallucination Detection (Contradiction Class):
+  Precision: 0.89
+  Recall:    0.80
+  F1 Score:  0.84
+==================================================
+
+--- FAILURE LOG ---
+
+Claim: DNA is a collection of songs.
+True: SUPPORTED | Pred: CONTRADICTED
+Evidence Found: Evidence 1: When interviewed by Loudwire, singer Chris Taylor Brown said of the album: "The Acoustic Collection really focuses on the songs we have written throughout the years. I think by stripping every song down to the basic instruments, it really allows the emotion in each song to be felt. We have played acoustic sets at radio stations, meet and greets with fans and have even done a few full acoustic shows and with each performance, our fans asked for an album of acoustic songs. I really feel like we delivered exactly what they had in mind."
+
+Evidence 2: In molecular biology, DNA repair is a collection of processes by which a cell identifies and corrects damage to the DNA molecules that encode its genome. A weakened capacity for DNA repair is a risk factor for the development of cancer. DNA is constantly modified in cells, by internal metabolic by-products, and by external ionizing radiation, ultraviolet light, and medicines, resulting in spontaneous DNA damage involving tens of thousands of individual molecular lesions per cell per day. DNA modifications can also be programmed. Molecular lesions can cause structural damage to the DNA molecule, and can alter or eliminate the cell's ability for transcription and gene expression.
+
+Evidence 3: The Acoustic Collection is an album by American rock band Trapt, released September 23, 2014, through their label Crash Collide Records, with distribution from The End Records and ADA. This album features acoustic re-recordings of Trapt's hits as well as fan favorites. Best Buy offered an exclusive edition at release, containing autographed front covers by the band. When interviewed by Loudwire, singer Chris Taylor Brown said of the album: "The Acoustic Collection really focuses on the songs we have written throughout the years. I think by stripping every song down to the basic instruments, it really allows the emotion in each song to be felt.
+------------------------------
+
+Claim: Marco Polo did not travel to China.
+True: CONTRADICTED | Pred: SUPPORTED
+Evidence Found: Evidence 1: His story of the princess Kököchin sent from China to Persia to marry the Īl-khān is also confirmed by independent sources in both Persia and China. While Polo describes paper money and the burning of coal, he fails to mention the Great Wall of China, tea, Chinese characters, chopsticks, or footbinding. His failure to note the presence of the Great Wall of China was first raised in the middle of the 17th century, and in the middle of the 18th century, it was suggested that he had never reached China. Later scholars such as John W. Haeger argued that Marco Polo might not have visited Southern China, in view of the lack of details in his description of southern Chinese cities compared to northern ones, while Herbert Franke also raised the possibility that Marco Polo had not been to China at all, and wondered if he had based his accounts on Persian sources, in view of his use of Persian expressions. This is taken further by Frances Wood, who claimed in her 1995 book Did Marco Polo Go to China?
+
+Evidence 2: Later scholars such as John W. Haeger argued that Marco Polo might not have visited Southern China, in view of the lack of details in his description of southern Chinese cities compared to northern ones, while Herbert Franke also raised the possibility that Marco Polo had not been to China at all, and wondered if he had based his accounts on Persian sources, in view of his use of Persian expressions. This is taken further by Frances Wood, who claimed in her 1995 book Did Marco Polo Go to China? that at best Polo never went farther east than Persia (modern Iran), and that there is nothing in The Book of Marvels about China that could not have been obtained by reading Persian books. Wood maintains that it is more probable that Polo went only to Constantinople (modern Istanbul, Turkey) and some of the Italian merchant colonies around the Black Sea, picking hearsay from those travellers who had been farther east. Supporters of Polo's basic accuracy countered on the points raised by sceptics such as footbinding and the Great Wall of China.
+
+Evidence 3: Vogel, Hans Ulrich (2013), Marco Polo Was in China: New Evidence from Currencies, Salts and Revenues, Leiden; Boston: Brill, ISBN 978-90-04-23193-1. Wood, Francis (1996). Did Marco Polo Go to China?. Boulder: Westview Press. ISBN 978-0-8133-8998-1.
+------------------------------
+
+Claim: The Sterile Cuckoo was adapted from a biography by John Nichols.
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: The Sterile Cuckoo was adapted for a film by Alan J. Pakula in 1969. The Wizard of Loneliness was published in 1966, and the film version with Lukas Haas was made in 1988. He also had a hand, uncredited due to a decision in an arbitration with the Writers Guild, in the Oscar-winning Best Adapted Screenplay for Costa-Gavras' 1982 film Missing. After arriving in Taos in 1969, Nichols remained in northern New Mexico until his death. His last book was the memoir I Got Mine: Confessions of a Midlist Writer, published in 2022.
+
+Evidence 2: Nichols was the author of the "New Mexico trilogy", a series about the complex relationship among history, race and ethnicity, and land and water rights in the fictional town of Chamisaville, New Mexico. The trilogy consists of The Milagro Beanfield War (which was adapted into a movie of the same title directed by Robert Redford), The Magic Journey, and The Nirvana Blues. Two of his other novels have been made into films. The Sterile Cuckoo was adapted for a film by Alan J. Pakula in 1969. The Wizard of Loneliness was published in 1966, and the film version with Lukas Haas was made in 1988.
+
+Evidence 3: This period was heavily influential on his political development. The Associated Press said his work was defined by an emphasis on social justice, and noted that he described himself as a "liberation ecologist". Nichols later returned to the United States, living in SoHo, Manhattan for a short time before settling in Taos, New Mexico in 1969. Nichols was the author of the "New Mexico trilogy", a series about the complex relationship among history, race and ethnicity, and land and water rights in the fictional town of Chamisaville, New Mexico. The trilogy consists of The Milagro Beanfield War (which was adapted into a movie of the same title directed by Robert Redford), The Magic Journey, and The Nirvana Blues.
+------------------------------
+=== Test 3 ===
+Loading FEVER dataset...
+Loading Semantic Search Model (all-MiniLM-L6-v2)...
+
+Evaluating FULL PIPELINE on 20 live Wikipedia searches...
+WARNING: This will make live HTTP requests. Please be patient to avoid API rate limits.
+
+Generated search queries: ['Tamerlan Tsarnaev has always been a completely law abiding citizen.'] for claim: 'Tamerlan Tsarnaev has always been a completely law abiding citizen.' (Domain: general)
+Generated search queries: ['Avenged Sevenfold is a statue of an American heavy metal band.'] for claim: 'Avenged Sevenfold is a statue of an American heavy metal band.' (Domain: None)
+Generated search queries: ['Marvel vs. Capcom: Infinite is part of a series.'] for claim: 'Marvel vs. Capcom: Infinite is part of a series.' (Domain: )
+Generated search queries: ['Drake Bell released an album.'] for claim: 'Drake Bell released an album.' (Domain: general)
+Generated search queries: ['Dakota Fanning was involved with creative work.'] for claim: 'Dakota Fanning was involved with creative work.' (Domain: None)
+Generated search queries: ['horse evolution'] for claim: 'The horse has grown in size as it evolved.' (Domain: general)
+Generated search queries: ['Rachel Green is one of the six main characters in the sitcom Will and Grace.'] for claim: 'Rachel Green is one of the six main characters in the sitcom Will and Grace.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Rage (band)', 'Brad Wilk'] for claim: 'Brad Wilk co-founded Rage in the 20th century.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Soul Food is a jaguar.'] for claim: 'Soul Food is a jaguar.' (Domain: None)
+Generated search queries: ['Daggering is incapable of being a form of dance.'] for claim: 'Daggering is incapable of being a form of dance.' (Domain: )
+Generated search queries: ['Diwali is one of the most popular festivals of Hinduism.'] for claim: 'Diwali is one of the most popular festivals of Hinduism.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Hush (2016 film) was produced.'] for claim: 'Hush (2016 film) was produced.' (Domain: general)
+Generated search queries: ['Kenneth Lonergan', 'October 16, 1962'] for claim: 'Kenneth Lonergan died on October 16, 1962.' (Domain: general)
+Generated search queries: ['Tottenham Hotspur F.C.'] for claim: 'Tottenham Hotspur F.C.' (Domain: None)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['is a video game developer.'] for claim: 'is a video game developer.' (Domain: )
+Generated search queries: ['Creedence Clearwater Revival', 'John Fogerty'] for claim: 'Creedence Clearwater Revival possessed John Fogerty as lead vocalist and guitarist.' (Domain: general)
+Generated search queries: ['Chris Eubank Jr. has only ever been a professional golfer.'] for claim: 'Chris Eubank Jr. has only ever been a professional golfer.' (Domain: general)
+Generated search queries: ['Chaka Khan'] for claim: 'Chaka Khan is a musician.' (Domain: general)
+Generated search queries: ['The State of Palestine lays claim to the Gaza Strip.'] for claim: 'The State of Palestine lays claim to the Gaza Strip.' (Domain: general)
+Generated search queries: ['The Godfather Part II is a TV show.'] for claim: 'The Godfather Part II is a TV show.' (Domain: None)
+Generated search queries: ['Kleshas are only physical states.'] for claim: 'Kleshas are only physical states.' (Domain: )
+
+==================================================
+          END-TO-END PIPELINE RESULTS          
+==================================================
+Overall Accuracy: 80.00%
+
+Hallucination Detection (Contradiction Class):
+  Precision: 0.88
+  Recall:    0.70
+  F1 Score:  0.78
+==================================================
+
+--- FAILURE LOG ---
+
+Claim: Tamerlan Tsarnaev has always been a completely law abiding citizen.
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: No evidence found.
+------------------------------
+
+Claim: Rachel Green is one of the six main characters in the sitcom Will and Grace.
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: By the series' conclusion, Rachel achieves significant personal and professional growth. Her decision to reunite with Ross in the final episode brings her story full circle, solidifying her evolution from a dependent individual into a self-assured and independent woman. Post-series material, such as the spin-off Joey, suggests that she and Ross eventually remarry. Inspired by their own experiences as young people living in New York, they based its main characters on their friends and aspects of their own personal lives. Rachel Green was conceived as a young woman unprepared for adulthood.
+
+Evidence 2: Described by Penny Goldstone of Marie Claire as one of their all-time favorite television characters, The Times of India considers Rachel to be one of the general public’s favourite television characters of the 1990s, and Amory Rose of Business Insider called her "one of the most iconic characters of the 1990s and early 2000s". Elle Australia's Mahalia Chang said the character offered "our first glimpse into early nouveau pop culture feminism". Several baby name books and websites associate the name “Rachel” with the character. Lior Zaltzman of Kveller believes Rachel Green might be the most famous fictional Rachel. In 2015, Us Weekly named Rachel the most beloved television character of the previous two decades.
+
+Evidence 3: Inspired by their own experiences as young people living in New York, they based its main characters on their friends and aspects of their own personal lives. Rachel Green was conceived as a young woman unprepared for adulthood. Kauffman said the writers had always wanted Rachel to evolve from a woman who did not know how to do any job into “a woman who learned to partially define herself by her work”. In earlier drafts of the pilot, the character was named "Rachel Robbins". Kauffman confirmed that Rachel was intended to be Jewish, which she believed was reflected in the character’s full name and other creative choices, though she did not write her as strongly affiliated with specific religious practices or identity.
+------------------------------
+
+Claim: Tottenham Hotspur F.C. is a video game developer.
+True: CONTRADICTED | Pred: SUPPORTED
+Evidence Found: Evidence 1: Tottenham Hotspur play its home games at Brisbane Road in Leyton, and occasionally at the Tottenham Hotspur Stadium. The club has been training full-time at Hotspur Way since 2020. The club has won twelve titles, the most recent being the overall FA Women's Premier League in the 2016–17 season. Permission was obtained to change the club's name to Tottenham Hotspur Ladies F.C. in the 1991–92 season.
+
+Evidence 2: Permission was obtained to change the club's name to Tottenham Hotspur Ladies F.C. in the 1991–92 season. The reserve team started in 1992–93. In the 1996–97 season, the club's teams started playing in the national division. In the 2015–16 season, the club completed a historic double as they won the Ryman's Women's Cup and the FA Women's Premier League Cup.
+
+Evidence 3: Tottenham Hotspur Football Club Women, commonly referred to as Tottenham (  TOT-ən-əm) or Spurs, is an English women's football club affiliated with Tottenham Hotspur. The club currently compete in the Women's Super League (WSL), the top flight of women's football in England. The club gained promotion to the WSL after finishing second in the 2018–19 FA Women's Championship. Tottenham Hotspur play its home games at Brisbane Road in Leyton, and occasionally at the Tottenham Hotspur Stadium. The club has been training full-time at Hotspur Way since 2020.
+------------------------------
+
+Claim: The State of Palestine lays claim to the Gaza Strip.
+True: SUPPORTED | Pred: CONTRADICTED
+Evidence Found: Evidence 1: In 2017, the PA government imposed its own sanctions against Gaza, including, among other things, cutting off salaries to thousands of PA employees, as well as financial assistance to hundreds of families in the Gaza Strip. The PA initially said it would stop paying for the electricity and fuel that Israel supplies to the Gaza Strip, but after a year partially backtracked. After Israel's unilateral disengagement plan from the Gaza strip, Israel no longer has troops stationed within Gaza. Israel has retained control over Gaza's airspace and coastline, and over its own border with the territory. Egypt has control of its border with Gaza.
+
+Evidence 2: Law professor Noura Erakat wrote in 2012 that Israel's blockade was "illegal pursuant to international humanitarian law because it contravenes its obligations towards a civilian population living under its occupation" and said this had been covered at length by various commentators and human rights organizations. The Global International Humanitarian Law Centre of Diakonia published in 2014 that:
+
+... as outlined by the Hague Regulations (1899/1907), a territory is considered occupied when it is placed under the effective control of a hostile army. The Gaza Strip remains under belligerent occupation as Israel continues to retain effective control over significant aspects of civil life in the Gaza Strip on a daily basis as well as directly exercising certain elements of governing control over the territory and the people of the Gaza Strip. For as long as Israel maintains effective control over the Gaza Strip, it must fully comply with its obligations under IHL and IHRL, as the occupying power. This includes providing for the welfare of the occupied Palestinian population therein.
+
+Evidence 3: This includes construction material and computer equipment. Exports are also heavily restricted, with the main impediment to economic development in Gaza being Israel's ban on virtually all exports from the Strip. Israel blockaded the Gaza Strip at various levels of intensity in 2005–2006. Israeli-imposed closures date to 1991. In 2007, after Hamas seized control of the Gaza Strip, Israel imposed an indefinite blockade of Gaza that remains in place, on the grounds that Fatah and Palestinian Authority forces had fled the Strip and were no longer able to provide security on the Palestinian side.
+------------------------------
+=== Test 4 ===
+Loading FEVER dataset...
+Loading Semantic Search Model (all-MiniLM-L6-v2)...
+
+Evaluating FULL PIPELINE on 20 live Wikipedia searches...
+WARNING: This will make live HTTP requests. Please be patient to avoid API rate limits.
+
+Generated search queries: ['Dreamer (2005 film)', 'television show'] for claim: 'Dreamer (2005 film) is an American 2005 television show.' (Domain: general)
+Generated search queries: ['Varityas Blues (film)', '$16 million'] for claim: 'Varsity Blues (film) was filmed with a $16 million budget.' (Domain: general)
+Generated search queries: ["The Sterile Cuckoo's adaptation was done by Alvin Sargent."] for claim: 'The Sterile Cuckoo's adaptation was done by Alvin Sargent.' (Domain: general)
+Generated search queries: ['Earl Scruggs', 'bluegrass music'] for claim: 'Earl Scruggs was involved in bluegrass music.' (Domain: general)
+Generated search queries: ['Michaela Watkins is an actress.'] for claim: 'Michaela Watkins is an actress.' (Domain: None)
+Generated search queries: ['Tommy Lee Jones missed the chance to appear in No Country for Old Men.'] for claim: 'Tommy Lee Jones missed the chance to appear in No Country for Old Men.' (Domain: None)
+Generated search queries: ['Kellyanne Conway has not used the phrase "alternative facts."'] for claim: 'Kellyanne Conway has not used the phrase "alternative facts."' (Domain: None)
+Generated search queries: ['Bullitt (1982 film)', 'comedy'] for claim: 'Bullitt is only a 1989 comedy.' (Domain: general)
+Generated search queries: ['History of Earth'] for claim: 'The History of Earth dates back more than 5 billion years.' (Domain: general)
+Generated search queries: ['Jenna Jameson', 'stripper'] for claim: 'Jenna Jameson was only ever a stripper.' (Domain: general)
+Generated search queries: ['PacSun sells products designed for young adults.'] for claim: 'PacSun sells products designed for young adults.' (Domain: )
+Generated search queries: ['Edwardian Era', "Hundred Years' War"] for claim: 'The Hundred Years' War features the Edwardian Era War.' (Domain: general)
+Generated search queries: ['Amyotrophic lateral sclerosis is a cure.'] for claim: 'Amyotrophic lateral sclerosis is a cure.' (Domain: )
+Generated search queries: ['Saturn is the second-largest planet in the Solar System.'] for claim: 'Saturn is the second-largest planet in the Solar System.' (Domain: None)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Vedam', 'Canadian film actors and actresses'] for claim: 'Vedam stars only Canadian film actors and actresses.' (Domain: general)
+Generated search queries: ['The Beach first came out in 2000.'] for claim: 'The Beach first came out in 2000.' (Domain: None)
+Generated search queries: ['Augustus', 'Livia'] for claim: 'There are rumors that Augustus' husband, Livia, poisoned him.' (Domain: general)
+Generated search queries: ['Wentworth Miller', 'Stoker'] for claim: 'Wentworth Miller made his screenwriting debut with the 80s film Stoker.' (Domain: general)
+Generated search queries: ['Platinum Dunes', 'Bradley Fuller'] for claim: 'Bradley Fuller is the sole owner of Platinum Dunes.' (Domain: general)
+Generated search queries: ['Shinji Mikami'] for claim: 'Shinji Mikami is a director.' (Domain: general)
+
+==================================================
+          END-TO-END PIPELINE RESULTS          
+==================================================
+Overall Accuracy: 70.00%
+
+Hallucination Detection (Contradiction Class):
+  Precision: 0.75
+  Recall:    0.90
+  F1 Score:  0.82
+==================================================
+
+--- FAILURE LOG ---
+
+Claim: Varsity Blues (film) was filmed with a $16 million budget.
+True: SUPPORTED | Pred: CONTRADICTED
+Evidence Found: Evidence 1: The film was released in the United States on January 19, 2018. It received negative reviews from critics and grossed $16 million on a $3.5 million budget. Eight years later, he is a successful country singer. The morning after a concert in New Orleans, Liam wakes up to discover the girl he brought home jumping excitedly on and breaking his cell phone. Panicked after realizing, he takes the phone to an electronics store where the manager fixes it for him.
+
+Evidence 2: Catch and Release premiered at the Austin Film Festival on October 20, 2006, and was released in the United States on January 26, 2007. The film bombed at the box office, earning $16 million against a $25 million budget. Seeking solitude behind a shower curtain, she hears Grady's best friend, Fritz, having sex with the caterer. Eve, Grady's attorney, confirms that, as they were not married, Gray will get nothing. Grady secretly had an investment account with a million dollars in it, which she had known nothing about.
+
+Evidence 3: Gray goes to Malibu and finds Fritz playing with his dog on the beach—they embrace and kiss. Additional filming took place in December 2005. In July 2005, several scenes were filmed in Boulder, Colorado, where the story takes place. Kevin Smith said while filming this movie, he and Lewis went to the set of the Uwe Boll film In the Name of the King because Smith had heard they had Krispy Kreme doughnuts, which were flown in by Burt Reynolds, who was appearing in that film. They took boxes of doughnuts back to the Catch and Release set, and someone on set asked if they had stolen the doughnuts from the set of In the Name.., because Reynolds saw someone running away with them.
+------------------------------
+
+Claim: The Sterile Cuckoo's adaptation was done by Alvin Sargent.
+True: SUPPORTED | Pred: UNKNOWN
+Evidence Found: No evidence found.
+------------------------------
+
+Claim: The History of Earth dates back more than 5 billion years.
+True: CONTRADICTED | Pred: SUPPORTED
+Evidence Found: Evidence 1: The natural history of Earth concerns the development of planet Earth from its formation to the present day. Nearly all branches of natural science have contributed to the understanding of the main events of Earth's past, characterized by constant geological change and biological evolution. The geological time scale (GTS), as defined by international convention, depicts the large spans of time from the beginning of Earth to the present, and its divisions chronicle some definitive events of Earth history. Earth formed around 4.54 billion years ago, approximately one-third the age of the universe, by accretion from the solar nebula. Volcanic outgassing probably created the primordial atmosphere and then the ocean, but the early atmosphere contained almost no oxygen.
+
+Evidence 2: It began with the formation of the planet and ended 4.0 billion years ago. The following Archean and Proterozoic eons produced the beginnings of life on Earth and its earliest evolution. The succeeding eon is the Phanerozoic, divided into three eras: the Palaeozoic, an era of arthropods, fishes, and the first life on land; the Mesozoic, which spanned the rise, reign, and climactic extinction of the non-avian dinosaurs; and the Cenozoic, which saw the rise of mammals. Recognizable humans emerged at most 2 million years ago, a vanishingly small period on the geological scale. The earliest undisputed evidence of life on Earth dates at least from 3.5 billion years ago, during the Eoarchean Era, after a geological crust started to solidify following the earlier molten Hadean eon.
+
+Evidence 3: The geological history of Earth follows the major geological events in Earth's past based on the geologic time scale, a system of chronological measurement based on the study of the planet's rock layers (stratigraphy). Earth formed approximately 4.54 billion years ago through accretion from the solar nebula, a disk-shaped mass of dust and gas remaining from the formation of the Sun, which also formed the rest of the Solar System. Initially, Earth was molten due to extreme volcanism and frequent collisions with other bodies. Eventually, the outer layer of the planet cooled to form a solid crust when water began accumulating in the atmosphere. The Moon formed soon afterwards, possibly as a result of the impact of a protoplanet with Earth.
+------------------------------
+
+Claim: The Hundred Years' War features the Edwardian Era War.
+True: SUPPORTED | Pred: CONTRADICTED
+Evidence Found: Evidence 1: The Second Hundred Years' War is a periodization coined by the English historian John Robert Seeley in his work The Expansion of England (1883). Seeley used the periodization to describe the series of wars fought between England (and from 1707 onwards, Great Britain) and France that occurred between 1688 and 1815 as one continuous conflict for global dominance. These conflicts include the Nine Years' War, War of the Spanish Succession, War of the Austrian Succession, Seven Years' War, American Revolutionary War and French Revolutionary and Napoleonic Wars. The concept of a "Second Hundred Years' War" has not been widely accepted in academia and has been challenged by several historians, who question whether it accurately reflects the complex and distinct Anglo-French conflicts during that period. The Second Hundred Years' War is named after the Hundred Years' War, which occurred in the 14th and 15th centuries.
+
+Evidence 2: The concept of a "Second Hundred Years' War" has not been widely accepted in academia and has been challenged by several historians, who question whether it accurately reflects the complex and distinct Anglo-French conflicts during that period. The Second Hundred Years' War is named after the Hundred Years' War, which occurred in the 14th and 15th centuries. The use of the phrase as an overarching category indicates the interrelation of all the wars as components of the rivalry between France and Britain for world power. It was a war between and over the future of each state's colonial empires. The two countries remained continual antagonists even as their national identities underwent significant evolution.
+
+Evidence 3: On 31 March 1325, Gascony was handed back to the Plantagenets after a truce. Ironically, Edward III, the son of Isabella and Edward II, would later use his position as grandson of Philip the Fair to claim the Kingdom of France. Therefore, the marriage settlements that sealed the end of the First Hundred Years' War would lead to the casus belli that was employed to declare the 'second' Hundred Years' War.
+------------------------------
+
+Claim: Saturn is the second-largest planet in the Solar System.
+True: SUPPORTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: Rhea is the second-largest of Saturn's moons. It is even slightly larger than Oberon, the second-largest moon of Uranus. In 2005, Cassini detected a depletion of electrons in the plasma wake of Rhea, which forms when the co-rotating plasma of Saturn's magnetosphere is absorbed by the moon. The depletion was hypothesized to be caused by the presence of dust-sized particles concentrated in a few faint equatorial rings. Such a ring system would make Rhea the only moon in the Solar System known to have rings.
+
+Evidence 2: Saturn is the only planet of the Solar System that is less dense than water—about 30% less. The average specific density of the planet is 0.69 g/cm3 due to its atmosphere. Jupiter's mass is 318 times Earth's, while Saturn is only 95 times Earth's. Together, Jupiter and Saturn hold 92% of the total planetary mass in the Solar System. The temperature, pressure, and density inside Saturn all rise steadily toward the core, which causes hydrogen to be a metal in the deeper layers.
+
+Evidence 3: Titan, the largest moon, comprises more than 90% of the mass in orbit around Saturn, including the rings. Saturn's second-largest moon, Rhea, may have a tenuous ring system of its own, along with a tenuous atmosphere. Many of the other moons are small: 143 are less than 50 km in diameter. Traditionally, most of Saturn's moons have been named after Titans of Greek mythology. Titan is the only satellite in the Solar System with a major atmosphere, in which a complex organic chemistry occurs.
+------------------------------
+
+Claim: The Beach first came out in 2000.
+True: SUPPORTED | Pred: CONTRADICTED
+Evidence Found: Evidence 1: The Beach Boys became the number-one act in the US, propelling themselves from opening for Crosby, Stills, Nash and Young in the summer of 1974 to headliners selling out basketball arenas within weeks. Guercio prevailed upon the group to swap out newer songs with older material in their concert setlists, partly to accommodate their growing audience demand for their earlier hits. Later in the year, members of the band appeared as guests on Chicago's hit "Wishing You Were Here". At the end of 1974, Rolling Stone proclaimed the Beach Boys "Band of the Year" based on the strength of their live performances. To capitalize on their sudden resurgence in popularity, the Beach Boys accepted Guercio's invitation to record their next Reprise album at his Caribou Ranch studio, located around the mountains of Nederland, Colorado.
+
+Evidence 2: I can't say whether it was the failure of The Beach that did it, but DiCaprio has never been this adventurous on screen since. And he's certainly never been this risky when it comes to selecting projects." In 2025, director Danny Boyle admitted his problems with the film, "Everybody [during production] was having parties and there were all sorts of goings on. They were all out in Thailand on per diems and everybody was having a wild time. For me it was just like I was struggling uphill the whole time."
+
+Evidence 3: The Beach Boys' greatest hits compilation album Endless Summer was released in June 1974 to unexpected success, becoming the band's second number 1 US album in October. The LP had a 155-week chart run, selling over 3 million copies. A second volume of greatest hits, Spirit of America, followed in April 1975, reaching US number 8, being certified Gold, and having a 43-week chart run. The Beach Boys became the number-one act in the US, propelling themselves from opening for Crosby, Stills, Nash and Young in the summer of 1974 to headliners selling out basketball arenas within weeks. Guercio prevailed upon the group to swap out newer songs with older material in their concert setlists, partly to accommodate their growing audience demand for their earlier hits.
+------------------------------
+=== Test 5 ===
+Loading FEVER dataset...
+Loading Semantic Search Model (all-MiniLM-L6-v2)...
+
+Evaluating FULL PIPELINE on 20 live Wikipedia searches...
+WARNING: This will make live HTTP requests. Please be patient to avoid API rate limits.
+
+Generated search queries: ['Murda Beatz is a record producer.'] for claim: 'Murda Beatz is a record producer.' (Domain: None)
+Generated search queries: ['New York City Landmarks Preservation Commission', 'number of members'] for claim: 'The New York City Landmarks Preservation Commission consists of zero commissioners.' (Domain: general)
+Generated search queries: ['Richard Dawkins', 'prestigious awards'] for claim: 'Richard Dawkins has been awarded prestigious awards.' (Domain: general)
+Generated search queries: ['Homer Hickman', 'memories'] for claim: 'Homer Hickman's memoirs sold terribly.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Match Point'] for claim: 'Match Point explores exclusively the role of misfortune in life.' (Domain: general)
+Generated search queries: ['So You Think You Can Dance was canceled on July 20th, 2005.'] for claim: 'So You Think You Can Dance was canceled on July 20th, 2005.' (Domain: )
+Generated search queries: ['The Beach is based on a novel.'] for claim: 'The Beach is based on a novel.' (Domain: general)
+Generated search queries: ['Kim Jong-il works for the Eternal General Secretary.'] for claim: 'Kim Jong-il works for the Eternal General Secretary.' (Domain: None)
+Generated search queries: ['Make It or Break It is incapable of being a television show.'] for claim: 'Make It or Break It is incapable of being a television show.' (Domain: None)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: CONTRADICTED
+Generated search queries: ['Britt Robertson is an entertainer.'] for claim: 'Britt Robertson is an entertainer.' (Domain: )
+Generated search queries: ['Dave Gibbons', 'April 12'] for claim: 'Dave Gibbons was born on April 12.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Aleister Crowley', 'poet'] for claim: 'Aleister Crowley was a poet.' (Domain: general)
+Generated search queries: ['Ludwig van Beethoven', 'musician'] for claim: 'Ludwig van Beethoven was not a musician.' (Domain: general)
+Generated search queries: ['Tool is not a band.'] for claim: 'Tool is not a band.' (Domain: general)
+Generated search queries: ['Basildon', 'connections'] for claim: 'Basildon has connections.' (Domain: general)
+Generated search queries: ['Craig David', 'Best American Male'] for claim: 'Craig David was nominated for Best American Male.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: CONTRADICTED
+Generated search queries: ['Sayyeshaa', 'Bollywood'] for claim: 'Sayyeshaa made her Bollywood debut.' (Domain: general)
+Generated search queries: ['CHiPs was written by a person.'] for claim: 'CHiPs was written by a person.' (Domain: None)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Men in Black II is a 2007 film.'] for claim: 'Men in Black II is a 2007 film.' (Domain: general)
+Generated search queries: ['The Bahamas is an internationally recognized state that comprises a series of landlocked areas that form an archipelago.'] for claim: 'The Bahamas is an internationally recognized state that comprises a series of landlocked areas that form an archipelago.' (Domain: general)
+
+==================================================
+          END-TO-END PIPELINE RESULTS          
+==================================================
+Overall Accuracy: 70.00%
+
+Hallucination Detection (Contradiction Class):
+  Precision: 0.73
+  Recall:    0.80
+  F1 Score:  0.76
+==================================================
+
+--- FAILURE LOG ---
+
+Claim: Homer Hickman's memoirs sold terribly.
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: 2001 saw a presidential scholar each of the first four years and the development of a master plan for Hickman's campus. A bond-issue was passed, and the renovations repairing the oldest parts of the school occurred. A large commons space, a main office, and language labs were added in 2003. In 2005, the oldest part of the building including the auditorium was restored, and the remainder of the school air-conditioned. State championships in football, baseball, and track were won in 2005.
+
+Evidence 2: Today, the school is accredited with distinction by the Missouri Department of Elementary and Secondary Education as well as the North Central Association of Colleges and Schools. Hickman's mascot is the Kewpie. As many high schools were at this point in history, CHS offered a two-year course of study. In 1895, it was increased to three, and again in 1896 to four. Extracurricular activities in 1898 included a literary society, choral union, orchestra, and debate team.
+
+Evidence 3: Hickman has more than double the number of Presidential Scholars than any other public or private high school in Missouri. Hickman was constructed in 1927 on the country estate of Missouri legislator and educator David Henry Hickman, next to what was then U.S. Route 40. The school was built to replace the earlier Columbia High School and carried over many of its traditions including the mascot and yearbook. Today, the school is accredited with distinction by the Missouri Department of Elementary and Secondary Education as well as the North Central Association of Colleges and Schools. Hickman's mascot is the Kewpie.
+------------------------------
+
+Claim: So You Think You Can Dance was canceled on July 20th, 2005.
+True: SUPPORTED | Pred: CONTRADICTED
+Evidence Found: Evidence 1: The video of the speech became an internet sensation, viewed over a million times within its first month on social networking sites such as YouTube, Google video, MySpace, and Facebook. Rickrolling originated on 15 May 2007, when 4chan user Shawn Cotter uploaded the "Never Gonna Give You Up" music video to YouTube and linked to it in place of the trailer for the video game Grand Theft Auto IV. Under the YouTube username cotter548, he uploaded the video, titled "Rickroll'D", on 15 May 2007. In a 2008 April Fools' joke, YouTube made all links to videos on the site's home page end up on the "Never Gonna Give You Up" music video. In the video, Severus Snape hears a strange ticking and, noticing it has a catchy rhythm, begins singing his name to it, followed by Albus Dumbledore, Ron Weasley, Hermione Granger, and Harry Potter.
+
+Evidence 2: is video that features Matt Harding of Dancing doing a dance "jig" in many different places around the world. The video garnered popularity on the video sharing site YouTube. There are now five major videos plus two outtakes and several background videos on YouTube. Matt dances alone in the first videos. In 2008 others join with him doing the dance "jig"; in 2010 he does the Diski Dance in South Africa.
+
+Evidence 3: Matt dances alone in the first videos. In 2008 others join with him doing the dance "jig"; in 2010 he does the Diski Dance in South Africa. In 2012 he works with other dancers, sometimes using a local dance or another dance step. In 2007, Jawed Karim, one of the founders of YouTube, stated that Harding's video was his favorite on YouTube at that time. There is evidence that the video is a product of the dishonest marketing technique of astroturfing.
+------------------------------
+
+Claim: Kim Jong-il works for the Eternal General Secretary.
+True: SUPPORTED | Pred: CONTRADICTED
+Evidence Found: Evidence 1: On 15 April 2012, the centenary of the birth of North Korea's first leader Kim Il Sung, Kim Jong Un made his first major public speech, entitled Let Us March Forward Dynamically Towards Final Victory, Holding Higher the Banner of Songun. At least two works predate this speech. To All the Service Personnel and People Who Deeply Mourned the Death of Comrade is dated 26 March. Kim published Let Us Brilliantly Accomplish the Revolutionary Cause of Juche, Holding Kim Jong Il in High Esteem as the Eternal General Secretary of Our Party shortly before the 11 April Fourth Conference of the Workers' Party of Korea (조선로동당 제4차 대표자회), which conferred on Kim Jong Il the posthumous title "Eternal General Secretary". The Great Kim Il Sung Is the Eternal Leader of Our Party and Our People, also from 2012 and probably ghostwritten, runs through the achievements of both Kim Jong Il and Kim Il Sung in a "panegyric" fashion.
+
+Evidence 2: Kim published Let Us Brilliantly Accomplish the Revolutionary Cause of Juche, Holding Kim Jong Il in High Esteem as the Eternal General Secretary of Our Party shortly before the 11 April Fourth Conference of the Workers' Party of Korea (조선로동당 제4차 대표자회), which conferred on Kim Jong Il the posthumous title "Eternal General Secretary". The Great Kim Il Sung Is the Eternal Leader of Our Party and Our People, also from 2012 and probably ghostwritten, runs through the achievements of both Kim Jong Il and Kim Il Sung in a "panegyric" fashion. Kim did not deliver a traditional New Year Address in 2012 out of respect for Kim Jong Il who had died just a short time ago. He did, however, revive the tradition the following year; Kim Jong Il never spoke in public but chose to have new year's editorials published in newspapers. In an unofficial hierarchy of speeches by the leader of North Korea, these New Year Addresses are second to only speeches made at major party events.
+
+Evidence 3: He had been named Wonsu (Marshal) in 1992 when North Korean founder Kim Il Sung was promoted to Dae Wonsu. Also in February 2012, the North Korean government created the Order of Kim Jong Il in his honor and awarded it to 132 individuals for services in building a "thriving socialist nation" and for increasing defence capabilities. Kim Jong Un was elected as the First Secretary of the Workers' Party of Korea on 11 April 2012 at the Fourth Conference of the WPK. The Party declared itself as "the party of Kim Il Sung and Kim Jong Il"; Kimilsungism became Kimilsungism–Kimjongilism, thereafter declared to be "the only guiding idea of the party" as well as the state ideology of North Korea. The Constitution was amended in 2012 to name Kim Jong Il as the Eternal General Secretary of the Workers' Party of Korea and Eternal Chairman of the National Defence Commission.
+------------------------------
+
+Claim: Dave Gibbons was born on April 12.
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: In 1996 and 1997, Gibbons collaborated with Mark Waid and Jimmy Palmiotti on two issues of the Amalgam Comics character "Super-Soldier," a character born from the merging of the DC and Marvel Universes after the events of the 1996 intercompany crossover DC vs. Marvel/Marvel vs. DC. Among many other covers, one-shots and minor works, Gibbons worked with Alan Moore again briefly on the latter's Awesome Entertainment Judgment Day miniseries, providing (variant) covers to all three issues, on the first issue of Kitchen Sink Press's The Spirit: The New Adventures revival and within the pages of the Alan Moore Songbook. He designed the logo for Oni Press in 1997. In 1999 he penciled and inked Darko Macan's four-issue Star Wars: Vader's Quest miniseries. Gibbons wrote Captain America issues #17–20 (Nov. 2003 – Jan. 2004) for artist Lee Weeks.
+
+Evidence 2: He left his surveyor job to focus on his comics career. Gibbons spent his young adult years as part of England's Mod subculture, where he was immersed in club life and used amphetamines at all-weekend parties. He paid tribute to that lifestyle in his graphic novel The Originals. One of his earlier works was a 12-part comic-series titled Year of the Shark Men for DC Thomson's The Wizard magazine, in April 1976 – July 1976. When the science-fiction title 2000 AD was set up in the mid-1970s, Gibbons contributed artwork to the first issue, Prog 01 (February 1977), and went on to draw the first 24 instalments of Harlem Heroes, one of the founding (and pre-Judge Dredd) strips.
+
+Evidence 3: In Marvel Edge's Savage Hulk No. 1 (Jan 1996), Gibbons wrote, penciled, inked, coloured and lettered "Old Friends", a version of the events of Captain America No. 110 from the point of view of the Hulk. In 1996 and 1997, Gibbons collaborated with Mark Waid and Jimmy Palmiotti on two issues of the Amalgam Comics character "Super-Soldier," a character born from the merging of the DC and Marvel Universes after the events of the 1996 intercompany crossover DC vs. Marvel/Marvel vs. DC. Among many other covers, one-shots and minor works, Gibbons worked with Alan Moore again briefly on the latter's Awesome Entertainment Judgment Day miniseries, providing (variant) covers to all three issues, on the first issue of Kitchen Sink Press's The Spirit: The New Adventures revival and within the pages of the Alan Moore Songbook.
+------------------------------
+
+Claim: Sayyeshaa made her Bollywood debut.
+True: SUPPORTED | Pred: CONTRADICTED
+Evidence Found: Evidence 1: Sayyeshaa Saigal (born 12 August 1997), known mononymously as Sayyeshaa, is an Indian actress who primarily works in Tamil films. She made her acting debut with the Telugu film Akhil (2015), for which she received SIIMA Award for Best Female Debut – Telugu nomination. Sayyeshaa made her Hindi film debut with Shivaay (2016), receiving Stardust Award for Superstar of Tomorrow – Female nomination. She then made her Tamil film debut with Vanamagan (2017) and received SIIMA Award for Best Debut Actress - Tamil nomination. Her successful films include Kaappaan (2019) and Yuvarathnaa (2021), her Kannada film debut.
+
+Evidence 2: She then made her Tamil film debut with Vanamagan (2017) and received SIIMA Award for Best Debut Actress - Tamil nomination. Her successful films include Kaappaan (2019) and Yuvarathnaa (2021), her Kannada film debut. She is the daughter of actors Sumeet Saigal and Shaheen Banu. Sayyeshaa is the grandniece of actors Saira Banu, who is her mother's aunt and Dilip Kumar, and the great granddaughter of Naseem Banu. Sayyeshaa completed her schooling from Ecole Mondiale World School, Juhu.
+
+Evidence 3: India Today stated, "Arya's chemistry with Sayyeshaa has worked really well. It makes you root for both the characters." She made her Kannada film debut with Yuvarathnaa opposite Puneeth Rajkumar. She portrayed a lecturer in this commercially successful film. The Hans India wrote, "Sayyeshaa has limited screen space but she looks gorgeous in those brief moments."
+------------------------------
+
+Claim: CHiPs was written by a person.
+True: SUPPORTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: CHIPS: Cara Hebat Ikut Penanggulangan Masalah Sosial is an Indonesian comedy film that premiered on April 15, 1983. Directed by Iksan Lahardi, it stars Dono, Kasino, and Indro. This film is inspired by the success of a similarly famous TV series from the 1980s, CHiPs, starring Erik Estrada as Officer Francis Ponchorello. Alongside the Warkop DKI trio, the film stars the late Panji Anom as Junet, their boss at CHIPS, and Sherly Malinton as Lita, Dono's romantic interest. From the outset, the film presents a series of comedic incidents: Kasino chasing after a reckless trail motorcyclist, Indro managing the antics of a mischievous child named Tomi, and Dono ending up soaked after accidentally falling into a river with Lita during a romantic interlude.
+
+Evidence 2: The film concludes somewhat tragically as Dono is compelled to abandon his plans to propose to Lita, who must honor her arranged marriage with Junet, their boss. Nonetheless, Dono exacts a humorous revenge by tossing Junet's cigar in a fit of rage, which elicits laughter from the trio as they play a prank on their former boss. Ultimately, the film ends on a comedic note. The CHIPS organization was reintroduced in the first and second installments of the Warkop DKI Reborn film series. These films were released in 2016 and 2017, respectively.
+
+Evidence 3: He made a brief appearance as mine owner Bob Freeman in the 2016 drama 94 Feet. He had a role on The Love Boat as Sergeant Belouski in Season 4, Episode 1. In 2010, Wilcox was charged with securities fraud by the U.S. Securities and Exchange Commission (SEC), after being caught by undercover FBI agents in a penny stock kickback scheme. He pled guilty to securities fraud conspiracy and was sentenced to three years probation. Wilcox married Hannie Strasse, a member of the CHIPs sound crew, in 1980.
+------------------------------

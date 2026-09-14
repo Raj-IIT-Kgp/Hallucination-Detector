@@ -1,0 +1,200 @@
+Loading Climate-FEVER dataset from HuggingFace...
+Loading Semantic Search Model (all-MiniLM-L6-v2)...
+
+Evaluating FULL PIPELINE on 20 Climate-FEVER samples...
+WARNING: This will make live HTTP requests. Please be patient to avoid API rate limits.
+
+Generated search queries: ['Ross McKitrick', 'Journal of Geophysical Research: Atmospheres', 'Greenhouse gas'] for claim: 'In a paper published online this week in the Journal of Geophysical Research-Atmosphere, economics professor Ross McKitrick says the resulting discrepancies may be leading to an overstatement of the role of greenhouse gases in the atmosphere.' (Domain: scientific)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Solar variation', 'Global warming', 'Sunspot'] for claim: '“Several of the papers note that the primary influence on warming appears to be solar activity.' (Domain: scientific)
+Generated search queries: ['Rate of increase (climate change)', 'Global temperature record'] for claim: 'In fact, the rate of increase from September onward is the fastest rate of change on record, either upwards or downwards.' (Domain: scientific)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Block (meteorology)', 'Extreme weather'] for claim: 'This “blocking” effect means extreme events can unfold.”' (Domain: scientific)
+Generated search queries: ['Mauna Loa', 'Atmospheric carbon dioxide', 'Keeling Curve'] for claim: ''Mauna Loa has been producing a readout which supports Manning's predetermined goal by showing steady growth in atmospheric CO2 concentrations since 1959.' (Domain: scientific)
+Generated search queries: ['Glaciers in Greenland', 'Glaciers in Antarctica', 'Ocean warming'] for claim: 'warmer oceans have also begun to destabilize glaciers in Greenland and Antarctica' (Domain: scientific)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['IPCC Fourth Assessment Report', 'Pat Michaels'] for claim: 'Fourth Assessment Report (AR4), in which the likely range is given as 2.0°C to 4.5°C, with a best estimate of 3.0°C" (Pat Michaels)' (Domain: scientific)
+Generated search queries: ['Global warming', 'Temperature record', 'National Oceanic and Atmospheric Administration'] for claim: 'Climate skeptics argue temperature records have been adjusted in recent years to make the past appear cooler and the present warmer, although the Carbon Brief showed that NOAA has actually made the past warmer, evening out the difference.' (Domain: scientific)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Carbon pricing', 'Economic impact of climate change policies'] for claim: 'Economic assessments of proposed policy to put a price on carbon emissions are in widespread agreement that the net economic impact will be minor.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Antarctica', 'NASA', 'Journal of Glaciology'] for claim: 'Antarctica is gaining land-based ice, according to a new study by NASA scientists published in the Journal of Glaciology' (Domain: scientific)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Koch Industries', 'Greenhouse gas emissions', 'Toxic air pollution'] for claim: '(Koch Industries) is among the worst in toxic air pollution in the entire United States ... and churns out more climate-changing greenhouse gases than oil giants Chevron, Shell and Valero.' (Domain: scientific)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Jet stream'] for claim: 'This means the jet stream meanders more, with big loops bringing warm air to the frozen north and cold air into warmer southern climes.”' (Domain: scientific)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Instrumental temperature record', 'Global temperature record'] for claim: '“The worldwide temperature record has been changed.' (Domain: scientific)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Cloud cover', 'Greenhouse gas', 'Water vapor'] for claim: 'If there is  a cloud cover, the heat is trapped by water vapour as a greenhouse gas  and the temperature stays quite warm.' (Domain: scientific)
+Generated search queries: ['Climate proxy', 'Medieval Warm Period'] for claim: '18 proxies tell us the world was the same or warmer 1,000 years ago.' (Domain: scientific)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Climate change', 'Global warming'] for claim: 'The broader term covers changes beyond warmer temperatures, such as shifting rainfall patterns.”' (Domain: scientific)
+Generated search queries: ['Australian Research Council', 'Coral bleaching', 'Great Barrier Reef'] for claim: 'a new study by scientists at the Australian Research Council finds that the ongoing bleaching event is mainly due to human-caused global warming, and that if global warming proceeds as currently expected, “large parts” of the Great Barrier Reef could die by the mid-2030s.' (Domain: scientific)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Extreme weather', 'Climate change'] for claim: 'The extreme cycles of dry and wet weather appear to have been intensifying over the last three decades.' (Domain: scientific)
+Generated search queries: ['Millennial scale climate cooling', 'Global temperature record'] for claim: 'Since then, the planet has been cooling on a millennial scale' (Domain: scientific)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Carbon dioxide effects on ocean acidification', 'Marine life', 'Ocean acidification'] for claim: 'More than half of the 44 studies selected for publication found that raised levels of CO2 had little or no impact on marine life, including crabs, limpets, sea urchins and sponges' (Domain: scientific)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+
+==================================================
+      CLIMATE-FEVER END-TO-END RESULTS      
+==================================================
+Overall Accuracy: 30.00%
+
+Hallucination Detection (Contradiction Class):
+  Precision: 0.33
+  Recall:    0.10
+  F1 Score:  0.15
+==================================================
+
+--- FAILURE LOG ---
+
+Claim: In a paper published online this week in the Journal of Geophysical Research-Atmosphere, economics professor Ross McKitrick says the resulting discrepancies may be leading to an overstatement of the role of greenhouse gases in the atmosphere.
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: Ross McKitrick (born 1965) is a Canadian economist specializing in environmental economics and policy analysis. He is a professor of economics at the University of Guelph, and a senior fellow of the Fraser Institute. McKitrick has authored works about environmental economics and ones denying the scientific consensus on climate change, including co-authoring the book Taken by Storm: The Troubled Science, Policy and Politics of Global Warming, published in 2002. He is the author of Economic Analysis of Environmental Policy, published by the University of Toronto Press. In 2001 he received an associate professorship and has been a full professor since December 2008.
+
+Evidence 2: He is the author of Economic Analysis of Environmental Policy, published by the University of Toronto Press. In 2001 he received an associate professorship and has been a full professor since December 2008. He has also been a senior fellow of the Fraser Institute since 2002. He is a member of the academic advisory board of the Global Warming Policy Foundation. With Christopher Essex he co-authored the 2002 Taken by Storm: The Troubled Science, Policy and Politics of Global Warming, a book that was a runner-up for the Donner Prize.
+
+Evidence 3: Within the lower atmosphere, greenhouse gases exchange thermal radiation with the surface and limit radiative heat flow away from it, which reduces the overall rate of upward radiative heat transfer. The increased concentration of greenhouse gases is also cooling the upper atmosphere, as it is much thinner than the lower layers, and any heat re-emitted from greenhouse gases is more likely to travel further to space than to interact with the fewer gas molecules in the upper layers. The upper atmosphere is also shrinking as the result. This table shows the most important contributions to the overall greenhouse effect, without which the average temperature of Earth's surface would be about −18 °C (0 °F), instead of around 15 °C (59 °F). This table also specifies tropospheric ozone, because this gas has a cooling effect in the stratosphere, but a warming influence comparable to nitrous oxide and CFCs in the troposphere.
+------------------------------
+
+Claim: “Several of the papers note that the primary influence on warming appears to be solar activity.
+True: CONTRADICTED | Pred: SUPPORTED
+Evidence Found: Evidence 1: They conclude that because of this, "long-term climate change may appear to track the amplitude of the solar activity cycles," but that "Solar radiative forcing of climate is reduced by a factor of 5 when the background component is omitted from historical reconstructions of total solar irradiance ...This suggests that general circulation model (GCM) simulations of twentieth century warming may overestimate the role of solar irradiance variability." A 2006 review suggested that solar brightness had relatively little effect on global climate, with little likelihood of significant shifts in solar output over long periods of time. Lockwood and Fröhlich, 2007, found "considerable evidence for solar influence on the Earth's pre-industrial climate and the Sun may well have been a factor in post-industrial climate change in the first half of the last century", but that "over the past 20 years, all the trends in the Sun that could have had an influence on the Earth's climate have been in the opposite direction to that required to explain the observed rise in global mean temperatures." In a study that considered geomagnetic activity as a measure of known solar-terrestrial interaction, Love et al. found a statistically significant correlation between sunspots and geomagnetic activity, but not between global surface temperature and either sunspot number or geomagnetic activity.
+
+Evidence 2: Under this scenario, they claimed the Sun might have contributed 50% of the observed global warming since 1900. estimated that the residual effects of the prolonged high solar activity during the last 30 years account for between 16% and 36% of warming from 1950 to 1999. The oppositely-directed trends highlighted by Lockwood and Fröhlich in 2007, with global mean temperatures continuing to rise while solar activity fell, have continued and become even more pronounced since then. In 2007 the difference in the trends was apparent after about 1987 and that difference has grown and accelerated in subsequent years. The updated figure (right) shows the variations and contrasts solar cycles 14 and 24, a century apart, that are quite similar in all solar activity measures (in fact cycle 24 is slightly less active than cycle 14 on average), yet the global mean air surface temperature is more than 1 degree Celsius higher for cycle 24 than cycle 14, showing the rise is not associated with solar activity.
+
+Evidence 3: The finding that solar activity was approximately the same in cycles 14 and 24 applies to all solar outputs that have, in the past, been proposed as a potential cause of terrestrial climate change and includes total solar irradiance, cosmic ray fluxes, spectral UV irradiance, solar wind speed and/or density, heliospheric magnetic field and its distribution of orientations and the consequent level of geomagnetic activity. Daytime temperatures have not risen as fast as nighttime temperatures. This is the opposite of the expected warming if solar energy (falling primarily or wholly during daylight, depending on energy regime) were the principal means of forcing. It is, however, the expected pattern if greenhouse gases were preventing radiative escape, which is more prevalent at night. This is the opposite of the expected pattern if the Sun, currently closer to the Earth during austral summer, were the principal climate forcing.
+------------------------------
+
+Claim: In fact, the rate of increase from September onward is the fastest rate of change on record, either upwards or downwards.
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: Since the 1950s, droughts and heat waves have appeared simultaneously with increasing frequency. Extremely wet or dry events within the monsoon period have increased in India and East Asia. Monsoonal precipitation over the Northern Hemisphere has increased since 1980. The rainfall rate and intensity of hurricanes and typhoons is likely increasing, and the geographic range likely expanding poleward in response to climate warming. The frequency of tropical cyclones has not increased as a result of climate change.
+
+Evidence 2: The rainfall rate and intensity of hurricanes and typhoons is likely increasing, and the geographic range likely expanding poleward in response to climate warming. The frequency of tropical cyclones has not increased as a result of climate change. Global sea level is rising as a consequence of thermal expansion and the melting of glaciers and ice sheets. Sea level rise has increased over time, reaching 4.8 cm per decade between 2014 and 2023. Over the 21st century, the IPCC projects 32–62 cm of sea level rise under a low emission scenario, 44–76 cm under an intermediate one and 65–101 cm under a very high emission scenario.
+
+Evidence 3: Oceanic CO2 uptake is slow enough that ocean acidification will also continue for hundreds to thousands of years. Deep oceans (below 2,000 metres (6,600 ft)) are also already committed to losing over 10% of their dissolved oxygen by the warming which occurred to date. Further, the West Antarctic ice sheet appears committed to practically irreversible melting, which would increase the sea levels by at least 3.3 m (10 ft 10 in) over approximately 2000 years. For instance, the range of hundreds of North American birds has shifted northward at an average rate of 1.5 km/year over the past 55 years. Higher atmospheric CO2 levels and an extended growing season have resulted in global greening.
+------------------------------
+
+Claim: 'Mauna Loa has been producing a readout which supports Manning's predetermined goal by showing steady growth in atmospheric CO2 concentrations since 1959.
+True: SUPPORTED | Pred: CONTRADICTED
+Evidence Found: Evidence 1: Revelle was also one of the founders of the International Geophysical Year (IGY) in 1957–58 and Keeling received IGY funding to establish a base on Mauna Loa in Hawaii, two miles (3,000 m) above sea level. Keeling started collecting carbon dioxide samples at the base in 1958. By 1960, he had established that there are strong seasonal variations in carbon dioxide levels with peak levels reached in the late northern hemisphere winter. A reduction in carbon dioxide followed during spring and early summer each year as plant growth increased in the land-rich northern hemisphere. In 1961, Keeling produced data showing that carbon dioxide levels were rising steadily in what later became known as the "Keeling Curve".
+
+Evidence 2: A globally significant species of coccolithophore is Emiliania huxleyi whose calcite scales have formed the basis of many sedimentary rocks such as limestone, where what was previously atmospheric carbon can remain fixed for geological timescales. Plants can grow as much as 50% faster in concentrations of 1,000 ppm CO2 when compared with ambient conditions, though this assumes no change in climate and no limitation on other nutrients. Elevated CO2 levels cause increased growth reflected in the harvestable yield of crops, with wheat, rice and soybean all showing increases in yield of 12–14% under elevated CO2 in FACE experiments. Increased atmospheric CO2 concentrations result in fewer stomata developing on plants which leads to reduced water usage and increased water-use efficiency. Studies using FACE have shown that CO2 enrichment leads to decreased concentrations of micronutrients in crop plants.
+
+Evidence 3: Concentrations reach a peak in May as the Northern Hemisphere spring greenup begins, and decline to a minimum in October, near the end of the growing season. Concentrations also vary on a regional basis, most strongly near the ground with much smaller variations aloft. In urban areas concentrations are generally higher and indoors they can reach 10 times background levels. The daily average concentration of atmospheric CO2 at Mauna Loa Observatory first exceeded 400 ppm on 10 May 2013 although this concentration had already been reached in the Arctic in June 2012. Data from 2013 showed that the concentration of carbon dioxide in the atmosphere is this high "for the first time in 55 years of measurement—and probably more than 3 million years of Earth history."
+------------------------------
+
+Claim: Fourth Assessment Report (AR4), in which the likely range is given as 2.0°C to 4.5°C, with a best estimate of 3.0°C" (Pat Michaels)
+True: SUPPORTED | Pred: CONTRADICTED
+Evidence Found: Evidence 1: This range of values is not a projection of the temperature rise we will see in the 21st century, since the future change in carbon dioxide concentrations is unknown, and factors besides carbon dioxide concentrations affect temperature. As a result, predictions for the 21st century are as shown below. Surface air warming in the 21st century:
+Best estimate for a "low scenario" is 1.8 °C with a likely range of 1.1 to 2.9 °C (3.2 °F with a likely range of 2.0 to 5.2 °F)
+Best estimate for a "high scenario" is 4.0 °C with a likely range of 2.4 to 6.4 °C (7.2 °F with a likely range of 4.3 to 11.5 °F)
+A temperature rise of about 0.1 °C per decade would be expected for the next two decades, even if greenhouse gas and aerosol concentrations were kept at year 2000 levels. A temperature rise of about 0.2 °C per decade is projected for the next two decades for all SRES scenarios. Confidence in these near-term projections is strengthened because of the agreement between past model projections and actual observed temperature increases.
+
+Evidence 2: Scenario B1
+Best estimate temperature rise of 1.8 °C with a likely range of 1.1 to 2.9 °C (3.2 °F with a likely range of 2.0 to 5.2 °F)
+Sea level rise likely range [18 to 38 cm] (7 to 15 inches)
+Scenario A1T
+Best estimate temperature rise of 2.4 °C with a likely range of 1.4 to 3.8 °C (4.3 °F with a likely range of 2.5 to 6.8 °F)
+Sea level rise likely range [20 to 45 cm] (8 to 18 inches)
+Scenario B2
+Best estimate temperature rise of 2.4 °C with a likely range of 1.4 to 3.8 °C (4.3 °F with a likely range of 2.5 to 6.8 °F)
+Sea level rise likely range [20 to 43 cm] (8 to 17 inches)
+Scenario A1B
+Best estimate temperature rise of 2.8 °C with a likely range of 1.7 to 4.4 °C (5.0 °F with a likely range of 3.1 to 7.9 °F)
+Sea level rise likely range [21 to 48 cm] (8 to 19 inches)
+Scenario A2
+Best estimate temperature rise of 3.4 °C with a likely range of 2.0 to 5.4 °C (6.1 °F with a likely range of 3.6 to 9.7 °F)
+Sea level rise likely range [23 to 51 cm] (9 to 20 inches)
+Scenario A1FI
+Best estimate temperature rise of 4.0 °C with a likely range of 2.4 to 6.4 °C (7.2 °F with a likely range of 4.3 to 11.5 °F)
+Sea level rise likely range [26 to 59 cm] (10 to 23 inches)
+
+
+=== Selected quotes from the Working Group I Summary for Policymakers ===
+"Both past and future anthropogenic carbon dioxide emissions will continue to contribute to warming and sea level rise for more than a millennium, due to the timescales required for removal of this gas from the atmosphere." The now-published text gives a warning that the new estimation of sea-level could be too low: "Dynamical processes related to ice flow not included in current models but suggested by recent observations could increase the vulnerability of the ice sheets to warming, increasing future sea level rise." The mid-points of the sea level rise estimates are within ±10% of those from the TAR; but the range has narrowed. Lord Rees, the president of the Royal Society, said, "This report makes it clear, more convincingly than ever before, that human actions are writ large on the changes we are seeing, and will see, to our climate. The IPCC strongly emphasises that substantial climate change is inevitable, and we will have to adapt to this.
+
+Evidence 3: Scenario-specific projections are based on analysis of multiple runs by multiple climate models, using the various SRES Scenarios. "Low scenario" refers to B1, the most optimistic scenario family. "High scenario" refers to A1FI, the most pessimistic scenario family. Scenario B1
+Best estimate temperature rise of 1.8 °C with a likely range of 1.1 to 2.9 °C (3.2 °F with a likely range of 2.0 to 5.2 °F)
+Sea level rise likely range [18 to 38 cm] (7 to 15 inches)
+Scenario A1T
+Best estimate temperature rise of 2.4 °C with a likely range of 1.4 to 3.8 °C (4.3 °F with a likely range of 2.5 to 6.8 °F)
+Sea level rise likely range [20 to 45 cm] (8 to 18 inches)
+Scenario B2
+Best estimate temperature rise of 2.4 °C with a likely range of 1.4 to 3.8 °C (4.3 °F with a likely range of 2.5 to 6.8 °F)
+Sea level rise likely range [20 to 43 cm] (8 to 17 inches)
+Scenario A1B
+Best estimate temperature rise of 2.8 °C with a likely range of 1.7 to 4.4 °C (5.0 °F with a likely range of 3.1 to 7.9 °F)
+Sea level rise likely range [21 to 48 cm] (8 to 19 inches)
+Scenario A2
+Best estimate temperature rise of 3.4 °C with a likely range of 2.0 to 5.4 °C (6.1 °F with a likely range of 3.6 to 9.7 °F)
+Sea level rise likely range [23 to 51 cm] (9 to 20 inches)
+Scenario A1FI
+Best estimate temperature rise of 4.0 °C with a likely range of 2.4 to 6.4 °C (7.2 °F with a likely range of 4.3 to 11.5 °F)
+Sea level rise likely range [26 to 59 cm] (10 to 23 inches)
+
+
+=== Selected quotes from the Working Group I Summary for Policymakers ===
+"Both past and future anthropogenic carbon dioxide emissions will continue to contribute to warming and sea level rise for more than a millennium, due to the timescales required for removal of this gas from the atmosphere." The now-published text gives a warning that the new estimation of sea-level could be too low: "Dynamical processes related to ice flow not included in current models but suggested by recent observations could increase the vulnerability of the ice sheets to warming, increasing future sea level rise."
+------------------------------
+
+Claim: Climate skeptics argue temperature records have been adjusted in recent years to make the past appear cooler and the present warmer, although the Carbon Brief showed that NOAA has actually made the past warmer, evening out the difference.
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: Based on the NOAA dataset (note that other datasets produce different rankings), the following table lists the global combined land and ocean annually averaged temperature rank and anomaly for each of the 10 warmest years on record. For comparison: IPCC uses the mean of four different datasets and expresses the data relative to 1850–1900. Although global instrumental temperature records begin only in 1850, reconstructions of earlier temperatures based on climate proxies, suggest these recent years may be the warmest for several centuries to millennia, or longer. An examination of the average global temperature changes by decades reveals continuing climate change: each of the last four decades has been successively warmer at the Earth's surface than any preceding decade since 1850. The most recent decade (2011–2020) was warmer than any multi-centennial period in the past 11,700 years.
+
+Evidence 2: The geologic temperature record are changes in Earth's environment as determined from geologic evidence on multi-million to billion (109) year time scales. The study of past temperatures provides an important paleoenvironmental insight because it is a component of the climate and oceanography of the time. Often, many are used in conjunction to get a multi-proxy estimate for the temperature. This has proven crucial in studies on glacial/interglacial temperature. Currently, the Earth is in an interglacial period, beginning about 20,000 years ago (20 kya).
+
+Evidence 3: Also, Greenland has the clearest record of abrupt climate changes in the ice core, and there are no other records that can show the same time interval with equally high time resolution. When scientists explored the trapped gas in the ice core bubbles, they found that the methane concentration in Greenland ice core is significantly higher than that in Antarctic samples of similar age, the records of changes of concentration difference between Greenland and Antarctic reveal variation of latitudinal distribution of methane sources. Increase in methane concentration shown by Greenland ice core records implies that the global wetland area has changed greatly over past years. Methane records derived from Greenland ice cores have provided valuable information about past atmospheric methane concentrations and their relationship to abrupt climate changes, making them an important proxy for studying past climate variability. In recent years, more and more new studies have provided older but discrete records.
+------------------------------
+
+Claim: Economic assessments of proposed policy to put a price on carbon emissions are in widespread agreement that the net economic impact will be minor.
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: Attempts to impose severe penalties that would incentivize more determined efforts to meet challenging targets, have always been blocked by at least one or two nations. In the 21st century, there is widespread agreement that a carbon price is the most effective way to reduce emissions, at least in theory. Generally though, nations have been reluctant to adopt a high carbon price, or in most cases any price at all. One of the main reasons for this reluctance is the problem of carbon leakage – the phenomena where activities producing GHG emissions are moved out of the jurisdiction that imposes the carbon price thus depriving the jurisdiction of jobs & revenue, and to no benefit, as the emissions will be released elsewhere. Nonetheless, the percentage of the worlds' emissions that are covered by a carbon price rose from 5% in 2005, to 15% by 2019, and should reach over 40% once China's carbon price comes fully into force.
+
+Evidence 2: The success of the Montreal treaty in reducing emissions that damaged the ozone layer suggested that targets could be effective. Yet in the case of greenhouse gas reductions, targets have not in general led to substantial cuts in emissions. Ambitious targets have usually not been met. Attempts to impose severe penalties that would incentivize more determined efforts to meet challenging targets, have always been blocked by at least one or two nations. In the 21st century, there is widespread agreement that a carbon price is the most effective way to reduce emissions, at least in theory.
+
+Evidence 3: One of the main reasons for this reluctance is the problem of carbon leakage – the phenomena where activities producing GHG emissions are moved out of the jurisdiction that imposes the carbon price thus depriving the jurisdiction of jobs & revenue, and to no benefit, as the emissions will be released elsewhere. Nonetheless, the percentage of the worlds' emissions that are covered by a carbon price rose from 5% in 2005, to 15% by 2019, and should reach over 40% once China's carbon price comes fully into force. Existing carbon price regimes have been implemented mostly independently by the European Union, nations and sub national jurisdictions acting autonomously. The largely voluntary pledge and review system where states make their own plans for emissions reduction was introduced in 1991, but abandoned before the 1997 Kyoto treaty, where the focus was on securing agreement for "top down" emissions targets. The approach was revived at Copenhagen, and gained further prominence with the 2015 Paris Agreement, though pledges came to be called nationally determined contributions (NDCs).
+------------------------------
+
+Claim: Antarctica is gaining land-based ice, according to a new study by NASA scientists published in the Journal of Glaciology
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: The British Antarctic Survey (BAS), Australian Antarctic Program (AAP) and United States Antarctic Program (USAP) have all released such reports, largely focusing on how changes in Antarctica's climate may impact their respective home countries and the global climate. Geologists primarily study plate tectonics, meteorites, and the breakup of Gondwana. Glaciologists study the history and dynamics of floating ice, seasonal snow, glaciers, and ice sheets. Biologists, in addition to researching wildlife, are interested in how low temperatures and the presence of humans affect adaptation and survival strategies in organisms. Biomedical scientists have made discoveries concerning the spreading of viruses and the body's response to extreme seasonal temperatures.
+
+Evidence 2: There is evidence of a large number of volcanoes under the ice, which could pose a risk to the ice sheet if activity levels were to rise. The ice dome known as Dome Argus in East Antarctica is the highest Antarctic ice feature, at 4,091 metres (13,422 ft). It is one of the world's coldest and driest places—temperatures there reach as low as −90 °C (−130 °F), and the annual precipitation is 1–3 cm (0.39–1.18 in). Modern Antarctica was formed as Gondwana gradually broke apart beginning around 183 Ma. For a large proportion of the Phanerozoic, Antarctica had a tropical or temperate climate, and it was covered in forests.
+
+Evidence 3: The Antarctic region includes the ice shelves, waters, and all the island territories in the Southern Ocean situated south of the Antarctic Convergence, a zone approximately 32 to 48 km (20 to 30 mi) wide and varying in latitude seasonally. The region covers some 20 percent of the Southern Hemisphere, of which 5.5 percent (14 million km2) is the surface area of the Antarctica continent itself. All of the land and ice shelves south of 60°S latitude are administered under the Antarctic Treaty System. Biogeographically, the Antarctic realm is one of eight biogeographic realms on Earth's land surface. Climate change in Antarctica is particularly important because the melting of the Antarctic ice sheet has a high potential to add to the global sea level rise.
+------------------------------
+
+Claim: (Koch Industries) is among the worst in toxic air pollution in the entire United States ... and churns out more climate-changing greenhouse gases than oil giants Chevron, Shell and Valero.
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: Additionally, lower-income communities more often perform polluting activities, such as using solid biofuels for cooking. In the United States, Blacks and Latinos generally face more pollution than Whites and Asians. Indoor air pollution is worst in low-income countries, in particularly south-east Asia, the western Pacific, and Africa. Outdoor air pollution is usually concentrated in densely populated metropolitan areas. Urbanization leads to a rapid rise in premature mortality due to air pollution in fast-growing tropical cities.
+
+Evidence 2: National air quality laws have often been effective, notably the 1956 Clean Air Act in Britain and the 1963 US Clean Air Act. International efforts have had mixed results: the Montreal Protocol almost eliminated harmful ozone-depleting chemicals, while international action on climate change has been less successful. Methane leaks are common in oil and gas production, and oil refineries emit a wide range of pollutants. Some hazardous air pollutants are produced in plastic and rubber production, whereas chloroform can be produced during water chlorination, and arsenic is found in the mining industry. Many polluting industries have been pushed out of richer nations, and China too has started to push its most polluting industries out of the country.
+
+Evidence 3: Organizations such as the California Air Resources Board (CARB) have recommended that more sufficient regulations be implemented in the San Joaquin Valley to reduce toxic emissions into the atmosphere. There are now efforts from the EPA, the CARB, and the San Joaquin Valley Air Pollution Control District to enforce regulations from the Clean Air Act and fund further efforts to live in a more sustainable fashion. It is likely that tens of thousands of premature deaths are still being caused by fine-particle pollution and ground-level ozone pollution. Climate change poses a challenge to the management of conventional air pollutants in the United States due to warmer, dryer summer conditions that can lead to increased air stagnation episodes. Prolonged droughts that may contribute to wildfires would also result in regionally high levels of air particles.
+------------------------------
+
+Claim: This means the jet stream meanders more, with big loops bringing warm air to the frozen north and cold air into warmer southern climes.”
+True: SUPPORTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: The jet stream serves as an atmospheric boundary, separating the cold polar air from the warm subtropical air. Its instability is characterized by the winding of Rossby waves, which may lead to harsh winter weather; For example, in early 2026, extreme cold air erupted across North America, causing temperatures in areas such as Ontario to drop below −30 °C (−22 °F). If two air masses of different temperatures or densities meet, the resulting pressure difference caused by the density difference (which ultimately causes wind) is highest within the transition zone. The wind does not flow directly from the hot to the cold area, but is deflected by the Coriolis effect and flows along the boundary of the two air masses. All these facts are consequences of the thermal wind relation.
+
+Evidence 2: The jet stream moves from west to east bringing changes of weather. The path of jet streams affects cyclonic storm systems at lower levels in the atmosphere, and so knowledge of their course has become an important part of weather forecasting. For example, in 2007 and 2012, Britain experienced severe flooding as a result of the polar jet staying south for the summer. The jet stream serves as an atmospheric boundary, separating the cold polar air from the warm subtropical air. Its instability is characterized by the winding of Rossby waves, which may lead to harsh winter weather; For example, in early 2026, extreme cold air erupted across North America, causing temperatures in areas such as Ontario to drop below −30 °C (−22 °F).
+
+Evidence 3: The warmer air can only move along the edge of the polar vortex, but not enter it. Within the vortex, the cold polar air becomes increasingly cold, due to a lack of warmer air from lower latitudes as well as a lack of energy from the Sun entering during the polar night. The mountain barrier increases the strength of the low level wind by 45 percent. In the North American Great Plains a southerly low-level jet helps fuel overnight thunderstorm activity during the warm season, normally in the form of mesoscale convective systems which form during the overnight hours. A similar phenomenon develops across Australia, which pulls moisture poleward from the Coral Sea towards cut-off lows which form mainly across southwestern portions of the continent.
+------------------------------

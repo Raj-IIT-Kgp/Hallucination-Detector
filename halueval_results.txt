@@ -1,0 +1,234 @@
+Loading HaluEval dataset...
+Downloading/Loading HaluEval (QA subset) from HuggingFace...
+Loading Semantic Search Model (all-MiniLM-L6-v2)...
+
+Evaluating FULL PIPELINE on 20 HaluEval QA samples...
+WARNING: This will make live HTTP requests. Please be patient to avoid API rate limits.
+
+Generated search queries: ['Bianca (moon)', 'The Taming of the Shrew'] for claim: 'Question: The satellite Bianca is named after the sister of Katherine in a Shakespeare's play believed to be written between what years?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Bianca (moon)', 'The Taming of the Shrew'] for claim: 'Answer: The satellite Bianca is named after the sister of Katherine in Shakespeare's play that was written in the early 1600s.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['2003 FIBA Under-19 World Championship'] for claim: 'Question: What is the nationality of the 2003 FIBA Under-19 World Championship MVP ?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['2003 FIBA Under-19 World Championship', '2003 FIBA Under-19 World Championship MVP'] for claim: 'Answer: As per my knowledge, the 2003 FIBA Under-19 World Championship MVP is a citizen of New Zealand.' (Domain: general)
+Generated search queries: ['Strombocactus', 'Calypso bulbosa'] for claim: 'Question: Are both Strombocactus and Calypso bulbosa both genus of plants ?' (Domain: scientific)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: CONTRADICTED
+Generated search queries: ['Strombocactus', 'Calypso bulbosa'] for claim: 'Answer: yes' (Domain: scientific)
+Generated search queries: ['Football', 'Association football positions'] for claim: 'Question: This footballer played in the top divisions in Italy, Spain, England and Germany and is known for what?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Footballer', 'Speed on the ball'] for claim: 'Answer: his speed on the ball' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Peter Benchley', 'Odön von Horváth'] for claim: 'Question: Peter Benchley and Ödön von Horváth, have which mutual occupation?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Peter Benchley', 'Ödön von Horváth'] for claim: 'Answer: Peter Benchley and Ödön von Horváth both worked in literature.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Moisés Solano', 'Basque pelota'] for claim: 'Question:  Moisés Solano helped fund his racing career by playing a sport that is a variation of what game?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Basque pelota'] for claim: 'Answer: Basque pelota' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['The Professional Basketball Club LLC', 'Dorchester Capital Corporation', 'American Cancer Society'] for claim: 'Question: The Professional Basketball Club LLC is an investment group headed by an American businessman who is the chairman of Dorchester Capital Corporation, and is also the chairman emeritus of the board of directors of what organization?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['The Professional Basketball Club LLC', 'American Cancer Society'] for claim: 'Answer: The American Cancer Society.' (Domain: general)
+Generated search queries: ['Moscow Water Dog', 'Bavarian Mountain Hound'] for claim: 'Question: Moscow Water Dog and Bavarian Mountain Hound, are a breed of what?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Moscow Water Dog', 'Bavarian Mountain Hound'] for claim: 'Answer: dog' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Monoral (band)', 'Versus (band)'] for claim: 'Question: Are Monoral and Versus both rock bands?' (Domain: general)
+Generated search queries: ['Monoral', 'Versus (band)'] for claim: 'Answer: Monoral is an alternative band.' (Domain: general)
+Generated search queries: ['Holliday Street Theater', 'The Star-Spangled Banner'] for claim: 'Question: This historical theatrical venue showed the first performance of what would eventually be the US national anthem Answer: Holliday Street Theater' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Hurricane Beulah', 'Atlantic hurricane season'] for claim: 'Question: Hurricane Beulah was the second tropical storm, second hurricane, and only major hurricane during which was the first Atlantic hurricane season to be included in the satellite era?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: CONTRADICTED
+Generated search queries: ['Hurricane Beulah', '1967 Atlantic hurricane season'] for claim: 'Answer: Hurricane Beulah was the second tropical storm, second hurricane, and only major hurricane during the first Atlantic hurricane season.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: CONTRADICTED
+Generated search queries: ['James Matthews', 'Pippa Middleton'] for claim: 'Question: This women’s clothing, footwear and accessories retailer is frequented by the wife of James Matthews; where was it founded?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Hampstead', 'James Matthews'] for claim: 'Answer: Hampstead' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Terence Hill', 'Lazzarella (film)'] for claim: 'Question: Lazzarella, is a 1957 Italian comedy film directed by Carlo Ludovico Bragaglia and starring Alessandra Panaro and Mario Girotti (later best known as Terence Hill), Hill is an Italian actor, film director, screenwriter and film producer, born on which date?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Terence Hill'] for claim: 'Answer: 29 March 1939' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['2015 Gaddafi Stadium Draft', 'Gaddafi Stadium'] for claim: 'Question: What Player Draft was held at Gaddafi Stadium and initial squads were finalised in Decenber 2015?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['2015 Pakistan Super League draft', 'Gaddafi Stadium'] for claim: 'Answer: The 2015 Gaddafi Stadium Draft.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Trappist beer', 'Belgium'] for claim: 'Question: Tripel was the strongest beer in their range, in 1956, served at a Trappist brewery in what country?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: CONTRADICTED
+Generated search queries: ['Westmalle Trappist brewery', 'Tripel (beer)', 'Belgian beer'] for claim: 'Answer: Tripel was not the strongest beer in their range until 1966, but it was served at a Trappist brewery in Belgium.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: CONTRADICTED
+Generated search queries: ['Colin Powell', 'Southern Center for International Studies'] for claim: 'Question: What American statesman and a retired four-star general in the United States Army has attended events at the Southern Center for International Studies?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Colin Powell'] for claim: 'Answer: Colin Powell' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Emma Rose Kenney', 'Blue Sky Studios'] for claim: 'Question: Emma Rose Kenney's roll in a Blue Sky Studios produced film earned how much money?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Emma Rose Kenney', 'Blue Sky Studios'] for claim: 'Answer: Emma Rose Kenney's animation movie earned $240 million.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Lionel Hugh Harvey', 'Kansas City Scouts', 'National Hockey League'] for claim: 'Question: Lionel Hugh Harvey,  is a retired Canadian professional ice hockey forward who played 18 games for the Kansas City Scouts, a professional ice hockey team in which sports organization?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['National Hockey League', 'Kansas City Scouts', 'Lionel Hugh Harvey'] for claim: 'Answer: National Hockey League (NHL)' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: SUPPORTED
+Generated search queries: ['Emmy Rossum', 'Appalachian folk music'] for claim: 'Question: What year did Emmy Rossum star in a film about a musicologist researching and collecting Appalachian folk music in the mountains of western North Carolina?' (Domain: general)
+Generated search queries: ['Songcatcher'] for claim: 'Answer: 2000' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Jake Davis'] for claim: 'Question: Where was the musician who Jake Davis first gained recognition by covering from?' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: UNKNOWN
+Generated search queries: ['Jake Davis'] for claim: 'Answer: The musician who Jake Davis first gained recognition by covering is from Ireland.' (Domain: general)
+    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...
+    Critic LLM decided: CONTRADICTED
+
+==================================================
+          HALUEVAL END-TO-END RESULTS          
+==================================================
+Overall Accuracy: 40.00%
+
+Hallucination Detection (Contradiction Class):
+  Precision: 0.60
+  Recall:    0.30
+  F1 Score:  0.40
+==================================================
+
+--- FAILURE LOG ---
+
+Claim: Question: The satellite Bianca is named after the sister of Katherine in a Shakespeare's play believed to be written between what years? Answer: The satellite Bianca is named after the sister of Katherine in Shakespeare's play that was written in the early 1600s.
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: There is also an asteroid called 218 Bianca. Bianca is an inner satellite of Uranus. It was discovered from the images taken by Voyager 2 on January 23, 1986, and was given the temporary designation S/1986 U 9. It was named after the sister of Katherina in Shakespeare's play The Taming of the Shrew. It is also designated Uranus VIII.
+
+Evidence 2: It was named after the sister of Katherina in Shakespeare's play The Taming of the Shrew. It is also designated Uranus VIII. Bianca belongs to the Portia group of satellites, which also includes Cressida, Desdemona, Juliet, Portia, Rosalind, Cupid, Belinda, and Perdita. These satellites have similar orbits and photometric properties. Other than its orbit, size of 64 km × 46 km (40 mi × 29 mi), and geometric albedo of 0.065, little is known about it.
+
+Evidence 3: Written in modern prose, the episode relocates the story to contemporary London, where Katherine (Shirley Henderson) is an abrasive career politician who is told she must find a husband if she wants to become the party leader. Meanwhile, her supermodel sister Bianca (Jaime Murray) has fallen in love with Lucentio (Santiago Cabrera) and wants to marry him, but Bianca's manager, Harry (Stephen Tompkinson), has long believed she will marry him. To put him off, Bianca announces she will not marry until her sister is married (as she believes Katherine will never marry). Harry then arranges a meeting between his friend Petruchio (Rufus Sewell) and Katherine. Harry bets Petruchio that he will not be able to woo Katherine, so, determined to prove him wrong, Petruchio sets out to win her over.
+------------------------------
+
+Claim: Question: What is the nationality of the 2003 FIBA Under-19 World Championship MVP ? Answer: As per my knowledge, the 2003 FIBA Under-19 World Championship MVP is a citizen of New Zealand.
+True: CONTRADICTED | Pred: SUPPORTED
+Evidence Found: Evidence 1: The 2003 FIBA Under-19 World Championship (Greek: 2003 Παγκόσμιο Πρωτάθλημα FIBA Under-19) was the 7th edition of the FIBA U19 World Championship organized by FIBA. It was held in the Greek city of Thessaloniki from 10 to 20 July 2003. Australia won the tournament by beating Lithuania, 126–92, in the final, for their maiden title. Andrew Bogut was named the tournament MVP. Greece, which previously hosted the 1995 edition, stepped forward to host the tournament.
+
+Evidence 2: The 2007 FIBA Under-19 World Championship (Serbian: Светско првенство до 19 година ФИБА до 19 година) was the 8th edition of the FIBA U19 World Championship. It was held in Novi Sad, Serbia from 12 to 22 July 2007. The host nation won the tournament after beating the United States 74–69 in the final. Milan Mačvan was named the tournament MVP.
+
+Evidence 3: The FIBA U19 Basketball World Cup (formerly FIBA Under-19 World Championship) is the under-19 men's world basketball championship organized by the International Basketball Federation (FIBA). From its inauguration in 1979, until 2007, it was held every four years. Since 2007, it has been held biennially. The reigning world champions are United States, winning the tournament in 2025. The next edition will be held in Czechia in 2027.
+------------------------------
+
+Claim: Question: Are both Strombocactus and Calypso bulbosa both genus of plants ? Answer: yes
+True: SUPPORTED | Pred: CONTRADICTED
+Evidence Found: Evidence 1: It was moved to the genus Calypso by the botanist William Oakes 1842. Varieties
+Four varieties and one nothovariety, a variety of hybrid origin that is established in the wild, are recognized:
+
+
+=== Synonyms ===
+Calypso bulbosa has 29 synonyms of the species or one of its four varieties, including 16 species. The habitat of these plants in the deep woods habitat metaphorically hides them from plant hunters. The species name, bulbosa, means possessing a bulb, referring to its growth habit. Calypso bulbosa is known by the common names fairy slipper, fairyslipper orchid, and fairy-slipper orchid, due to the prominent lower lip of the flower resembling a slipper.
+
+Evidence 2: The following generic names have been published as synonyms:
+
+Cytherea Salisb. (1812)
+Orchidium Sw. (1814)
+Calypsodium Link (1829)
+Norna Wahlenb. (1833)
+Calypso bulbosa was assigned  to the genus Cypripedium in 1753 by Carl von Linné in Species Plantarum. It was moved to the genus Calypso by the botanist William Oakes 1842. Varieties
+Four varieties and one nothovariety, a variety of hybrid origin that is established in the wild, are recognized:
+
+
+=== Synonyms ===
+Calypso bulbosa has 29 synonyms of the species or one of its four varieties, including 16 species.
+
+Evidence 3: Strombocactus disciformis is a rare species of cacti and the only species of the genus Strombocactus. The plant originates from Central and Northeast Mexico. Strombocactus disciformis are low-growing, gray-green succulents with a broadly round, unbranched stem and root. In their natural habitats, they grow in a disk shape, half hidden in the ground, reaching around 8 cm in diameter and 2-3 cm in height. In cultivation, they become nearly spherical.
+------------------------------
+
+Claim: Question: This footballer played in the top divisions in Italy, Spain, England and Germany and is known for what? Answer: his speed on the ball
+True: SUPPORTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: Such a player is either a skillful, attack-minded midfielder or a creative striker who can both score and create opportunities for centre forwards, although a second striker will often not be involved in build-up plays as much as an attacking midfielder. As the supporting forward role was popularised in Italy due to free-role attacking midfielders adapting to a more advanced position in the tactically rigorous 4–4–2 formations of the 1990s, their defensive contribution is also usually higher than that of a pure number ten playmaker. In Italy, this role is also known as a "rifinitore" or "seconda punta", whereas in Brazil, it is known as a "segundo atacante". They can be classified as forwards, considering their origin as the old outside forward who played out on the "wing" (i.e. They continue to be termed as such in many parts of the world, especially in Latin and Dutch footballing cultures.
+
+Evidence 2: In Italy, the libero is also  thought to have evolved from the centre-half-back role in the English WM system, or sistema, which was known as the centromediano metodista role in Italian football jargon, due to its association with the metodo system; in the metodo system, however, the "metodista" was given both defensive and creative duties, functioning as both a ball–winner and deep-lying playmaker. Juventus manager Felice Borel used Carlo Parola in the centre-half role, as a player who would drop back into the defence to mark opposing forwards, but also start attacks after winning back possession, in a similar manner to the sweeper, which led to the development of this specialised position. Indeed, Herrera's catenaccio strategy with his Grande Inter side saw him withdraw a player from his team's midfield and instead deploy them further-back in defence as a sweeper. Prior to Viani, Ottavio Barbieri is also thought by some pundits to have introduced the sweeper role to Italian football during his time as Genoa's manager. Like Viani, he was influenced by Rappan's verrou, and made several alterations to the English WM system or "sistema", which led to his system being described as mezzosistema.
+
+Evidence 3: Prior to Viani, Ottavio Barbieri is also thought by some pundits to have introduced the sweeper role to Italian football during his time as Genoa's manager. Like Viani, he was influenced by Rappan's verrou, and made several alterations to the English WM system or "sistema", which led to his system being described as mezzosistema. His system used a man-marking back-line, with three man-marking defenders and a full-back who was described as a terzino volante (or vagante, as noted at the time by former footballer and Gazzetta dello Sport journalist Renzo De Vecchi); the latter position was essentially a libero, which was later also used by Viani in his vianema system, and Rocco in his catenaccio system. Though sweepers may be expected to build counter-attacking moves, and as such require better ball control and passing ability than typical centre-backs, their talents are often confined to the defensive realm. For example, the catenaccio system of play, used in Italian football in the 1960s, often employed a predominantly defensive sweeper who mainly "roamed" around the back line; according to Schianchi, Ivano Blason is considered to be the first true libero in Italy, who – under manager Alfredo Foni with Inter and subsequently Nereo Rocco with Padova – would serve as the last man in his team, positioned deep behind the defensive line, and clearing balls away from the penalty area.
+------------------------------
+
+Claim: Question: Peter Benchley and Ödön von Horváth, have which mutual occupation? Answer: Peter Benchley and Ödön von Horváth both worked in literature.
+True: CONTRADICTED | Pred: SUPPORTED
+Evidence Found: Evidence 1: Later in life, Benchley expressed regret for his writing about sharks, which he felt indulged already present fear and false belief about sharks, and he became an advocate for marine conservation. His younger brother, Nat Benchley, is a writer and actor. Peter Benchley was an alumnus of the Allen-Stevenson School, Phillips Exeter Academy and Harvard University. After graduating from college in 1961, Benchley travelled around the world for a year. The experience was told in his first book, Time and a Ticket, a travel memoir published by Houghton Mifflin in 1964.
+
+Evidence 2: His eldest son Peter Benchley (1940–2006) was a writer, best known for the novel Jaws and its 1975 screen adaptation, directed by Steven Spielberg. Younger son Nat Benchley is a writer and actor who has portrayed his grandfather, Robert Benchley, in a one-man, semi-biographical stage show, Benchley Beside Himself. The show was a compilation of Robert Benchley's best monologues, short movies, radio rantings, and pithy pieces as recalled, edited, and acted by grandson Nat, combined with anecdotes, family reminiscences and friends' perspectives. Nathaniel Benchley died 1981 in Boston and was interred in the family plot at Prospect Hill Cemetery in Nantucket. New York: McGraw-Hill.
+
+Evidence 3: Von Horváth opened the knapsack and found a postcard reading "Having a wonderful time". Asked by friends what he did with it, von Horváth replied "I posted it". "If you ask me what is my native country, I answer: I was born in Fiume, grew up in Belgrade, Budapest, Pressburg (Bratislava), Vienna and Munich, and I have a Hungarian passport, but I have no fatherland. I am a very typical mix of old Austria-Hungary: at once Magyar, Croatian, German and Czech; my country is Hungary; my mother tongue is German." He survives the falling branch and moves to the United States, where expatriate German authors such as Bertolt Brecht and Heinrich Mann write for the motion picture industry.
+------------------------------
+
+Claim: Question:  Moisés Solano helped fund his racing career by playing a sport that is a variation of what game?  Answer: Basque pelota
+True: SUPPORTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: With the ball easily travelling at 200 kilometres per hour (120 mph), pelota can kill if safety equipment is not used properly or at all; while rare, occasional deaths do occur. While the game evolved to the modern jeu de paume (with racquet, called real tennis in England) and eventually to lawn tennis, rural Alpine and Pyrenean communities kept the tradition. In the Basque Country the "pasaka" and "laxoa", local versions of the paume evolved to the peculiar style of the pilota: instead of playing face to face, with a net in the midfield, the Basques began to fling the ball against a wall. According to the Basque pilota historian Chipitey Etcheto, the first recorded matches took place in Napoleonic times; it is believed that the game was close to currently rare speciality of "rebot". The mid-19th century saw the explosion of the "pelota craze".
+
+Evidence 2: He met local football coach Iván Guerra as a child, who would help Caicedo and his family by paying for his football boots, travel expenses and food. Given Caicedo's sensitive nature, he was nicknamed "Niño Moi" by his teammates. The team would often play in games across the Santo Domingo Canton, and Caicedo earned a call-up to a regional select XI. Initially a forward, Caicedo later developed into a midfielder, and at the age of thirteen joined local side Colorados Jaipadida, an affiliate of professional club ESPOLI. Following impressive performances with Jaipadida, he was invited to train with ESPOLI.
+
+Evidence 3: Jaipadida director Darwin Castillo sent Caicedo to trial with professional side Mushuc Runa, but after he was unable to pay for food or board, the trial was ended after a week. A later trial with Barcelona in Guayaquil would also prove unsuccessful. Having suffered a ruptured cruciate ligament in his knee in 2017, he required a number of surgeries, and was out for a total of ten months. Caicedo recovered from the injury, and following his arrival at the club to manage the under-18 side in 2019, Yuri Solano stated that Caicedo's athleticism "set him apart from the rest at that time". Later in 2019, Caicedo captained the Independiente del Valle youth team to the Copa Mitad del Mundo title, a youth tournament in Spain.
+------------------------------
+
+Claim: Question: The Professional Basketball Club LLC is an investment group headed by an American businessman who is the chairman of Dorchester Capital Corporation, and is also the chairman emeritus of the board of directors of what organization? Answer: The American Cancer Society.
+True: CONTRADICTED | Pred: SUPPORTED
+Evidence Found: Evidence 1: Professional Basketball Club LLC is an investment group headed by Clay Bennett that owns the National Basketball Association (NBA)'s Oklahoma City Thunder franchise (formerly the Seattle SuperSonics) and the Thunder's NBA G League affiliate Oklahoma City Blue. The group also owned the Women's National Basketball Association (WNBA)'s Seattle Storm franchise from 2006 to 2008. The PBC then sold the Storm to local Seattle owners, before relocating the SuperSonics to Oklahoma City. The team relocated to Oklahoma City and began play as the Oklahoma City Thunder in the 2008–09 basketball season, becoming the third NBA franchise to relocate in the 2000s. The Professional Basketball Club on January 8, 2008, sold the Storm to an ownership group consisting of four Seattle businesswomen.
+
+Evidence 2: Clayton Ike Bennett (born November 14, 1959) is an American businessman and chairman of the Professional Basketball Club LLC, the ownership group of the Oklahoma City Thunder, an NBA franchise formerly known as the Seattle SuperSonics. Bennett is the chairman of Oklahoma City-based Dorchester Capital Corporation, as well as the chairman emeritus of the board of directors of the Oklahoma Heritage Association and served as chairman of the Board of Regents of the University of Oklahoma from 2011 to 2019. Immediately before the 2005–06 NBA season, Bennett, along with Aubrey McClendon of Oklahoma City-based Chesapeake Energy Corporation, Tom L. Ward of Oklahoma City-based SandRidge Energy Corporation, and G. Jeffrey Records Jr. of Oklahoma City-based MidFirst Bank, partnered with the city of Oklahoma City and the state of Oklahoma in providing a revenue guarantee for the NBA's New Orleans Hornets. This resulted in the relocation of the Hornets to Oklahoma City for two seasons. The temporary relocation to Oklahoma City stemmed from damage to the arena and infrastructure in New Orleans caused by Hurricane Katrina.
+
+Evidence 3: After the SuperSonics' ownership group, led by Howard Schultz, failed to persuade Washington state government officials to provide $220 million in public funding to update KeyArena, Schultz sold the team to the Professional Basketball Club LLC (PBC), an investment group headed by Oklahoma City businessman Clay Bennett. A condition of the sale was that PBC execute a "good-faith effort" to secure a suitable arena in the Seattle area for the team. The new owners failed to persuade local governments to pay for a new $500 million arena complex, and consequently announced that they intended to move the team to Oklahoma City. When they sought to be released from the lease that required the SuperSonics to play in KeyArena through 2010, a judge rejected the request and Seattle sued Bennett's group to enforce the lease. On July 2, 2008, a settlement was reached: among other conditions, PBC would pay $45 million to break the lease plus $30 million if Seattle had no replacement team after five years.
+------------------------------
+
+Claim: Question: This women’s clothing, footwear and accessories retailer is frequented by the wife of James Matthews; where was it founded? Answer: Hampstead
+True: SUPPORTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: In September 2015, Middleton participated in a 47-mile swim-run competition in Sweden alongside her brother and her future husband, James Matthews, to raise money for the Michael Matthews Foundation, a charity founded in honour of Matthews's brother, who died descending from the peak of Everest. In September 2016, Middleton released her second book, Heartfelt, whose proceeds go to the British Heart Foundation. At the wedding, Middleton's dress, which was created by Sarah Burton of Alexander McQueen, who also created the bride's dress, was highly praised in the media. Made of ivory crêpe fabric, it was styled with a cowl at the front and organza-covered buttons at the back. Copies of the dress were soon available on the High Street where there was a great demand for them.
+
+Evidence 2: The Sun reported it had been approached by a hacker who claimed to have 3,000 images from her iCloud account and demanded £50,000 for them. The hacker was arrested that same month. In July 2016, in the Lake District, Middleton became engaged to James Matthews, a hedge fund manager who is a former professional racing driver. The couple married on 20 May 2017 at St Mark's Church, at Englefield Estate, Berkshire, near Bucklebury Manor, the Middleton family home. James Matthews's father is Laird of Glen Affric, a 10,000 acre estate in Scotland.
+
+Evidence 3: 2019 saw Matthews work alongside his wife on their own E4 show Spencer, Vogue and Baby Too. The show was renewed for a second series. Matthews is the founder of CleanCo, which sells non-alcohol spirit alternatives and focuses around the concept of living a 'Life Less Wasted'. He started CleanCo following his own journey into sobriety following the birth of his first child and becoming aware of a lack of sophisticated options for those choosing not to drink alcohol. Matthews has presented for the BBC's Watchdog, appeared in a CBeebies 2019 marketing campaign and worked with the Agricultural and Horticultural Development Board.
+------------------------------
+
+Claim: Question: What Player Draft was held at Gaddafi Stadium and initial squads were finalised in Decenber 2015? Answer: The 2015 Gaddafi Stadium Draft.
+True: CONTRADICTED | Pred: SUPPORTED
+Evidence Found: Evidence 1: The player draft for the inaugural season of the Pakistan Super League was held at Gaddafi Stadium, Lahore on 21–22 December 2015. A total of 308 players and 30 coaches, including Pakistanis and foreigners were divided into 5 different categories: Platinum, Diamond, Gold, Silver and Emerging. Each franchise had a salary-spending cap of $1.2 million, including the signing of players, coaches and support staff. There were five icon players and each team was allowed to pick one icon and six foreigners in a 20-man squad (16 active and 4 supplementary). Shahid Afridi was the first player to be picked in the draft.
+
+Evidence 2: There were five icon players and each team was allowed to pick one icon and six foreigners in a 20-man squad (16 active and 4 supplementary). Shahid Afridi was the first player to be picked in the draft. Shane Watson was the first foreign player to be picked in the draft. Players were paid according to their categories:
+Icon - $200,000, Platinum - $140,000, Diamond - $70,000, Gold - $50,000, Silver - $25,000, Emerging - $10,000
+
+Supplementary players are those who picked by their team as extra players and their contracts will start only after they join their teams when one of the main team player gets injured or is unavailable to play.
+
+Evidence 3: The stadium was renovated for the 1996 Cricket World Cup, during which it hosted the tournament final between Australia and Sri Lanka, having previously staged matches in the 1987 World Cup as well. It was the first cricket stadium in Pakistan to be equipped with modern floodlights with their own standby power generators. In addition to Pakistan home games and international matches, the Gaddafi Stadium has also hosted several matches of the Pakistan Super League, with the first one being the final of the 2017 edition. In March 2022, the PCB began the process to rename the stadium for sponsorship reasons. In June 2024, the PCB unveiled plans to revamp Gaddafi Stadium ahead of the ICC Champions Trophy 2025, where the venue went on to host four matches, including a high-profile semi-final clash between South Africa and New Zealand.
+------------------------------
+
+Claim: Question: Emma Rose Kenney's roll in a Blue Sky Studios produced film earned how much money? Answer: Emma Rose Kenney's animation movie earned $240 million.
+True: CONTRADICTED | Pred: UNKNOWN
+Evidence Found: Evidence 1: This is a list of productions from Blue Sky Studios, a former American computer-animation film production company based in Greenwich, Connecticut, United States, which include feature films, shorts, specials, and television series. Blue Sky had produced 13 feature films, which were all released by 20th Century Fox (now 20th Century Studios). The company produced its first feature-length film, Ice Age, in 2002. Their second production, Robots, was released in 2005, followed by their first sequel, Ice Age: The Meltdown, in 2006. Blue Sky Studios was one of the Fox film studios that was acquired by Disney on March 20, 2019.
+
+Evidence 2: The lack of box office success, coupled with the rise of computer animation, led Fox to shut down the studios. Fox has had much more success with the studio, with the box office receipts of their films becoming competitive with the likes of Pixar and DreamWorks Animation. On March 21, 2019, Blue Sky Studios was integrated as a separate unit within Walt Disney Studios, yet they would continue to report to Fox Animation presidents Andrea Miloro and Robert Baird. In February 2021, Disney had announced that Blue Sky would cease all operations and close sometime within April 2021, eventually shuttering on April 10, 2021. The company is not credited on these films like how they are with Blue Sky's films and Fox Animation Studios' Anastasia and Titan A.E.
+
+Evidence 3: Both Fox Animation Studios and Blue Sky had their own unique animation style, with the former having the same animation style as Don Bluth Entertainment due to both Don Bluth Entertainment and Fox Animation Studios being founded by the same animator, Don Bluth. The Fox studio, however, was not as successful. Their first feature, Anastasia, was a great success that made nearly $140 million at the worldwide box office on a $53 million budget in 1997, but their next feature, Titan A.E., was a large financial loss, losing $100 million for 20th Century Fox in 2000. The lack of box office success, coupled with the rise of computer animation, led Fox to shut down the studios. Fox has had much more success with the studio, with the box office receipts of their films becoming competitive with the likes of Pixar and DreamWorks Animation.
+------------------------------

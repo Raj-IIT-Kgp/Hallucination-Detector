@@ -2,9 +2,7 @@ from agents.claim_extractor import extract_claims
 from agents.query_generator import generate_queries
 from verification.nli_verifier import verify_claim
 from detector.report_generator import generate_report
-from agents.correction_agent import correct_claim
-from agents.rebuilder_agent import rebuild_response
-from agents.critic_agent import review_correction, nli_override, evaluate_absence
+from agents.critic_agent import nli_override
 
 class HallucinationDetector:
 
@@ -38,8 +36,8 @@ class HallucinationDetector:
                 })
                 continue
 
-            evidence_text = evidence[0]["text"]
-            source_url = evidence[0]["url"]
+            evidence_text = "\n\n".join([f"Evidence {i+1}: {e['text']}" for i, e in enumerate(evidence)])
+            source_url = ", ".join(list(set([e["url"] for e in evidence])))
 
             verification = verify_claim(
                 claim,
@@ -47,59 +45,26 @@ class HallucinationDetector:
                 domain=domain
             )
             
-            # CRITIC LLM OVERRIDE: If NLI returns UNKNOWN, use LLM to double check
+            # CRITIC LLM OVERRIDE: If NLI returns UNKNOWN, use LLM to perform multi-hop logic
             if verification["label"] == "unknown":
-                print(f"    NLI returned UNKNOWN. Triggering Critic LLM Override...")
+                print(f"    NLI returned UNKNOWN. Triggering Critic LLM Override for multi-hop reasoning...")
                 llm_label = nli_override(claim, evidence_text, domain=domain)
                 print(f"    Critic LLM decided: {llm_label.upper()}")
                 verification["label"] = llm_label
-
-            if verification["label"] == "unknown":
-                print(f"    Critic LLM also returned UNKNOWN. Triggering Absence of Evidence Evaluation...")
-                absence_label = evaluate_absence(claim, ", ".join(search_queries))
-                print(f"    Absence Evaluator decided: {absence_label.upper()}")
-                verification["label"] = absence_label
-                if absence_label == "contradicted":
-                    evidence_text = f"The comprehensive Wikipedia pages for {search_queries} contain no record of this event."
-
-            correction = None
-            if verification["label"] == "contradicted":
-                # Debate Loop: Corrector vs. Critic
-                print(f"--> Initiating Debate for hallucinated claim: '{claim}'")
-                draft = correct_claim(claim, evidence_text)
-                feedback = None
-                
-                for attempt in range(2):
-                    print(f"    Critic analyzing draft (Attempt {attempt+1}): {draft}")
-                    critique = review_correction(claim, draft, evidence_text)
-                    
-                    if critique["is_accurate"]:
-                        print("    Critic approved: PASS")
-                        break
-                    else:
-                        feedback = critique["feedback"]
-                        print(f"    Critic rejected: FAIL - {feedback}")
-                        draft = correct_claim(claim, evidence_text, feedback=feedback)
-                        
-                correction = draft
 
             results.append({
                 "claim": claim,
                 "evidence": evidence_text,
                 "source_url": source_url,
                 "verification": verification,
-                "correction": correction
+                "correction": None
             })
 
         report = generate_report(results)
         
-        # Finally, rebuild the original paragraph using the corrections from the report
-        print("\nRebuilding the final corrected response...")
-        final_text = rebuild_response(answer, report)
-        
         return {
             "report": report,
-            "final_text": final_text
+            "final_text": answer  # We no longer rebuild the text
         }
 
     def analyze_stream(self, answer):
@@ -133,8 +98,8 @@ class HallucinationDetector:
                 })
                 continue
 
-            evidence_text = evidence[0]["text"]
-            source_url = evidence[0]["url"]
+            evidence_text = "\n\n".join([f"Evidence {i+1}: {e['text']}" for i, e in enumerate(evidence)])
+            source_url = ", ".join(list(set([e["url"] for e in evidence])))
 
             yield json.dumps({"status": "progress", "message": f"Verifying claim against evidence..."}) + "\n"
             verification = verify_claim(
@@ -142,53 +107,28 @@ class HallucinationDetector:
                 evidence_text,
                 domain=domain
             )
-            
+
+            # CRITIC LLM OVERRIDE
             if verification["label"] == "unknown":
-                yield json.dumps({"status": "progress", "message": "NLI returned UNKNOWN. Triggering Critic LLM Override..."}) + "\n"
+                yield json.dumps({"status": "progress", "message": "NLI returned UNKNOWN. Triggering Critic LLM for multi-hop reasoning..."}) + "\n"
                 llm_label = nli_override(claim, evidence_text, domain=domain)
                 verification["label"] = llm_label
-
-            if verification["label"] == "unknown":
-                yield json.dumps({"status": "progress", "message": "Critic LLM returned UNKNOWN. Triggering Absence Evaluator..."}) + "\n"
-                absence_label = evaluate_absence(claim, ", ".join(search_queries))
-                verification["label"] = absence_label
-                if absence_label == "contradicted":
-                    evidence_text = f"The comprehensive Wikipedia pages for {search_queries} contain no record of this event."
-
-            correction = None
-            if verification["label"] == "contradicted":
-                yield json.dumps({"status": "progress", "message": f"Initiating Debate Loop for hallucination..."}) + "\n"
-                draft = correct_claim(claim, evidence_text)
-                feedback = None
-                
-                for attempt in range(2):
-                    yield json.dumps({"status": "progress", "message": f"Critic analyzing draft (Attempt {attempt+1})..."}) + "\n"
-                    critique = review_correction(claim, draft, evidence_text)
-                    
-                    if critique["is_accurate"]:
-                        break
-                    else:
-                        feedback = critique["feedback"]
-                        draft = correct_claim(claim, evidence_text, feedback=feedback)
-                        
-                correction = draft
 
             results.append({
                 "claim": claim,
                 "evidence": evidence_text,
                 "source_url": source_url,
                 "verification": verification,
-                "correction": correction
+                "correction": None
             })
 
-        yield json.dumps({"status": "progress", "message": "Generating final report and rebuilding text..."}) + "\n"
+        yield json.dumps({"status": "progress", "message": "Generating final report..."}) + "\n"
         report = generate_report(results)
-        final_text = rebuild_response(answer, report)
         
         yield json.dumps({
             "status": "done",
             "report": report,
-            "final_text": final_text
+            "final_text": answer  # We no longer rebuild the text
         }) + "\n"
 
 
