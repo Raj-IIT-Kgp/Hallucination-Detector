@@ -11,3 +11,4 @@ Flask
 duckduckgo-search
 arxiv
 rank_bm25
+networkx

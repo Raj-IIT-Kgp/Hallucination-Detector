@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hallucination Detector</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=3">
+    <link rel="stylesheet" href="/static/style.css?v=4">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
     <div class="background-elements">
@@ -16,7 +17,7 @@
     <div class="container">
         <header>
             <h1>AI Hallucination Detector</h1>
-            <p>Powered by Multi-Agent RAG Debate Framework</p>
+            <p>Powered by Multi-Agent RAG + Knowledge Graph Reasoning</p>
         </header>
 
         <main>
@@ -60,6 +61,21 @@
                     </div>
                 </div>
 
+                <!-- Knowledge Graph Panel -->
+                <div id="kgPanel" class="card kg-panel hidden">
+                    <div class="kg-header">
+                        <h2>🕸️ Knowledge Graph</h2>
+                        <p class="kg-subtitle" id="kgSubtitle">Entity relationship map used for multi-hop reasoning</p>
+                    </div>
+                    <div id="kgContainer" class="kg-container">
+                        <svg id="kgSvg"></svg>
+                    </div>
+                    <div id="kgLegend" class="kg-legend">
+                        <span class="kg-legend-item"><span class="kg-dot kg-dot-node"></span>Wikipedia Entity</span>
+                        <span class="kg-legend-item"><span class="kg-line"></span>Relationship</span>
+                    </div>
+                </div>
+
             </div>
         </main>
     </div>
@@ -81,6 +97,6 @@
         </div>
     </div>
 
-    <script src="/static/app.js?v=4"></script>
+    <script src="/static/app.js?v=5"></script>
 </body>
 </html>

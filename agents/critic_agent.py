@@ -73,6 +73,7 @@ RULES:
 Reasoning and Verdict:
 """
     response = generate_response(prompt).strip()
+    print(f"    Critic reasoning:\n{response}")
     
     lines = response.split('\n')
     verdict_line = next((line for line in reversed(lines) if line.strip().upper().startswith("VERDICT:")), response).upper()

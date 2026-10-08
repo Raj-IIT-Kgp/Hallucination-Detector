@@ -363,8 +363,82 @@ textarea:focus {
     animation: spin 1s linear infinite;
 }
 
+
 .progress-text {
     font-size: 1.1rem;
     color: var(--text-main);
     font-weight: 500;
 }
+
+/* ============================================
+   KNOWLEDGE GRAPH PANEL
+   ============================================ */
+
+.kg-panel {
+    margin-top: 1.5rem;
+    padding: 1.75rem;
+}
+
+.kg-header {
+    margin-bottom: 1rem;
+}
+
+.kg-header h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 0.25rem;
+}
+
+.kg-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.kg-container {
+    width: 100%;
+    height: 380px;
+    background: rgba(10, 12, 28, 0.6);
+    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    overflow: hidden;
+    position: relative;
+}
+
+#kgSvg {
+    width: 100%;
+    height: 100%;
+}
+
+.kg-legend {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    align-items: center;
+}
+
+.kg-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.kg-dot-node {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.15);
+    border: 2px solid #818cf8;
+}
+
+.kg-line {
+    display: inline-block;
+    width: 20px;
+    height: 2px;
+    background: #6366f1;
+    opacity: 0.6;
+}
+
