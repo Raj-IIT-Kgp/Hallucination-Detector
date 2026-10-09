@@ -122,3 +122,46 @@ Even on general knowledge datasets, an open-domain pipeline hits a mathematical 
 To push general knowledge verification above 85% and eliminate random variation, the pipeline must shift from "Open-Domain" search to strict "Retrieval-Augmented Generation" (RAG) using locked data:
 1.  **Version-Locked Vector Databases:** Instead of querying the live Wikipedia API, the system must download a static, version-controlled snapshot of Wikipedia (e.g., the exact 2018 database dump used by FEVER).
 2.  **Pre-Indexed Embeddings:** This snapshot must be chunked and pre-indexed into an enterprise Vector Database (like Pinecone, Milvus, or FAISS). The retriever can then execute instantaneous, mathematically precise semantic searches against the exact corpus the dataset was built on, entirely eliminating API drift and keyword search failures.
+
+---
+
+## Appendix: Evaluation Metrics Explained
+
+These are standard Machine Learning evaluation metrics. It is critical to understand their exact definitions in the context of Hallucination Detection to prove a deep understanding of data science.
+
+### 1. The Definitions (In the context of Hallucinations)
+In this system, the primary goal is the "positive" class of detecting a hallucination (a False claim).
+
+* **True Positive (TP):** The claim was actually a hallucination, and the system correctly flagged it as `CONTRADICTED`.
+* **True Negative (TN):** The claim was a true fact, and the system correctly labeled it as `SUPPORTED`.
+* **False Positive (FP):** The claim was a true fact, but the system made a mistake and wrongly flagged it as a hallucination (`CONTRADICTED`).
+* **False Negative (FN):** The claim was a dangerous hallucination, but the system missed it and wrongly labeled it as `SUPPORTED`.
+
+### 2. The Metrics Explained
+
+#### 1. Overall Accuracy
+* **What it is:** The total percentage of claims the system got right.
+* **Formula:** `(TP + TN) / Total Claims`
+* **What it means for us:** If accuracy is 75%, it means out of 100 claims, the system gave the correct final verdict on 75 of them.
+
+#### 2. Precision
+* **What it is:** When the system flags a claim as a hallucination, how often is it actually correct?
+* **Formula:** `TP / (TP + FP)`
+* **What it means for us:** A high precision (e.g., 0.88) means the system almost never falsely accuses a true fact of being a hallucination. It is mathematically strict.
+
+#### 3. Recall
+* **What it is:** Out of ALL the actual hallucinations hidden in the text, what percentage did the system successfully catch?
+* **Formula:** `TP / (TP + FN)`
+* **What it means for us:** A lower recall (e.g., 0.70) means that while the system is highly precise, it occasionally misses some subtle hallucinations and accidentally lets them pass as true.
+
+#### 4. F1-Score
+* **What it is:** The harmonic mean (a balanced average) of Precision and Recall.
+* **Formula:** `2 * (Precision * Recall) / (Precision + Recall)`
+* **What it means for us:** Accuracy can be misleading if a dataset is unbalanced (e.g., 90% true facts, 10% hallucinations). F1-Score is the "golden metric" in NLP that proves the system is actually good at detecting both classes fairly.
+
+### 3. How Are We Measuring This?
+The system calculates these metrics mathematically using the `evaluation/run_benchmark.py` script.
+
+1. **The Ground Truth:** Academic datasets (like FEVER) contain claims that human researchers have already pre-labeled as either `SUPPORTS` or `REFUTES`.
+2. **The Live Test:** The evaluation script hides the human label, feeds the claim into the pipeline, and waits for the system's final verdict.
+3. **The Math:** Once the system finishes 20 claims, the script utilizes `scikit-learn` (specifically `accuracy_score` and `precision_recall_fscore_support`). It mathematically compares the array of human-ground-truth labels against the array of predicted labels to calculate the exact Precision, Recall, and F1 values.
