@@ -26,15 +26,19 @@ The system executes parallel live queries against the **Wikipedia API**, the **A
 * **Absence Evaluation (New):** If no evidence is found across all search queries, the system invokes the **Critic LLM** to perform an **Absence Evaluation**. The LLM logically deduces whether the sheer absence of the entity from Wikipedia proves the claim is false (e.g., a massive historical event missing = CONTRADICTED, whereas a minor trivia fact missing = UNKNOWN).
 * **Cosine Similarity Maximization:** The semantic similarity between the claim vector $\mathbf{c}$ and the evidence vector $\mathbf{e}$ is computed using the `all-MiniLM-L6-v2` embedding model. The similarity is defined mathematically as:
 
-  $$
-  \text{sim}(\mathbf{c}, \mathbf{e}) = \frac{\mathbf{c} \cdot \mathbf{e}}{\|\mathbf{c}\| \|\mathbf{e}\|}
-  $$
+
+$$
+\text{sim}(\mathbf{c}, \mathbf{e}) = \frac{\mathbf{c} \cdot \mathbf{e}}{\|\mathbf{c}\| \|\mathbf{e}\|}
+$$
+
 * **Hybrid Re-Ranking (RRF):** Dense Cosine Similarity scores are combined with sparse **BM25** keyword scores using Reciprocal Rank Fusion. The RRF score for a document $d$ across multiple rankings $R$ is calculated as:
 
-  $$
-  \text{RRF}(d) = \sum_{r \in R} \frac{1}{k + r(d)}
-  $$
-  where $r(d)$ is the rank of document $d$ and $k$ is a smoothing constant (typically 60).
+
+$$
+\text{RRF}(d) = \sum_{r \in R} \frac{1}{k + r(d)}
+$$
+
+where $r(d)$ is the rank of document $d$ and $k$ is a smoothing constant (typically 60).
 
 ### Phase 3.5: Epistemic Contradiction Arbitration (Upgraded)
 Before merging the retrieved paragraphs, the system evaluates the open web for consensus. It runs a rapid zero-shot NLI check on each individual retrieved source against the claim. If it detects that Source A says the claim is `SUPPORTED`, but Source B says it is `CONTRADICTED`, the pipeline flags an **EPISTEMIC CONTRADICTION**. 
@@ -44,9 +48,10 @@ Rather than blindly failing or short-circuiting to `DISPUTED`, the pipeline expl
 The claim and the Top-3 evidence paragraphs are processed by a zero-shot NLI model (`facebook/bart-large-mnli`).
 * **Probability Distribution:** Outputs a softmax probability distribution over the classes $y \in \{ \text{SUPPORTED}, \text{CONTRADICTED}, \text{UNKNOWN} \}$. The probability for each class $i$ given logits $z_i$ is computed as:
 
-  $$
-  P(y = i \mid \mathbf{c}, \mathbf{e}) = \frac{e^{z_i}}{\sum_{j} e^{z_j}}
-  $$
+
+$$
+P(y = i \mid \mathbf{c}, \mathbf{e}) = \frac{e^{z_i}}{\sum_{j} e^{z_j}}
+$$
 
 ### Phase 5a: Knowledge Graph Multi-Hop Reasoning
 When the NLI model returns `UNKNOWN`, the system constructs a live in-memory Knowledge Graph to perform multi-hop evidence reasoning.
