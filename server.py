@@ -31,13 +31,14 @@ def analyze():
 def analyze_stream_endpoint():
     data = request.json
     text = data.get('text', '')
+    force_kg = data.get('forceKG', False)
     
     if not text:
         return jsonify({"error": "No text provided"}), 400
 
     def generate():
         try:
-            for update in detector.analyze_stream(text):
+            for update in detector.analyze_stream(text, force_kg=force_kg):
                 yield update
         except Exception as e:
             import json

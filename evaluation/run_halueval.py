@@ -52,9 +52,20 @@ def run_halueval_benchmark(num_samples=6):
                 prediction = "unknown"
                 evidence = "No report generated."
             else:
-                claim_result = claims_list[0]
-                prediction = claim_result["verification"]["label"]
-                evidence = claim_result["evidence"]
+                # Aggregate atomic fact predictions
+                predictions = [c["verification"]["label"] for c in claims_list]
+                
+                if "contradicted" in predictions:
+                    prediction = "contradicted"
+                elif "disputed" in predictions:
+                    prediction = "disputed"
+                elif "unknown" in predictions:
+                    prediction = "unknown"
+                else:
+                    prediction = "supported"
+                    
+                # Concatenate evidence from all facts
+                evidence = "\n".join([f"Fact {i+1}: {c['evidence']}" for i, c in enumerate(claims_list)])
                 
             y_true.append(true_label)
             y_pred.append(prediction)

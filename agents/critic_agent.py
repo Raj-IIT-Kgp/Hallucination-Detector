@@ -44,27 +44,54 @@ Reasoning and Verdict:
                 feedback = parts[1].strip(" :-")
         return {"is_accurate": False, "feedback": feedback}
 
-def nli_override(claim, evidence, domain="general"):
-    """
-    Uses the LLM's common sense reasoning to override the rigid NLI model
-    when the NLI model outputs 'unknown'.
-    """
-    
-    academic_rule = ""
-    if domain == "scientific":
-        academic_rule = "\nCRITICAL RULE: You are evaluating peer-reviewed scientific abstracts. Academic literature uses cautious, probabilistic language (e.g., 'suggests', 'likely', 'potential'). You must interpret this cautious language as affirmative support (SUPPORTED) if the underlying statistical finding aligns with the claim.\n"
-        
+def _defense_agent(claim, evidence):
     prompt = f"""
-You are an expert fact-checker with deep reading comprehension skills.
-You need to determine if a claim is SUPPORTED or CONTRADICTED by the provided evidence.
+You are the Defense Attorney in a debate. Your ONLY goal is to prove that the following claim is SUPPORTED by the provided evidence.
+You must construct the strongest possible logical argument using the evidence to support the claim.
+If the evidence is ambiguous, you must interpret it in a way that supports the claim.
 
 Claim: "{claim}"
 Evidence: "{evidence}"
 
+Provide your compelling argument to prove the claim is SUPPORTED. Be concise but persuasive.
+"""
+    return generate_response(prompt).strip()
+
+def _prosecution_agent(claim, evidence):
+    prompt = f"""
+You are the Prosecuting Attorney in a debate. Your ONLY goal is to prove that the following claim is CONTRADICTED (a hallucination/falsehood) by the provided evidence.
+You must construct the strongest possible logical argument using the evidence to contradict the claim.
+If the evidence is ambiguous, you must interpret it in a way that refutes the claim.
+
+Claim: "{claim}"
+Evidence: "{evidence}"
+
+Provide your compelling argument to prove the claim is CONTRADICTED. Be concise but persuasive.
+"""
+    return generate_response(prompt).strip()
+
+def _judge_agent(claim, evidence, defense_arg, prosecution_arg, domain="general"):
+    academic_rule = ""
+    if domain == "scientific":
+        academic_rule = "\nCRITICAL RULE: You are evaluating peer-reviewed scientific abstracts. Cautious language (e.g., 'suggests', 'likely') should be interpreted as affirmative support if the underlying finding aligns with the claim.\n"
+        
+    prompt = f"""
+You are an impartial Expert Judge in a debate regarding fact-checking.
+You need to determine the absolute truth: is the claim SUPPORTED, CONTRADICTED, or UNKNOWN based on the evidence?
+
+Claim: "{claim}"
+Evidence: "{evidence}"
+
+Argument for SUPPORTED (Defense):
+"{defense_arg}"
+
+Argument for CONTRADICTED (Prosecution):
+"{prosecution_arg}"
+
 CHAIN OF THOUGHT REASONING:
-Step 1: Identify all entities and the core relationship/action in the Claim.
-Step 2: Read the Evidence. Does it contain the same entities?
-Step 3: Check if the relationship/action in the Evidence matches or contradicts the Claim. Be extremely precise about subtle word changes.
+Step 1: Evaluate the Defense's argument against the actual Evidence. Is it logically sound or making leaps?
+Step 2: Evaluate the Prosecution's argument against the actual Evidence. Are they nitpicking or finding a genuine contradiction?
+Step 3: Decide which argument holds up better against the raw evidence.
 {academic_rule}
 RULES:
 1. Show your step-by-step reasoning first.
@@ -72,11 +99,26 @@ RULES:
 
 Reasoning and Verdict:
 """
-    response = generate_response(prompt).strip()
-    print(f"    Critic reasoning:\n{response}")
+    return generate_response(prompt).strip()
+
+def nli_override(claim, evidence, domain="general"):
+    """
+    Uses a Multi-Agent Debate framework to override the rigid NLI model
+    when the NLI model outputs 'unknown'.
+    """
+    print("    [Critic Debate] Starting Multi-Agent Debate...")
     
-    lines = response.split('\n')
-    verdict_line = next((line for line in reversed(lines) if line.strip().upper().startswith("VERDICT:")), response).upper()
+    defense_arg = _defense_agent(claim, evidence)
+    print("    [Critic Debate] Defense Agent constructed SUPPORTED argument.")
+    
+    prosecution_arg = _prosecution_agent(claim, evidence)
+    print("    [Critic Debate] Prosecution Agent constructed CONTRADICTED argument.")
+    
+    judge_response = _judge_agent(claim, evidence, defense_arg, prosecution_arg, domain)
+    print(f"    [Critic Debate] Judge reasoning:\n{judge_response}")
+    
+    lines = judge_response.split('\n')
+    verdict_line = next((line for line in reversed(lines) if line.strip().upper().startswith("VERDICT:")), judge_response).upper()
     
     if "SUPPORTED" in verdict_line:
         return "supported"

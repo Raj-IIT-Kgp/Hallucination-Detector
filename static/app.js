@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsSection = document.getElementById('resultsSection');
     const tooltip = document.getElementById('tooltip');
     const progressSection = document.getElementById('progressSection');
-    const progressText = document.getElementById('progressText');
+    const terminalStream = document.getElementById('terminalStream');
 
     let isTooltipHovered = false;
     let hideTooltipTimeout;
@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     analyzeBtn.addEventListener('click', async () => {
         const text = inputText.value.trim();
         if (!text) return;
+
+        const forceKG = document.getElementById('forceKgToggle').checked;
 
         // UI Loading State
         analyzeBtn.disabled = true;
@@ -23,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tooltip.classList.remove('visible');
 
         progressSection.classList.remove('hidden');
-        progressText.textContent = "Connecting to agents...";
+        terminalStream.innerHTML = '<div class="terminal-line">> Connecting to agents...</div>';
 
         // Reset KG panel
         document.getElementById('kgPanel').classList.add('hidden');
@@ -33,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/analyze_stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
+                body: JSON.stringify({ text, forceKG })
             });
 
             if (!response.ok) {
@@ -61,7 +63,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (data.status === 'error') {
                             throw new Error(data.message);
                         } else if (data.status === 'progress') {
-                            progressText.textContent = data.message;
+                            const line = document.createElement('div');
+                            line.className = 'terminal-line';
+                            line.textContent = '> ' + data.message;
+                            terminalStream.appendChild(line);
+                            
+                            while (terminalStream.children.length > 5) {
+                                terminalStream.removeChild(terminalStream.firstChild);
+                            }
                         } else if (data.status === 'done') {
                             renderResults(text, data);
                         }

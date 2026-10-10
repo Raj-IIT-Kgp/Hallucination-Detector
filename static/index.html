@@ -3,76 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hallucination Detector</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=4">
+    <title>Hallucination Detector - NEURAL LINK</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=8">
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
+    <div class="scanlines"></div>
+    <div class="grid-bg"></div>
+    
     <div class="background-elements">
         <div class="glow-orb orb-1"></div>
         <div class="glow-orb orb-2"></div>
     </div>
 
     <div class="container">
-        <header>
-            <h1>AI Hallucination Detector</h1>
-            <p>Powered by Multi-Agent RAG + Knowledge Graph Reasoning</p>
+        <header class="cyber-header">
+            <h1 class="glitch" data-text="NEURAL FACT-CHECKER">NEURAL FACT-CHECKER</h1>
+            <p class="subtitle">SYS.v4 // MULTI-AGENT DEBATE & TEMPORAL RAG</p>
         </header>
 
         <main>
-            <div class="card input-section">
-                <textarea id="inputText" placeholder="Paste an AI-generated paragraph here to check for hallucinations... (e.g. 'Raj invented facebook in 2005. Messi won 2 ballon-dor in his career.')"></textarea>
+            <div class="cyber-card input-section">
+                <div class="card-corner top-left"></div>
+                <div class="card-corner top-right"></div>
+                <div class="card-corner bottom-left"></div>
+                <div class="card-corner bottom-right"></div>
+                
+                <div class="textarea-wrapper">
+                    <textarea id="inputText" placeholder="> Input raw text corpus for neural verification..."></textarea>
+                    <div class="scanner-line"></div>
+                </div>
+                
                 <div class="controls">
-                    <button id="analyzeBtn" class="btn-primary">
-                        <span class="btn-text">Detect Hallucinations</span>
+                    <div class="toggle-container">
+                        <label class="cyber-toggle">
+                            <input type="checkbox" id="forceKgToggle">
+                            <span class="slider"></span>
+                        </label>
+                        <span class="toggle-label">DEEP SCAN (FORCE KG)</span>
+                    </div>
+                    <button id="analyzeBtn" class="cyber-btn">
+                        <span class="btn-text">INITIALIZE SEQUENCE</span>
                         <div class="spinner" style="display: none;"></div>
                     </button>
                 </div>
             </div>
 
-            <div id="progressSection" class="progress-section hidden card">
-                <div class="progress-spinner"></div>
-                <div id="progressText" class="progress-text">Initializing...</div>
+            <div id="progressSection" class="cyber-card progress-section hidden">
+                <div class="progress-header">
+                    <div class="progress-spinner"></div>
+                    <span class="progress-title">NEURAL NETWORK ACTIVE</span>
+                    <span class="blinking-cursor">_</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                <div class="terminal-container">
+                    <div id="terminalStream" class="terminal-stream">
+                        <div class="terminal-line">> SYSTEM STANDBY...</div>
+                    </div>
+                </div>
+                <div class="node-status">
+                    <span class="node active">SYS.CORE</span>
+                    <span class="node active">AGENT.RAG</span>
+                    <span class="node blinking">LLM.INFERENCE</span>
+                </div>
             </div>
 
             <div id="resultsSection" class="results-section hidden">
-                <div class="card analysis-card">
-                    <h2>Analysis Report</h2>
+                <div class="cyber-card analysis-card">
+                    <h2 class="section-title">VERIFICATION LOG</h2>
+                    
                     <div class="metrics">
-                        <div class="metric-box">
+                        <div class="metric-box box-blue">
+                            <span class="metric-label">TOTAL CLAIMS</span>
                             <span class="metric-value" id="totalClaims">0</span>
-                            <span class="metric-label">Total Claims</span>
                         </div>
-                        <div class="metric-box warning">
+                        <div class="metric-box box-red">
+                            <span class="metric-label">HALLUCINATIONS</span>
                             <span class="metric-value" id="hallucinatedClaims">0</span>
-                            <span class="metric-label">Hallucinations</span>
                         </div>
-                        <div class="metric-box success">
+                        <div class="metric-box box-green">
+                            <span class="metric-label">VERIFIED</span>
                             <span class="metric-value" id="supportedClaims">0</span>
-                            <span class="metric-label">Supported</span>
                         </div>
                     </div>
 
                     <div class="text-display">
-                        <h3>Original Text Analysis</h3>
-                        <p class="instruction">Hover over red text to view proof and verification.</p>
+                        <h3 class="subsection-title">CORPUS ANALYSIS</h3>
+                        <p class="instruction">/// ACCESSING ANNOTATED OUTPUT. HOVER FOR EVIDENCE LOGS.</p>
                         <div id="annotatedText" class="annotated-text"></div>
                     </div>
                 </div>
 
-                <!-- Knowledge Graph Panel -->
-                <div id="kgPanel" class="card kg-panel hidden">
+                <div id="kgPanel" class="cyber-card kg-panel hidden">
                     <div class="kg-header">
-                        <h2>🕸️ Knowledge Graph</h2>
-                        <p class="kg-subtitle" id="kgSubtitle">Entity relationship map used for multi-hop reasoning</p>
+                        <h2 class="section-title">NETWORK TOPOLOGY</h2>
+                        <p class="kg-subtitle" id="kgSubtitle">Knowledge graph multi-hop inference mapping active</p>
                     </div>
                     <div id="kgContainer" class="kg-container">
                         <svg id="kgSvg"></svg>
                     </div>
                     <div id="kgLegend" class="kg-legend">
-                        <span class="kg-legend-item"><span class="kg-dot kg-dot-node"></span>Wikipedia Entity</span>
-                        <span class="kg-legend-item"><span class="kg-line"></span>Relationship</span>
+                        <span class="kg-legend-item"><span class="kg-dot kg-dot-node"></span>Node</span>
+                        <span class="kg-legend-item"><span class="kg-line"></span>Vector Edge</span>
                     </div>
                 </div>
 
@@ -81,22 +116,22 @@
     </div>
 
     <!-- Floating Tooltip -->
-    <div id="tooltip" class="tooltip hidden">
+    <div id="tooltip" class="cyber-tooltip hidden">
         <div class="tooltip-header">
-            <span class="status-badge">Contradicted</span>
+            <span class="status-badge">CONTRADICTED</span>
             <span class="confidence-badge" id="ttConfidence">99%</span>
         </div>
         <div class="tooltip-body">
             <div class="tooltip-section">
-                <h4>Wikipedia Evidence</h4>
+                <h4>DATA SOURCE MATCH</h4>
                 <p id="ttEvidence" class="evidence-text"></p>
                 <a id="ttSource" href="#" target="_blank" class="source-link">
-                    View Source ↗
+                    [ ACCESS SOURCE FILE ]
                 </a>
             </div>
         </div>
     </div>
 
-    <script src="/static/app.js?v=5"></script>
+    <script src="/static/app.js?v=9"></script>
 </body>
 </html>
