@@ -53,6 +53,24 @@ $$
 P(y = i \mid \mathbf{c}, \mathbf{e}) = \frac{e^{z_i}}{\sum_{j} e^{z_j}}
 $$
 
+* **Domain-Adaptive Confidence Thresholding:** To rigidly prevent false positives, the system implements a piecewise threshold function $\tau$. If the maximum predicted probability $\max P(y)$ is strictly less than $\tau$, the pipeline artificially degrades the classification to `UNKNOWN` to force an escalation to Phase 5. The threshold $\tau$ dynamically adjusts based on the domain classified in Phase 2:
+
+
+$$
+\tau = \begin{cases} 
+0.55 & \text{if domain} = \text{scientific} \\
+0.75 & \text{if domain} = \text{general}
+\end{cases}
+$$
+
+
+$$
+\hat{y} = \begin{cases} 
+\arg\max_i P(y = i) & \text{if } \max_i P(y = i) \geq \tau \\
+\text{UNKNOWN} & \text{otherwise}
+\end{cases}
+$$
+
 ### Phase 5a: Knowledge Graph Multi-Hop Reasoning
 When the NLI model returns `UNKNOWN`, the system constructs a live in-memory Knowledge Graph to perform multi-hop evidence reasoning.
 * Gemini performs advanced Entity Linking on the claim, actively resolving implicit hidden entities.
