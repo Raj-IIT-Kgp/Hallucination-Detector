@@ -60,7 +60,7 @@ The system implements a **Cascaded Verification & Remediation Architecture** (co
 
 ### Phase 1: Atomic Fact Decomposition
 To prevent the introduction of secondary hallucinations and establish a clean, discrete unit of evaluation, complex sentences are parsed into isolated, decontextualized factual claims.
-* **Discrete Unit of Evaluation ($N_{\text{atomic}}$):** Complex sentences contain multiple dependent propositions. By decomposing sentences into atomic claims, every downstream evaluation is conducted over discrete atomic facts rather than coarse sentences.
+* **Discrete Unit of Evaluation** ($N_{\text{atomic}}$): Complex sentences contain multiple dependent propositions. By decomposing sentences into atomic claims, every downstream evaluation is conducted over discrete atomic facts rather than coarse sentences.
 * **Q&A Synthesis:** When evaluating Question & Answer pairs, instructional dialogue, or compound prompts, the pipeline synthesizes the context and response into declarative propositions prior to decomposition, preserving contextual premises.
 * **Strict Coreference Resolution:** Pronouns, demonstratives, and implicit referents are deterministically resolved to their explicit proper nouns and antecedents extracted from global context.
 * **Deterministic Fallback:** If LLM parsing fails, deterministic tokenization falls back to the **Natural Language Toolkit (NLTK)**.
@@ -73,7 +73,7 @@ For each atomic claim, a **Query Generator Agent (powered by Gemini)** synthesiz
 
 ### Phase 3: Parallel Web Retrieval & Hybrid Re-Ranking
 Parallel search queries are dispatched across the **Wikipedia API**, **ArXiv API** (for scientific claims), and **DuckDuckGo**.
-* **Sliding-Window Paragraph Chunking:** Retrieved articles are stripped of boilerplate and segmented into sliding windows of $5$ sentences with a $2$-sentence overlap ($\text{stride} = 3$), ensuring boundary facts spanning adjacent sentences are preserved without losing local context.
+* **Sliding-Window Paragraph Chunking:** Retrieved articles are stripped of boilerplate and segmented into sliding windows of 5 sentences with a 2-sentence overlap ($\text{stride} = 3$), ensuring boundary facts spanning adjacent sentences are preserved without losing local context.
 * **Absence Evaluation:** If zero evidence is returned across all retrieval backends even after query reformulation, an LLM evaluates the epistemic salience of the queried entity: absence of evidence for prominent, globally recorded historical or scientific entities strongly indicates refutation (`CONTRADICTED`), whereas lack of evidence for obscure or low-salience entities yields conservative abstention (`UNKNOWN`).
 * **Cosine Similarity:** The semantic similarity between claim vector $\mathbf{c}$ and evidence vector $\mathbf{e}$ is computed using `all-MiniLM-L6-v2`:
 
@@ -93,7 +93,7 @@ where $r(d)$ is the document rank and $k = 60$ is the smoothing constant. Eviden
 Rather than treating retrieval as a static, single-shot operation, the pipeline implements an **Agentic Retrieval Feedback Loop**:
 * **Trigger Conditions:** If Phase 3 returns zero valid evidence snippets, or if Phase 4 downstream verification signals model posterior dispersion ($|\mathcal{C}(X)| > 1$), the pipeline initiates a self-reflective retry cycle.
 * **Search Failure Diagnosis:** The **Self-Reflective Query Rewriter Agent** analyzes the claim alongside previously attempted queries and the unhelpful evidence snippets, identifying why retrieval failed (e.g., lexical ambiguity, overly specific qualifiers, or missing parent entity context).
-* **Divergent Query Synthesis:** The agent formulates up to $2$ new, divergent search queries targeting alternative entity names, canonical aliases, or broader contextual events, immediately re-executing hybrid retrieval before escalating to Knowledge Graph construction.
+* **Divergent Query Synthesis:** The agent formulates up to 2 new, divergent search queries targeting alternative entity names, canonical aliases, or broader contextual events, immediately re-executing hybrid retrieval before escalating to Knowledge Graph construction.
 
 ### Phase 3.5: Consensus Evaluation & Calibrated Epistemic Contradiction Detection
 Before merging retrieved paragraphs, the system evaluates the open web for factual consensus. A zero-shot NLI check is executed on each distinct retrieved source snippet $e_i \in \mathcal{E}$ against the claim $c$.
@@ -144,7 +144,7 @@ Because raw softmax outputs are uncalibrated and lack error bounds, the system i
 s(X_i, Y_i) = 1 - \hat{\pi}_{Y_i}(X_i)
 ```
 
-  3. **Exact Finite-Sample Order-Statistic Computation:** For a user-specified significance level $\alpha \in (0, 1)$ (e.g., $\alpha = 0.10$ for $90\%$ coverage), the finite-sample adjusted conformal quantile $\hat{q}_\alpha$ is the exact $k$-th order statistic:
+  3. **Exact Finite-Sample Order-Statistic Computation:** For a user-specified significance level $\alpha \in (0, 1)$ (e.g., $\alpha = 0.10$ for 90% coverage), the finite-sample adjusted conformal quantile $\hat{q}_\alpha$ is the exact $k$-th order statistic:
 
 ```math
 \hat{q}_\alpha = s_{(k)}, \quad \text{where } k = \lceil (n + 1)(1 - \alpha) \rceil
@@ -177,7 +177,7 @@ A prediction set containing multiple labels (e.g., $\{\text{SUPPORTED}, \text{UN
 
 ### Phase 5a: Knowledge Graph Multi-Hop Reasoning & Semantic Entity Disambiguation
 When escalated from Phase 4, the system constructs a live in-memory Knowledge Graph to perform multi-hop evidence reasoning.
-* **Implicit Entity Linking & Canonical Resolution:** An **Entity Linker Agent** extracts up to $5$ named entities from the claim and global context. When an entity is referenced implicitly through a relational expression, the agent leverages world knowledge to resolve the implicit antecedent to its explicit proper noun and canonical Wikipedia article title.
+* **Implicit Entity Linking & Canonical Resolution:** An **Entity Linker Agent** extracts up to 5 named entities from the claim and global context. When an entity is referenced implicitly through a relational expression, the agent leverages world knowledge to resolve the implicit antecedent to its explicit proper noun and canonical Wikipedia article title.
 * **Semantic Entity Disambiguation:** Wikipedia search and entity extraction frequently suffer from disambiguation traps and lexical auto-suggest drift when queried entities share titles with homonymous media, creative works, or geographical locations. To eliminate this failure mode:
   1. Auto-suggest is strictly deactivated (`auto_suggest=False`) to enforce query fidelity.
   2. Disambiguation pages are parsed, and candidate titles containing irrelevant entertainment tags (e.g., `(album)`, `(song)`, `(band)`) are filtered out when the claim domain is non-entertainment.
@@ -198,7 +198,7 @@ When escalated from Phase 4, the system constructs a live in-memory Knowledge Gr
 
   - **Provenance-Verified Edges:** Edges satisfying this condition are tagged `verified=True` with full provenance metadata $\{u, v, \text{rel}, q, \text{URL}\}$.
   - **Unverified Edges (Visual-Only):** If an extracted relation lacks an authentic verbatim quote from the text, it is tagged `verified=False`. In the D3.js visual interface, it is rendered with a dashed edge for user exploration, but it is **strictly barred from being injected into the evidence candidate pool**, guaranteeing that downstream NLI never verifies against synthetic hallucinations.
-* **Multi-Hop Traversal & Composite Edge Scoring:** Candidate evidence is extracted across all node summaries using sliding windows ($3$ sentences, stride $2$). In addition, provenance-verified edges are synthesized into composite grounded propositions:
+* **Multi-Hop Traversal & Composite Edge Scoring:** Candidate evidence is extracted across all node summaries using sliding windows (3 sentences, stride 2). In addition, provenance-verified edges are synthesized into composite grounded propositions:
 
 ```math
 \mathbf{e}_{\text{edge}} = \text{Grounded Relationship } [u \leftrightarrow v]\text{: } \text{rel} \text{ (Evidence Quote: ``} q \text{'')}
@@ -233,7 +233,7 @@ If the evidence is incomplete, ambiguous, or lacks decisive proof, the Judge is 
 
 ### Phase 6: Real-Time Stream Reconstruction & Conformal Telemetry
 As atomic claims are verified, the backend pushes asynchronous NDJSON events (Server-Sent Events) to the Flask client:
-* **Live Conformal Telemetry:** For each claim, the pipeline streams the finite-sample prediction set $\mathcal{C}(X)$, the coverage guarantee ($1 - \alpha = 90\%$), and the escalation signal in real time.
+* **Live Conformal Telemetry:** For each claim, the pipeline streams the finite-sample prediction set $\mathcal{C}(X)$, the nominal coverage guarantee ($1 - \alpha$, 90%), and the escalation signal in real time.
 * **Production Summary Metrics:** The final verification report aggregates total evaluated claims, hallucination rate, singleton conformal claims, and conformal escalation rate.
 * **Interactive UI:** The frontend (`static/app.js` and `static/index.html`) renders an integrated Conformal Coverage dashboard card, D3.js Knowledge Graph network topology, and interactive hover tooltips displaying the calibrated prediction set chips, conformal $p$-values ($p(\text{contra}), p(\text{unk}), p(\text{supp})$), and source citations.
 
@@ -252,7 +252,7 @@ The system was evaluated against standard fact-verification benchmarks (FEVER, C
 ### 3.1 FEVER Benchmark Performance Analysis (5-Run Cross Validation)
 To evaluate real-world generalization on live Wikipedia retrieval, the system was evaluated across 5 randomized batches on the FEVER benchmark dataset.
 
-* **Unit of Evaluation ($N_{\text{atomic}}$):** Each batch consisted of $N_{\text{sentence}} = 20$ parent sentences. Because complex sentences decompose into 2–3 independent atomic facts, the actual denominator is the total number of evaluated atomic claims ($N_{\text{atomic}}$). This explains the exact percentage scores below:
+* **Unit of Evaluation** ($N_{\text{atomic}}$): Each batch consisted of $N_{\text{sentence}} = 20$ parent sentences. Because complex sentences decompose into 2–3 independent atomic facts, the actual denominator is the total number of evaluated atomic claims ($N_{\text{atomic}}$). This explains the exact percentage scores below:
 
 | Batch Run | Parent Sentences ($N_{\text{sentence}}$) | Atomic Claims ($N_{\text{atomic}}$) | Correct Atomic Claims | Overall Accuracy | Precision | Recall | F1-Score |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -263,13 +263,13 @@ To evaluate real-world generalization on live Wikipedia retrieval, the system wa
 | **Test 5** | 20 | 43 | 36 | **83.72%** (36/43) | 0.85 | 0.83 | 0.84 |
 | **Pooled Total** | **100** | **215** | **179** | **83.26%** (179/215) | **0.85** | **0.82** | **0.83** |
 
-* **Statistical Sampling Uncertainty:** Across the pooled sample of $N = 215$ atomic claims, the overall accuracy is $83.26\%$ with a standard error of:
+* **Statistical Sampling Uncertainty:** Across the pooled sample of $N = 215$ atomic claims, the overall accuracy is 83.26% with a standard error of:
 
 ```math
 \text{SE} = \sqrt{\frac{\hat{p}(1 - \hat{p})}{N}} = \sqrt{\frac{0.8326 \times 0.1674}{215}} = 2.55\%
 ```
 
-yielding an asymptotic $95\%$ confidence interval of **$83.26\% \pm 5.00\%$ ($[78.26\%, 88.26\%]$)**.
+yielding an asymptotic 95% confidence interval of **83.26% ± 5.00% ([78.26%, 88.26%])**.
 
 * **Analysis of the Residual 16.7% Error Gap:** 
 Error analysis reveals that the remaining failure rate is heavily dominated by **Cross-Encoder Literalism**. Zero-shot sequence classification models (`bart-large-mnli`) lack higher-order semantic abstraction for implicit entailments (failing to recognize semantic equivalence when claims use abstract paraphrases rather than verbatim phrasing). This failure mode directly motivated the multi-agent debate escalation mechanism in Phase 5b.
@@ -294,13 +294,13 @@ The Conformal Verification layer was empirically validated on holdout partitions
 
 #### Key Statistical Findings:
 1. **Strict Finite-Sample Validity:** In every single test condition, empirical test coverage strictly equals or exceeds nominal coverage ($\text{Empirical Coverage} \ge 1 - \alpha$), validating exchangeability and order-statistic calibration.
-2. **Superior Information Efficiency:** With $n=100$ calibration samples and the exact discrete order-statistic implementation ($s_{(91)}$), the average prediction set size at $\alpha=0.10$ ($90\%$ coverage guarantee) contracts from $2.72$ down to **$1.26$**, and achieves near-singleton efficiency ($|\mathcal{C}(X)| = 1.01$) at $\alpha=0.20$.
+2. **Superior Information Efficiency:** With $n = 100$ calibration samples and the exact discrete order-statistic implementation ($s_{(91)}$), the average prediction set size at $\alpha = 0.10$ (90% coverage guarantee) contracts from 2.72 down to **1.26**, and achieves near-singleton efficiency ($|\mathcal{C}(X)| = 1.01$) at $\alpha = 0.20$.
 3. **Artifacts:** High-resolution calibration curves and efficiency plots are maintained in `experiments/conformal_coverage_plot.png` and `experiments/conformal_set_size_plot.png`, with the production calibration state saved in `experiments/conformal_calibration.json`.
-4. **Critical Statistical Distinction (Marginal Set Coverage $\ne$ Pointwise Contradiction Precision):**
-   A common fallacy in applied machine learning is assuming that a $90\%$ marginal coverage guarantee ($\mathbb{P}(Y \in \mathcal{C}(X)) \ge 1 - \alpha$) means that any individual hallucination verdict has a $90\%$ probability of being correct. This assumption is statistically invalid for three fundamental reasons:
+4. **Critical Statistical Distinction (Marginal Set Coverage ≠ Pointwise Contradiction Precision):**
+   A common fallacy in applied machine learning is assuming that a 90% marginal coverage guarantee ($\mathbb{P}(Y \in \mathcal{C}(X)) \ge 1 - \alpha$) means that any individual hallucination verdict has a 90% probability of being correct. This assumption is statistically invalid for three fundamental reasons:
    * **Set Guarantee vs. Point Decision:** Conformal prediction guarantees that the true label belongs to the *set* $\mathcal{C}(X)$. If $\mathcal{C}(X) = \{\text{CONTRADICTED}, \text{UNKNOWN}\}$, the set contains the truth, but forcing a point decision of "hallucination" may be wrong.
    * **Marginal Average vs. Class-Conditional Coverage:** The guarantee is marginal across the joint distribution $P_{XY}$. High coverage on easy factual claims (`SUPPORTED`) can mathematically mask lower coverage on rare, subtle hallucinations (`CONTRADICTED`).
-   * **Precision is a Posterior Metric:** Conformal prediction controls the coverage risk (analogous to bounding false negatives of the set). It does *not* bound the precision ($\mathbb{P}(Y = \text{contra} \mid \hat{y} = \text{contra})$) of individual positive assertions.
+   * **Precision is a Posterior Metric:** Conformal prediction controls the coverage risk (analogous to bounding false negatives of the set). It does *not* bound the precision $\mathbb{P}(Y = \text{contra} \mid \hat{y} = \text{contra})$ of individual positive assertions.
    
    To avoid overinterpreting conformal guarantees, our architecture strictly treats $\mathcal{C}(X)$ as an **epistemic uncertainty gating mechanism** ($g(X)$), while measuring **Contradiction Class Precision (0.89)**, **Recall (0.80)**, and **Selective Risk ($R(f, g) = 0.11$)** independently in Section 3.4.
 
@@ -323,8 +323,8 @@ To determine whether Multi-Agent Debate provides genuine verification utility or
 | **LLM API Calls Consumed** | 0 calls | 6 calls (3 per escalation) | **+6 API calls** |
 
 #### Critical Insights on Debate Mechanics:
-* **Targeted Value:** Multi-Agent Debate is not applied uniformly across all claims; it is an escalation mechanism triggered only when NLI confidence collapses. In $86.7\%$ of claims, fast deterministic NLI resolves the claim with zero LLM API overhead.
-* **Correction of NLI Literalism:** For the escalated claims, the debate successfully bridged the semantic gap (resolving figurative phrasings, domain terminology, and role interpretations), achieving a $100\%$ correction rate with zero sycophantic degradations.
+* **Targeted Value:** Multi-Agent Debate is not applied uniformly across all claims; it is an escalation mechanism triggered only when NLI confidence collapses. In 86.7% of claims, fast deterministic NLI resolves the claim with zero LLM API overhead.
+* **Correction of NLI Literalism:** For the escalated claims, the debate successfully bridged the semantic gap (resolving figurative phrasings, domain terminology, and role interpretations), achieving a 100% correction rate with zero sycophantic degradations.
 * **Cost-Latency Trade-off:** The $+13.33\%$ accuracy uplift comes at the cost of $+0.762$ seconds average latency per claim and 3 LLM calls per escalated claim.
 
 ---
@@ -360,13 +360,13 @@ f(X) & \text{if } g(X) = 1 \\
 #### 2. Coverage vs. Selective Risk
 Under selective classification, the system's operational behavior is governed by two coupled metrics:
 
-1. **System Coverage ($\Phi(g)$):** The probability that the model accepts an arbitrary claim and renders a definitive verdict:
+1. **System Coverage** ($\Phi(g)$): The probability that the model accepts an arbitrary claim and renders a definitive verdict:
 
 ```math
 \Phi(g) = \mathbb{E}_{X \sim P_X}[g(X)]
 ```
 
-2. **Selective Risk ($R(f, g)$):** The conditional misclassification rate restricted strictly to accepted claims:
+2. **Selective Risk** ($R(f, g)$): The conditional misclassification rate restricted strictly to accepted claims:
 
 ```math
 R(f, g) = \frac{\mathbb{E}_{(X, Y)} [\ell(f(X), Y) \cdot g(X)]}{\Phi(g)}
@@ -375,9 +375,9 @@ R(f, g) = \frac{\mathbb{E}_{(X, Y)} [\ell(f(X), Y) \cdot g(X)]}{\Phi(g)}
 where $\ell(\hat{y}, y) = \mathbb{I}(\hat{y} \ne y)$ is the 0-1 classification loss.
 
 #### 3. Why Abstention Safeguards Trustworthiness:
-* **Why Binary Benchmarks Penalize Abstention:** Standard benchmarks assume full coverage ($\Phi(g) \equiv 1.0$), scoring any conservative abstention ($g(X) = 0$) as an error ($\ell = 1$). In reality, abstentions represent cases where evidence is ambiguous, contradictory across sources, or under-specified. Scoring abstentions as wrong pulls overall accuracy down to $75.00\%$.
+* **Why Binary Benchmarks Penalize Abstention:** Standard benchmarks assume full coverage ($\Phi(g) \equiv 1.0$), scoring any conservative abstention ($g(X) = 0$) as an error ($\ell = 1$). In reality, abstentions represent cases where evidence is ambiguous, contradictory across sources, or under-specified. Scoring abstentions as wrong pulls overall accuracy down to 75.00%.
 * **The Cost of Forcing Binary Guesses:** If the gating function were disabled ($g(X) \equiv 1$), forcing a coin flip on ambiguous claims, selective risk would dramatically increase. In safety-critical hallucination detection, **false positive accusations destroy trust**.
-* **High Selective Precision ($89\%$):** By allowing the verifier to abstain when the conformal set signals epistemic uncertainty ($|\mathcal{C}(X)| > 1$), the pipeline maintains **0.89 Precision** on all accepted claims ($\Phi \approx 0.85$). The system trades a modest portion of coverage to guarantee that when it flags an assertion as a hallucination, it is backed by calibrated statistical confidence.
+* **High Selective Precision (89%):** By allowing the verifier to abstain when the conformal set signals epistemic uncertainty ($|\mathcal{C}(X)| > 1$), the pipeline maintains **0.89 Precision** on all accepted claims ($\Phi \approx 0.85$). The system trades a modest portion of coverage to guarantee that when it flags an assertion as a hallucination, it is backed by calibrated statistical confidence.
 
 ---
 
