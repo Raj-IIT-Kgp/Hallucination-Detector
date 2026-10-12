@@ -9,7 +9,7 @@ Crucially, the system replaces arbitrary heuristic confidence thresholds with **
 
 ## 2. System Architecture & Pipeline Workflow
 
-The system implements a **6-Phase Cascaded Verification Architecture**. Each phase acts as a progressively more powerful reasoning engine. The pipeline only escalates to higher-cost reasoning tiers when lower tiers indicate statistical uncertainty, optimizing verification accuracy against API latency and token cost.
+The system implements a **Cascaded Verification & Remediation Architecture** (comprising 6 core verification phases and an optional modular remediation layer). Each phase acts as a progressively more powerful reasoning engine. The pipeline only escalates to higher-cost reasoning tiers when lower tiers indicate statistical uncertainty, optimizing verification accuracy against API latency and token cost.
 
 ```
                   Complex Input Text
@@ -19,29 +19,33 @@ The system implements a **6-Phase Cascaded Verification Architecture**. Each pha
           └───────────────┬──────────────┘
                           │
           ┌───────────────▼──────────────┐
-          │ Phase 2: Dynamic Query Gen   │  (Entities, Domain, Timestamps)
-          └───────────────┬──────────────┘
-                          │
-          ┌───────────────▼──────────────┐
-          │ Phase 3: Hybrid Retrieval    │  (Dense MiniLM + BM25 RRF)
-          └───────────────┬──────────────┘
-                          │
-          ┌───────────────▼──────────────┐
-          │ Phase 3.5: Consensus Check   │  (External Source Conflict Detection)
-          └───────────────┬──────────────┘
-                          │
-          ┌───────────────▼──────────────┐
-          │ Phase 4: Conformal NLI Layer │  (Coverage Guarantee: P(Y ∈ C(X)) ≥ 1 - α)
-          └───────────────┬──────────────┘
-                          │
-                 Is Set Ambiguous?
-                 [|C(X)| > 1 or UNKNOWN ∈ C(X)]
-                  ├── No  ──► Crisp Point Verdict (Supported / Contradicted)
-                  │
-                  └── Yes ──► (Escalation Trigger)
-                                  │
+          │ Phase 2: Dynamic Query Gen   │◄───────────────────────────┐
+          └───────────────┬──────────────┘                           │
+                          │                                          │ (Iterative Feedback)
+          ┌───────────────▼──────────────┐                           │ Self-Reflective
+          │ Phase 3: Hybrid Retrieval    │                           │ Query Rewriter
+          │ (Dense MiniLM + BM25 RRF)    │                           │ (Diagnoses Search Failure)
+          └───────────────┬──────────────┘                           │
+                          │                                          │
+          ┌───────────────▼──────────────┐                           │
+          │ Phase 3.5: Consensus Check   │                           │
+          │ (Source Conflict Detection)  │                           │
+          └───────────────┬──────────────┘                           │
+                          │                                          │
+          ┌───────────────▼──────────────┐                           │
+          │ Phase 4: Conformal NLI Layer │                           │
+          │ (Coverage: P(Y ∈ C) ≥ 1 - α) │                           │
+          └───────────────┬──────────────┘                           │
+                          │                                          │
+                 Is Set Ambiguous?                                   │
+                 [|C(X)| > 1 or UNKNOWN ∈ C(X)]                      │
+                  ├── No  ──► Crisp Point Verdict (Singleton)        │
+                  │                                                  │
+                  └── Yes ──► Retry Retrieval? ──────────────────────┘
+                                  │ (If retry exhausted)
           ┌───────────────────────▼────────────────────────┐
           │ Phase 5a: Knowledge Graph Multi-Hop Reasoning  │
+          │ (Entity Resolution + Edge Evidence Boosting)   │
           └───────────────────────┬────────────────────────┘
                                   │
           ┌───────────────────────▼────────────────────────┐
@@ -67,9 +71,10 @@ For each atomic claim, a **Query Generator Agent (powered by Gemini)** synthesiz
 * **Domain Classification:** Claims are classified into `general` or `scientific` domains to configure downstream retrieval indices and NLI tolerance.
 * **Temporal Tracking:** If a claim relies on present-day state (e.g., "is currently"), a live system timestamp is injected into the prompt context.
 
-### Phase 3: Parallel Web Retrieval (Hybrid Search)
+### Phase 3: Parallel Web Retrieval & Hybrid Re-Ranking
 Parallel search queries are dispatched across the **Wikipedia API**, **ArXiv API** (for scientific claims), and **DuckDuckGo**.
-* **Absence Evaluation:** If zero evidence is returned across all retrieval backends, an LLM evaluates the epistemic salience of the queried entity: absence of evidence for prominent, globally recorded historical or scientific entities strongly indicates refutation (`CONTRADICTED`), whereas lack of evidence for obscure or low-salience entities yields conservative abstention (`UNKNOWN`).
+* **Sliding-Window Paragraph Chunking:** Retrieved articles are stripped of boilerplate and segmented into sliding windows of $5$ sentences with a $2$-sentence overlap ($\text{stride} = 3$), ensuring boundary facts spanning adjacent sentences are preserved without losing local context.
+* **Absence Evaluation:** If zero evidence is returned across all retrieval backends even after query reformulation, an LLM evaluates the epistemic salience of the queried entity: absence of evidence for prominent, globally recorded historical or scientific entities strongly indicates refutation (`CONTRADICTED`), whereas lack of evidence for obscure or low-salience entities yields conservative abstention (`UNKNOWN`).
 * **Cosine Similarity:** The semantic similarity between claim vector $\mathbf{c}$ and evidence vector $\mathbf{e}$ is computed using `all-MiniLM-L6-v2`:
 
 ```math
@@ -82,7 +87,13 @@ Parallel search queries are dispatched across the **Wikipedia API**, **ArXiv API
 \text{RRF}(d) = \sum_{r \in R} \frac{1}{k + r(d)}
 ```
 
-where $r(d)$ is the document rank and $k = 60$ is the smoothing constant.
+where $r(d)$ is the document rank and $k = 60$ is the smoothing constant. Evidence candidates must satisfy $\text{sim}(\mathbf{c}, \mathbf{e}) \ge 0.20$ or $\text{BM25} > 1.0$ to filter out retrieval noise.
+
+### Phase 3.1: Self-Reflective Retrieval Feedback Loop (Iterative Query Reformulation)
+Rather than treating retrieval as a static, single-shot operation, the pipeline implements an **Agentic Retrieval Feedback Loop**:
+* **Trigger Conditions:** If Phase 3 returns zero valid evidence snippets, or if Phase 4 downstream verification signals model posterior dispersion ($|\mathcal{C}(X)| > 1$), the pipeline initiates a self-reflective retry cycle.
+* **Search Failure Diagnosis:** The **Self-Reflective Query Rewriter Agent** analyzes the claim alongside previously attempted queries and the unhelpful evidence snippets, identifying why retrieval failed (e.g., lexical ambiguity, overly specific qualifiers, or missing parent entity context).
+* **Divergent Query Synthesis:** The agent formulates up to $2$ new, divergent search queries targeting alternative entity names, canonical aliases, or broader contextual events, immediately re-executing hybrid retrieval before escalating to Knowledge Graph construction.
 
 ### Phase 3.5: Consensus Evaluation & Calibrated Epistemic Contradiction Detection
 Before merging retrieved paragraphs, the system evaluates the open web for factual consensus. A zero-shot NLI check is executed on each distinct retrieved source snippet $e_i \in \mathcal{E}$ against the claim $c$.
@@ -164,6 +175,7 @@ A prediction set containing multiple labels (e.g., $\{\text{SUPPORTED}, \text{UN
 
 ### Phase 5a: Knowledge Graph Multi-Hop Reasoning & Semantic Entity Disambiguation
 When escalated from Phase 4, the system constructs a live in-memory Knowledge Graph to perform multi-hop evidence reasoning.
+* **Implicit Entity Linking & Canonical Resolution:** An **Entity Linker Agent** extracts up to $5$ named entities from the claim and global context. When an entity is referenced implicitly through a relational expression, the agent leverages world knowledge to resolve the implicit antecedent to its explicit proper noun and canonical Wikipedia article title.
 * **Semantic Entity Disambiguation:** Wikipedia search and entity extraction frequently suffer from disambiguation traps and lexical auto-suggest drift when queried entities share titles with homonymous media, creative works, or geographical locations. To eliminate this failure mode:
   1. Auto-suggest is strictly deactivated (`auto_suggest=False`) to enforce query fidelity.
   2. Disambiguation pages are parsed, and candidate titles containing irrelevant entertainment tags (e.g., `(album)`, `(song)`, `(band)`) are filtered out when the claim domain is non-entertainment.
@@ -173,7 +185,14 @@ When escalated from Phase 4, the system constructs a live in-memory Knowledge Gr
 \hat{t} = \arg\max_{t \in \mathcal{T}} \frac{\mathbf{c} \cdot \mathbf{t}}{\|\mathbf{c}\| \|\mathbf{t}\|}
 ```
 
-* **Graph Topology & Traversal:** Named entities from the claim and context are linked to canonical Wikipedia concept nodes. Relationship edges are extracted and traversed using cosine similarity to connect indirect evidence chains (e.g., resolving entity relationships across multiple documents).
+* **NetworkX Graph Construction & Relationship Extraction:** Validated entities form the graph's nodes. For every distinct pair of entity nodes $(u, v)$, their introductory summaries are processed by an LLM to extract a concise relational proposition $\text{rel}(u, v) \le 15$ words. If a factual connection exists, an undirected edge is instantiated.
+* **Multi-Hop Traversal & Edge Evidence Boosting:** Evidence candidates are extracted across all node summaries using sliding windows ($3$ sentences, stride $2$). Crucially, the extracted edge relationships are also synthesized into discrete factual propositions $\text{rel}(u, v)$ and injected into the candidate evidence pool with an additive **$+0.1$ cosine similarity boost**:
+
+```math
+\text{Score}(\text{rel}_{u,v}) = \text{sim}(\mathbf{c}, \mathbf{e}_{\text{rel}}) + 0.10
+```
+
+This ensures that dense, relational propositions connecting multi-hop entities take precedence over generic background prose during top-$k$ evidence selection.
 
 ### Phase 5b: Multi-Agent Critic Debate & Conservative Abstention Policy
 If ambiguity persists after Knowledge Graph traversal (or if an external Epistemic Contradiction was flagged in Phase 3.5), the system invokes a Multi-Agent LLM Debate:
@@ -199,6 +218,12 @@ As atomic claims are verified, the backend pushes asynchronous NDJSON events (Se
 * **Live Conformal Telemetry:** For each claim, the pipeline streams the finite-sample prediction set $\mathcal{C}(X)$, the coverage guarantee ($1 - \alpha = 90\%$), and the escalation signal in real time.
 * **Production Summary Metrics:** The final verification report aggregates total evaluated claims, hallucination rate, singleton conformal claims, and conformal escalation rate.
 * **Interactive UI:** The frontend (`static/app.js` and `static/index.html`) renders an integrated Conformal Coverage dashboard card, D3.js Knowledge Graph network topology, and interactive hover tooltips displaying the calibrated prediction set chips, conformal $p$-values ($p(\text{contra}), p(\text{unk}), p(\text{supp})$), and source citations.
+
+### Phase 7: Modular Factual Remediation & Context Rebuilding Layer
+For applications requiring end-to-end autonomous text correction, the architecture provides a modular downstream remediation subsystem:
+* **Factual Correction Agent:** When a claim is definitively classified as `CONTRADICTED`, a Correction Agent synthesizes a factually accurate replacement claim conditioned strictly on the retrieved evidence $\mathcal{E}$, barring extraneous entities or ungrounded assertions.
+* **Critic Review Loop:** The draft correction is subjected to a chain-of-thought audit by a **Critic Agent**. The critic verifies that every entity, date, and relationship in the proposed correction is explicitly attested by the underlying evidence. If unwarranted facts are identified (`VERDICT: FAIL`), structured feedback is provided for iterative correction.
+* **Deterministic In-Place Context Rebuilding:** Rather than asking an LLM to regenerate the entire multi-paragraph document (which introduces severe risks of secondary hallucinations during generation), the **Rebuilder Agent** executes deterministic string replacement of false propositions with their validated corrections, preserving original syntax, formatting, and verified true facts.
 
 ---
 
