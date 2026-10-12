@@ -237,7 +237,8 @@ Error analysis reveals that the remaining failure rate is heavily dominated by *
 The Conformal Verification layer was empirically validated on holdout partitions of the FEVER dataset ($N = 200$ total samples: $n = 100$ calibration samples, $n = 100$ test samples). To account for finite-sample evaluation uncertainty, empirical coverage is reported alongside **Wilson 95% Score Confidence Intervals**.
 
 #### Empirical Results Table (Scaled $N = 200$):
-| Significance Level ($\alpha$) | Nominal Coverage ($1 - \alpha$) | Empirical Test Coverage | Wilson 95% Confidence Interval | Average Set Size $|\mathcal{C}(X)|$ | Conformal Quantile ($\hat{q}_\alpha$) |
+
+| Significance Level ($\alpha$) | Nominal Coverage ($1 - \alpha$) | Empirical Test Coverage | Wilson 95% Confidence Interval | Average Set Size $\vert\mathcal{C}(X)\vert$ | Conformal Quantile ($\hat{q}_\alpha$) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **0.05** | 95.0% | **99.00%** | $[94.57\%, 99.82\%]$ | 1.72 | 0.9937 |
 | **0.10** | 90.0% | **92.00%** | $[85.03\%, 95.93\%]$ | 1.33 | 0.9168 |
@@ -261,6 +262,7 @@ To determine whether Multi-Agent Debate provides genuine verification utility or
 2. **Treatment (With Debate):** NLI + Knowledge Graph + Multi-Agent Debate (Defense, Prosecution, Judge).
 
 #### Empirical Ablation Results:
+
 | Metric | Condition A: Without Debate | Condition B: With Debate | Net Marginal Impact ($\Delta$) |
 | :--- | :--- | :--- | :--- |
 | **Verification Accuracy** | 86.67% | **100.00%** | **+13.33%** |
