@@ -201,7 +201,7 @@ When escalated from Phase 4, the system constructs a live in-memory Knowledge Gr
 * **Multi-Hop Traversal & Composite Edge Scoring:** Candidate evidence is extracted across all node summaries using sliding windows ($3$ sentences, stride $2$). In addition, provenance-verified edges are synthesized into composite grounded propositions:
 
 ```math
-\mathbf{e}_{\text{edge}} = \text{"Grounded Relationship } [u \leftrightarrow v]: \text{rel} \text{ (Evidence Quote: \"} q \text{\")"}
+\mathbf{e}_{\text{edge}} = \text{Grounded Relationship } [u \leftrightarrow v]\text{: } \text{rel} \text{ (Evidence Quote: ``} q \text{'')}
 ```
 
 Crucially, rather than applying an uncalibrated additive boost (e.g. $+0.10$) which risks ranking weak relational edges above authoritative direct passage evidence, the system evaluates pure semantic cosine similarity:
