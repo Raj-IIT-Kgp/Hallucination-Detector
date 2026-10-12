@@ -1,0 +1,154 @@
+import json
+import os
+import numpy as np
+
+
+class ConformalVerifier:
+    """
+    Split Conformal Prediction Layer for Natural Language Inference & Fact Verification.
+    
+    Provides finite-sample, distribution-free theoretical guarantees:
+        P(Y in C(X)) >= 1 - alpha
+    where alpha is the user-specified significance level / error tolerance.
+    """
+
+    def __init__(self, alpha=0.10, calib_file=None):
+        """
+        Args:
+            alpha (float): Significance level (e.g. 0.10 means 90% guaranteed coverage).
+            calib_file (str, optional): Path to a pre-saved calibration JSON file.
+        """
+        self.alpha = float(alpha)
+        self.labels = ["contradicted", "unknown", "supported"]
+        self.q_hat = None
+        self.calibrated_scores = []
+        self.n_samples = 0
+        
+        if calib_file and os.path.exists(calib_file):
+            self.load_calibration(calib_file)
+
+    def compute_non_conformity(self, prob_vector, y_true):
+        """
+        Computes non-conformity score for a given observation:
+            s_i = 1 - p(y_true)
+        Higher score implies the model was more non-conforming / less confident in the truth.
+        """
+        if isinstance(y_true, str):
+            if y_true not in self.labels:
+                raise ValueError(f"Unknown label '{y_true}'. Must be one of {self.labels}")
+            y_idx = self.labels.index(y_true)
+        else:
+            y_idx = int(y_true)
+        
+        return 1.0 - float(prob_vector[y_idx])
+
+    def calibrate(self, probabilities_list, true_labels, save_path=None):
+        """
+        Computes the empirical conformal quantile q_hat on a hold-out calibration set.
+        
+        Formula (Angelopoulos & Bates, 2021; Vovk et al.):
+            p_level = ceil((n + 1) * (1 - alpha)) / n
+            q_hat = Quantile(scores, p_level, method='higher')
+        """
+        n = len(true_labels)
+        if n == 0:
+            raise ValueError("Calibration set cannot be empty.")
+
+        scores = []
+        for probs, y_true in zip(probabilities_list, true_labels):
+            score = self.compute_non_conformity(probs, y_true)
+            scores.append(score)
+
+        self.calibrated_scores = np.sort(np.array(scores))
+        self.n_samples = n
+
+        # Finite-sample exact quantile index
+        p_level = np.ceil((n + 1) * (1.0 - self.alpha)) / n
+        p_level = min(1.0, max(0.0, float(p_level)))
+
+        # Compute empirical quantile
+        self.q_hat = float(np.quantile(self.calibrated_scores, p_level, method="higher"))
+
+        if save_path:
+            self.save_calibration(save_path)
+
+        return self.q_hat
+
+    def predict_set(self, prob_vector):
+        """
+        Constructs the prediction set C(X) for an incoming test sample:
+            C(X) = { y in Y : 1 - p(y) <= q_hat }
+            
+        Returns:
+            dict containing:
+                - point_prediction (str)
+                - point_confidence (float)
+                - conformal_set (list of str)
+                - set_size (int)
+                - is_ambiguous (bool): True if set_size > 1 (statistically certified conflict)
+                - p_values (dict of str -> float): Conformal p-values for each candidate label
+                - coverage_guarantee (str)
+        """
+        if self.q_hat is None:
+            raise ValueError("ConformalVerifier has not been calibrated! Run calibrate() or load a pre-calibrated model.")
+
+        prob_vector = np.array(prob_vector, dtype=float)
+        prediction_set = []
+        p_values = {}
+
+        n = len(self.calibrated_scores)
+
+        for idx, label in enumerate(self.labels):
+            test_score = 1.0 - prob_vector[idx]
+            
+            # Conformal condition
+            if test_score <= self.q_hat:
+                prediction_set.append(label)
+
+            # Conformal p-value calculation:
+            # p_value(y) = (1 + sum(score_calib >= test_score)) / (n + 1)
+            count = np.sum(self.calibrated_scores >= test_score)
+            p_val = (1.0 + float(count)) / (float(n) + 1.0)
+            p_values[label] = round(p_val, 4)
+
+        # Fallback for empty set (occurs with probability at most alpha)
+        argmax_idx = int(np.argmax(prob_vector))
+        if not prediction_set:
+            prediction_set = [self.labels[argmax_idx]]
+
+        point_pred = self.labels[argmax_idx]
+        point_conf = float(prob_vector[argmax_idx])
+
+        return {
+            "point_prediction": point_pred,
+            "point_confidence": point_conf,
+            "conformal_set": prediction_set,
+            "set_size": len(prediction_set),
+            "is_ambiguous": len(prediction_set) > 1,
+            "p_values": p_values,
+            "coverage_guarantee": f"{int((1 - self.alpha) * 100)}%",
+            "q_hat": self.q_hat
+        }
+
+    def save_calibration(self, filepath):
+        """Saves calibration parameters and scores to a JSON file."""
+        data = {
+            "alpha": self.alpha,
+            "q_hat": self.q_hat,
+            "n_samples": self.n_samples,
+            "labels": self.labels,
+            "calibrated_scores": [float(s) for s in self.calibrated_scores]
+        }
+        os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
+        with open(filepath, "w") as f:
+            json.dump(data, f, indent=2)
+
+    def load_calibration(self, filepath):
+        """Loads calibration parameters from a JSON file."""
+        with open(filepath, "r") as f:
+            data = json.load(f)
+        self.alpha = data["alpha"]
+        self.q_hat = data["q_hat"]
+        self.n_samples = data["n_samples"]
+        self.labels = data["labels"]
+        self.calibrated_scores = np.array(data["calibrated_scores"])

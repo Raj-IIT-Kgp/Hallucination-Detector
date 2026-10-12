@@ -45,6 +45,7 @@ def verify_claim(claim, evidence, domain="general"):
 
     prediction = torch.argmax(probabilities).item()
     confidence = probabilities[0][prediction].item()
+    prob_list = [probabilities[0][i].item() for i in range(len(labels))]
     
     label = labels[prediction]
     
@@ -57,5 +58,6 @@ def verify_claim(claim, evidence, domain="general"):
 
     return {
         "label": label,
-        "confidence": confidence
+        "confidence": confidence,
+        "probabilities": prob_list
     }

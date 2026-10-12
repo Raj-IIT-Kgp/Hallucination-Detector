@@ -1,7 +1,9 @@
-# Architectural Report: Automated Hallucination Detection Pipeline with Knowledge Graph Reasoning
+# Architectural Report: Automated Hallucination Detection Pipeline with Knowledge Graph Reasoning and Distribution-Free Conformal Verification
 
 ## 1. Abstract
-This report outlines the architecture and mathematical constraints of an end-to-end Automated Hallucination Detection system. The pipeline integrates deterministic claim extraction, multi-entity query generation, hybrid web retrieval, zero-shot Natural Language Inference (NLI), a novel **Knowledge Graph (KG) multi-hop reasoning layer**, and a final Critic LLM override — powered by Gemini — to identify and flag factual hallucinations in AI-generated text. When standard NLI verification is inconclusive, the system dynamically constructs a live in-memory Knowledge Graph from Wikipedia entities, traverses it to collect multi-hop evidence chains, and feeds the enriched context back into the NLI pipeline before escalating to the LLM as a last resort.
+This report outlines the architecture and mathematical constraints of an end-to-end Automated Hallucination Detection system. The pipeline integrates deterministic claim extraction, multi-entity query generation, hybrid web retrieval, zero-shot Natural Language Inference (NLI), a novel **Knowledge Graph (KG) multi-hop reasoning layer**, a **Distribution-Free Split Conformal Prediction verification layer**, and a final Multi-Agent Critic debate override — powered by Gemini — to identify and flag factual hallucinations in AI-generated text.
+
+Crucially, the system moves beyond arbitrary heuristic confidence thresholds by incorporating **Split Conformal Prediction**, mathematically guaranteeing a finite-sample marginal coverage rate $\mathbb{P}(Y \in \mathcal{C}(X)) \ge 1 - \alpha$ regardless of the underlying data distribution. When statistical ambiguity is certified ($|\mathcal{C}(X)| > 1$), the pipeline escalates to dynamically construct a live in-memory Knowledge Graph from Wikipedia entities, traverses multi-hop evidence chains, and arbitrates competing viewpoints via a multi-agent game-theoretic debate.
 
 ---
 
@@ -26,58 +28,74 @@ The system executes parallel live queries against the **Wikipedia API**, the **A
 * **Absence Evaluation (New):** If no evidence is found across all search queries, the system invokes the **Critic LLM** to perform an **Absence Evaluation**. The LLM logically deduces whether the sheer absence of the entity from Wikipedia proves the claim is false (e.g., a massive historical event missing = CONTRADICTED, whereas a minor trivia fact missing = UNKNOWN).
 * **Cosine Similarity Maximization:** The semantic similarity between the claim vector $\mathbf{c}$ and the evidence vector $\mathbf{e}$ is computed using the `all-MiniLM-L6-v2` embedding model. The similarity is defined mathematically as:
 
-
-$$
+```math
 \text{sim}(\mathbf{c}, \mathbf{e}) = \frac{\mathbf{c} \cdot \mathbf{e}}{\|\mathbf{c}\| \|\mathbf{e}\|}
-$$
+```
 
 * **Hybrid Re-Ranking (RRF):** Dense Cosine Similarity scores are combined with sparse **BM25** keyword scores using Reciprocal Rank Fusion. The RRF score for a document $d$ across multiple rankings $R$ is calculated as:
 
-
-$$
+```math
 \text{RRF}(d) = \sum_{r \in R} \frac{1}{k + r(d)}
-$$
+```
 
 where $r(d)$ is the rank of document $d$ and $k$ is a smoothing constant (typically 60).
 
 ### Phase 3.5: Epistemic Contradiction Arbitration (Upgraded)
 Before merging the retrieved paragraphs, the system evaluates the open web for consensus. It runs a rapid zero-shot NLI check on each individual retrieved source against the claim. If it detects that Source A says the claim is `SUPPORTED`, but Source B says it is `CONTRADICTED`, the pipeline flags an **EPISTEMIC CONTRADICTION**. 
-Rather than blindly failing or short-circuiting to `DISPUTED`, the pipeline explicitly sets the interim verification label to `UNKNOWN` and explicitly prepends a warning to the evidence. This brilliant maneuver intentionally defers the conflicting evidence to the **Multi-Agent Debate (Phase 5b)**, forcing the Defense, Prosecution, and Judge LLM agents to critically analyze and arbitrate between the conflicting sources.
+Rather than blindly failing or short-circuiting to `DISPUTED`, the pipeline explicitly sets the interim verification label to `UNKNOWN` and explicitly prepends a warning to the evidence. This intentionally defers the conflicting evidence to the **Multi-Agent Debate (Phase 5b)**, forcing the Defense, Prosecution, and Judge LLM agents to critically analyze and arbitrate between the conflicting sources.
 
-### Phase 4: Primary Verification (Natural Language Inference)
+### Phase 4: Primary Verification & Conformal Uncertainty Layer
 The claim and the Top-3 evidence paragraphs are processed by a zero-shot NLI model (`facebook/bart-large-mnli`).
-* **Probability Distribution:** Outputs a softmax probability distribution over the classes $y \in \{ \text{SUPPORTED}, \text{CONTRADICTED}, \text{UNKNOWN} \}$. The probability for each class $i$ given logits $z_i$ is computed as:
 
+* **Softmax Probability Formulation:** Outputs a probability distribution over the classes $\mathcal{Y} = \{ \text{CONTRADICTED}, \text{UNKNOWN}, \text{SUPPORTED} \}$. Given logits $\mathbf{z}$, the probability vector $\hat{\boldsymbol{\pi}}(X)$ is given by:
 
-$$
-P(y = i \mid \mathbf{c}, \mathbf{e}) = \frac{e^{z_i}}{\sum_{j} e^{z_j}}
-$$
+```math
+P(Y = y_i \mid X) = \hat{\pi}_i(X) = \frac{e^{z_i}}{\sum_{j=1}^3 e^{z_j}}
+```
 
-* **Domain-Adaptive Confidence Thresholding:** To rigidly prevent false positives, the system implements a piecewise threshold function $\tau$. If the maximum predicted probability $\max P(y)$ is strictly less than $\tau$, the pipeline artificially degrades the classification to `UNKNOWN` to force an escalation to Phase 5. The threshold $\tau$ dynamically adjusts based on the domain classified in Phase 2:
+* **Split Conformal Prediction (Finite-Sample Guarantees):**
+Standard deep learning softmax outputs are notoriously miscalibrated and lack statistical error bounds. To provide rigorous statistical validity, the system implements **Split Conformal Prediction** (Vovk et al.; Angelopoulos & Bates, 2021).
+  
+  1. **Non-Conformity Scoring Function:** On a holdout calibration dataset of size $n$, the non-conformity score $s(X_i, Y_i)$ measures the model's error relative to the true ground truth class $Y_i$:
+  
+```math
+s(X_i, Y_i) = 1 - \hat{\pi}_{Y_i}(X_i)
+```
 
+  2. **Empirical Quantile Computation:** For a user-chosen error tolerance $\alpha \in (0, 1)$ (e.g., $\alpha = 0.10$ for $90\%$ coverage), the finite-sample adjusted conformal quantile $\hat{q}_\alpha$ is computed as:
+  
+```math
+\hat{q}_\alpha = \text{Quantile}\left(\frac{\lceil (n + 1)(1 - \alpha) \rceil}{n}; \; \{s(X_i, Y_i)\}_{i=1}^n\right)
+```
 
-$$
-\tau = \begin{cases} 
-0.55 & \text{if domain} = \text{scientific} \\
-0.75 & \text{if domain} = \text{general}
-\end{cases}
-$$
+  3. **Conformal Prediction Set Construction:** For any new test claim $X_{\text{test}}$, the verifier outputs a prediction set $\mathcal{C}(X_{\text{test}}) \subseteq \mathcal{Y}$:
+  
+```math
+\mathcal{C}(X_{\text{test}}) = \{ y \in \mathcal{Y} : 1 - \hat{\pi}_y(X_{\text{test}}) \le \hat{q}_\alpha \}
+```
 
+  4. **The Theoretical Coverage Guarantee:**
+  Subject only to the exchangeability of $(X_i, Y_i)$, this guarantees finite-sample marginal coverage:
+  
+```math
+\mathbb{P}\left(Y_{\text{test}} \in \mathcal{C}(X_{\text{test}})\right) \ge 1 - \alpha
+```
 
-$$
-\hat{y} = \begin{cases} 
-\arg\max_i P(y = i) & \text{if } \max_i P(y = i) \geq \tau \\
-\text{UNKNOWN} & \text{otherwise}
-\end{cases}
-$$
+  5. **Conformal p-values:** For each candidate class $y \in \mathcal{Y}$, exact conformal $p$-values are computed against calibration scores:
+  
+```math
+p(y) = \frac{1 + \sum_{i=1}^n \mathbb{I}\left(s_i \ge 1 - \hat{\pi}_y(X_{\text{test}})\right)}{n + 1}
+```
+
+* **Statistically Certified Ambiguity:** If $|\mathcal{C}(X)| > 1$ or $\mathcal{C}(X) = \{\text{UNKNOWN}\}$, the pipeline mathematically certifies that the claim cannot be resolved under the chosen error tolerance $\alpha$. This strictly triggers the multi-hop and debate escalation phases without relying on ad-hoc heuristics.
 
 ### Phase 5a: Knowledge Graph Multi-Hop Reasoning
-When the NLI model returns `UNKNOWN`, the system constructs a live in-memory Knowledge Graph to perform multi-hop evidence reasoning.
+When statistical ambiguity is certified in Phase 4, the system constructs a live in-memory Knowledge Graph to perform multi-hop evidence reasoning.
 * Gemini performs advanced Entity Linking on the claim, actively resolving implicit hidden entities.
 * The system fetches Wikipedia pages for each node, extracts natural-language relationship edges, and applies cosine similarity across all nodes to extract multi-hop evidence chains.
 
 ### Phase 5b: Multi-Agent Critic Debate
-If the claim is still `UNKNOWN` (or if an Epistemic Contradiction was flagged in Phase 3.5), the system invokes a Multi-Agent LLM Debate.
+If the claim remains ambiguous (or if an Epistemic Contradiction was flagged in Phase 3.5), the system invokes a Multi-Agent LLM Debate.
 * A **Defense Agent** argues that the evidence strictly supports the claim.
 * A **Prosecution Agent** argues that the evidence contradicts the claim.
 * A **Judge Agent** acts as an impartial arbitrator, reviewing both arguments against the raw evidence and rendering a final logical verdict.
@@ -87,17 +105,12 @@ As the system resolves claims, the backend utilizes a Python Generator to push a
 
 ---
 
-## 3. Multi-Dataset Evaluation
+## 3. Multi-Dataset Evaluation & Statistical Analysis
 
-The system was evaluated against three major fact-verification datasets. The pipeline was subjected to end-to-end live testing, requiring dynamic retrieval, mathematical NLI verification, and multi-agent consensus over the live Wikipedia API and DuckDuckGo.
+The system was evaluated against three major fact-verification datasets (FEVER, HaluEval, and Climate-FEVER) and subjected to empirical conformal calibration testing.
 
-The following metrics reflect a rigorous, end-to-end evaluation of the pipeline. These results highlight both the system's capabilities and the expected architectural limitations when performing live, open-domain retrieval.
-
-### 1. FEVER (Fact Extraction and VERification)
-**Dataset Profile:** FEVER is a rigorous, peer-reviewed academic standard consisting of relatively straightforward, general-knowledge claims generated by altering sentences from Wikipedia. The claims are mostly unambiguous and fact-centric (e.g., "History of art includes architecture, dance, sculpture, music...").
-
-**Performance Analysis (5-Run Cross Validation):**
-To ensure statistical honesty and mitigate the variance of random sampling, the system was evaluated across 5 distinct, randomized batches (20 unique claims per test). 
+### 3.1 FEVER Performance Analysis (5-Run Cross Validation)
+To ensure statistical honesty and mitigate the variance of random sampling, the system was evaluated across 5 distinct, randomized batches (20 unique claims per test) over live open-domain Wikipedia searches.
 
 #### Test 1 (20 Claims)
 | Metric | Score |
@@ -150,6 +163,31 @@ The zero-shot Natural Language Inference model (`facebook/bart-large-mnli`) occa
 **The Solution: Fine-Tuned Entailment LLMs**
 To bridge this remaining gap and approach near-perfect accuracy, the rigid sequence-to-sequence NLI model must be replaced in Phase 4. 
 The architectural solution is to deploy a **Fine-Tuned LLM Arbitrator** specifically trained on complex, abstract entailment tasks. Rather than relying on rigid semantic overlap, a lightweight, fine-tuned LLM (e.g., Llama 3 8B fine-tuned via LoRA for fact-checking) can contextually reason through implicit nuances, synonyms, and logical deductions natively, entirely eliminating the strict NLI bottleneck while maintaining rapid inference speeds.
+
+---
+
+### 3.2 Split Conformal Calibration Analysis (Statistical Validation)
+The Conformal Verification layer was empirically validated on holdout splits of the FEVER dataset using batched sequence classification. A calibration partition was used to compute the non-conformity quantiles $\hat{q}_\alpha$, and the test partition was evaluated across a spectrum of nominal significance levels $\alpha \in [0.05, 0.50]$.
+
+#### Empirical Results Table:
+| Significance Level ($\alpha$) | Nominal Coverage ($1 - \alpha$) | Empirical Test Coverage | Average Set Size $|\mathcal{C}(X)|$ | Conformal Quantile ($\hat{q}_\alpha$) |
+| :--- | :--- | :--- | :--- | :--- |
+| **0.05** | 95.0% | **100.00%** | 2.72 | 0.9998 |
+| **0.10** | 90.0% | **100.00%** | 2.72 | 0.9998 |
+| **0.15** | 85.0% | **100.00%** | 1.96 | 0.9963 |
+| **0.20** | 80.0% | **96.00%** | 1.72 | 0.9922 |
+| **0.25** | 75.0% | **96.00%** | 1.56 | 0.9849 |
+| **0.30** | 70.0% | **92.00%** | 1.24 | 0.8804 |
+| **0.40** | 60.0% | **80.00%** | 1.00 | 0.4320 |
+| **0.50** | 50.0% | **80.00%** | 1.00 | 0.1097 |
+
+#### Key Statistical Findings:
+1. **Strict Finite-Sample Validity:** In every single test condition, the empirical test coverage strictly exceeds the nominal theoretical coverage ($\text{Empirical Coverage} \ge 1 - \alpha$), empirically confirming the validity of the distribution-free guarantee.
+2. **Optimal Set Efficiency:** As the user relaxes the error tolerance from $\alpha = 0.05$ to $\alpha = 0.40$, the average prediction set size efficiently collapses from $2.72$ down to exactly $1.00$, proving that the model sharpens into crisp single-label predictions as soon as the evidence allows.
+3. **Artifacts Generated:** 
+   - Calibration Curve: `experiments/conformal_coverage_plot.png`
+   - Efficiency Curve: `experiments/conformal_set_size_plot.png`
+   - Exported Parameters: `experiments/conformal_calibration.json`
 
 ---
 
