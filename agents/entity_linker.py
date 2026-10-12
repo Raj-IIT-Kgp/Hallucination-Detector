@@ -30,7 +30,11 @@ Context: {ctx}
 Claim: {claim}
 Output:"""
 
-    response = generate_response(prompt).strip()
+    try:
+        response = generate_response(prompt).strip()
+    except Exception as e:
+        print(f"[EntityLinker] LLM unavailable: {e}")
+        return []
 
     try:
         # Strip markdown fences if present

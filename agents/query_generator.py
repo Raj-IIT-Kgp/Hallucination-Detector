@@ -38,7 +38,11 @@ Claim: {claim}
 Output:
 """
     
-    response = generate_response(prompt)
+    try:
+        response = generate_response(prompt)
+    except Exception as e:
+        print(f"[QueryGenerator] LLM connection unavailable ({e}). Falling back to claim heuristic.")
+        return {"queries": [claim], "domain": "general", "requires_current_state": False}
     
     try:
         # Clean up the LLM output in case it wrapped it in markdown
@@ -95,7 +99,11 @@ Example: ["Entity Alternate Name", "Specific Event Name"]
 
 Output:
 """
-    response = generate_response(prompt)
+    try:
+        response = generate_response(prompt)
+    except Exception as e:
+        print(f"[QueryGenerator] LLM rewrite failed: {e}")
+        return []
     try:
         cleaned = response.strip()
         if cleaned.startswith("```json"):

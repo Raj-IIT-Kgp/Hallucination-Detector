@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 import random
 import torch
 import numpy as np
@@ -13,10 +14,10 @@ from verification.nli_verifier import tokenizer, model, labels as nli_labels
 from statistical_layer.conformal_predictor import ConformalVerifier
 
 
-def run_conformal_experiment(num_samples=50, calib_ratio=0.5, batch_size=8):
-    print("=" * 70)
-    print("STATISTICAL EXPERIMENT: SPLIT CONFORMAL PREDICTION EVALUATION")
-    print("=" * 70)
+def run_conformal_experiment(num_samples=200, calib_ratio=0.5, batch_size=16):
+    print("=" * 80)
+    print("STATISTICAL EXPERIMENT: SPLIT CONFORMAL PREDICTION (SCALED N=200)")
+    print("=" * 80)
     print("Loading FEVER gold evidence dataset...")
     data = load_fever()
 
@@ -44,30 +45,43 @@ def run_conformal_experiment(num_samples=50, calib_ratio=0.5, batch_size=8):
     true_labels = [label_map.get(item["label"], "unknown") for item in sampled_data]
 
     model.eval()
-    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+    torch.set_num_threads(4)
+    device = torch.device("cpu")
     model.to(device)
 
-    for i in tqdm(range(0, len(claims), batch_size)):
-        batch_claims = claims[i : i + batch_size]
-        batch_evidences = evidences[i : i + batch_size]
-        batch_true = true_labels[i : i + batch_size]
+    cache_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fever_200_cache.json")
+    if os.path.exists(cache_file) and os.path.getsize(cache_file) > 10:
+        print(f"Loading cached NLI predictions from {cache_file}...")
+        with open(cache_file, "r") as f:
+            cache_data = json.load(f)
+            prob_vectors = cache_data["prob_vectors"]
+            y_true_labels = cache_data["y_true_labels"]
+    else:
+        for i in tqdm(range(0, len(claims), batch_size)):
+            batch_claims = claims[i : i + batch_size]
+            batch_evidences = evidences[i : i + batch_size]
+            batch_true = true_labels[i : i + batch_size]
 
-        inputs = tokenizer(
-            batch_evidences,
-            batch_claims,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=256
-        ).to(device)
+            inputs = tokenizer(
+                batch_evidences,
+                batch_claims,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=256
+            ).to(device)
 
-        with torch.no_grad():
-            outputs = model(**inputs)
-            probs = torch.softmax(outputs.logits, dim=1).cpu().numpy()
+            with torch.no_grad():
+                outputs = model(**inputs)
+                probs = torch.softmax(outputs.logits, dim=1).cpu().numpy()
 
-        for p, t in zip(probs, batch_true):
-            prob_vectors.append(p.tolist())
-            y_true_labels.append(t)
+            for p, t in zip(probs, batch_true):
+                prob_vectors.append(p.tolist())
+                y_true_labels.append(t)
+
+        with open(cache_file, "w") as f:
+            json.dump({"prob_vectors": prob_vectors, "y_true_labels": y_true_labels}, f)
+        print(f"Cached {len(prob_vectors)} predictions to {cache_file}")
 
     # Split into Calibration and Test sets
     n_total = len(y_true_labels)
@@ -88,9 +102,9 @@ def run_conformal_experiment(num_samples=50, calib_ratio=0.5, batch_size=8):
     avg_set_sizes = []
     ambiguity_rates = []
 
-    print("\n" + "=" * 70)
-    print(f"{'Alpha':<8} | {'Nominal Cov':<12} | {'Empirical Cov':<14} | {'Avg Set Size':<12} | {'q_hat':<8}")
-    print("-" * 70)
+    print("\n" + "=" * 90)
+    print(f"{'Alpha':<8} | {'Nominal Cov':<12} | {'Empirical Cov':<14} | {'Wilson 95% CI':<20} | {'Avg Set Size':<12} | {'q_hat':<8}")
+    print("-" * 90)
 
     for a in alphas:
         verifier = ConformalVerifier(alpha=a)
@@ -107,21 +121,23 @@ def run_conformal_experiment(num_samples=50, calib_ratio=0.5, batch_size=8):
             
             if y_true in c_set:
                 covered_count += 1
-            if pred_res["is_ambiguous"]:
+            if pred_res.get("is_escalation_candidate", False):
                 ambiguous_count += 1
             set_sizes.append(pred_res["set_size"])
 
         emp_cov = covered_count / len(test_labels)
         avg_size = np.mean(set_sizes)
         amb_rate = ambiguous_count / len(test_labels)
+        low_ci, high_ci = ConformalVerifier.compute_wilson_ci(covered_count, len(test_labels))
 
         empirical_coverages.append(emp_cov)
         avg_set_sizes.append(avg_size)
         ambiguity_rates.append(amb_rate)
 
-        print(f"{a:<8.2f} | {f'{int((1-a)*100)}%':<12} | {f'{emp_cov*100:.2f}%':<14} | {avg_size:<12.2f} | {q_hat:<8.4f}")
+        ci_str = f"[{low_ci*100:.1f}%, {high_ci*100:.1f}%]"
+        print(f"{a:<8.2f} | {f'{int((1-a)*100)}%':<12} | {f'{emp_cov*100:.2f}%':<14} | {ci_str:<20} | {avg_size:<12.2f} | {q_hat:<8.4f}")
 
-    print("=" * 70)
+    print("=" * 90)
 
     # Save calibration model for production use at alpha=0.10 (90% coverage)
     calib_save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "conformal_calibration.json")

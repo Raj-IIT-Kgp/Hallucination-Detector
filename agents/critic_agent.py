@@ -108,24 +108,27 @@ def nli_override(claim, evidence, domain="general"):
     when the NLI model outputs 'unknown'.
     """
     print("    [Critic Debate] Starting Multi-Agent Debate...")
-    
-    defense_arg = _defense_agent(claim, evidence)
-    print("    [Critic Debate] Defense Agent constructed SUPPORTED argument.")
-    
-    prosecution_arg = _prosecution_agent(claim, evidence)
-    print("    [Critic Debate] Prosecution Agent constructed CONTRADICTED argument.")
-    
-    judge_response = _judge_agent(claim, evidence, defense_arg, prosecution_arg, domain)
-    print(f"    [Critic Debate] Judge reasoning:\n{judge_response}")
-    
-    lines = judge_response.split('\n')
-    verdict_line = next((line for line in reversed(lines) if line.strip().upper().startswith("VERDICT:")), judge_response).upper()
-    
-    if "SUPPORTED" in verdict_line:
-        return "supported"
-    elif "CONTRADICTED" in verdict_line:
-        return "contradicted"
-    else:
+    try:
+        defense_arg = _defense_agent(claim, evidence)
+        print("    [Critic Debate] Defense Agent constructed SUPPORTED argument.")
+        
+        prosecution_arg = _prosecution_agent(claim, evidence)
+        print("    [Critic Debate] Prosecution Agent constructed CONTRADICTED argument.")
+        
+        judge_response = _judge_agent(claim, evidence, defense_arg, prosecution_arg, domain)
+        print(f"    [Critic Debate] Judge reasoning:\n{judge_response}")
+        
+        lines = judge_response.split('\n')
+        verdict_line = next((line for line in reversed(lines) if line.strip().upper().startswith("VERDICT:")), judge_response).upper()
+        
+        if "SUPPORTED" in verdict_line:
+            return "supported"
+        elif "CONTRADICTED" in verdict_line:
+            return "contradicted"
+        else:
+            return "unknown"
+    except Exception as e:
+        print(f"    [Critic Debate] Debate LLM connection failed: {e}. Abstaining conservatively to 'unknown'.")
         return "unknown"
 
 def evaluate_absence(claim, entity_query):
@@ -146,9 +149,12 @@ RULES:
 Based on the magnitude of the claim "{claim}", does its absence from Wikipedia prove it is false?
 OUTPUT ONLY ONE WORD: CONTRADICTED or UNKNOWN.
 """
-    response = generate_response(prompt).strip().upper()
-    
-    if "CONTRADICTED" in response:
-        return "contradicted"
-    else:
+    try:
+        response = generate_response(prompt).strip().upper()
+        if "CONTRADICTED" in response:
+            return "contradicted"
+        else:
+            return "unknown"
+    except Exception as e:
+        print(f"    [Evaluate Absence] LLM connection failed: {e}. Defaulting to 'unknown'.")
         return "unknown"

@@ -6,6 +6,10 @@ from nltk.tokenize import sent_tokenize
 from llm.generator import generate_response
 
 warnings.filterwarnings("ignore")
+try:
+    wikipedia.set_user_agent("HallucinationDetectorBot/1.0 (academic-research@univ.edu)")
+except Exception:
+    pass
 
 # Lazy-loaded encoder — instantiated on first use to avoid torch import at server startup
 _encoder = None
@@ -18,17 +22,60 @@ def _get_encoder():
     return _encoder
 
 
-def _fetch_wikipedia_summary(title: str) -> dict | None:
-    """Fetches the summary and URL for a Wikipedia article title."""
+def _fetch_wikipedia_summary(title: str, context_claim: str = None) -> dict | None:
+    """
+    Fetches the summary and URL for a Wikipedia article title.
+    Uses semantic cosine similarity to resolve disambiguation pages to the correct entity.
+    """
+    # First attempt: exact title without auto_suggest to prevent misdirected queries
     try:
-        page = wikipedia.page(title, auto_suggest=True)
+        page = wikipedia.page(title, auto_suggest=False)
         return {"title": page.title, "summary": page.summary[:1500], "url": page.url}
-    except wikipedia.exceptions.DisambiguationError as e:
+    except (wikipedia.exceptions.DisambiguationError, wikipedia.exceptions.PageError) as e:
+        candidates = []
+        if isinstance(e, wikipedia.exceptions.DisambiguationError):
+            candidates = list(e.options[:10])
+        else:
+            try:
+                candidates = wikipedia.search(title, results=5)
+            except Exception:
+                candidates = []
+
+        if not candidates:
+            return None
+
+        # Filter out obvious media/album/song noise if claim is not about media
+        clean_candidates = candidates
+        if context_claim and not any(w in context_claim.lower() for w in ["album", "song", "band", "music", "film", "movie"]):
+            filtered = [c for c in candidates if not any(tag in c.lower() for tag in ["(album)", "(song)", "(band)", "(single)", "(ep)"])]
+            if filtered:
+                clean_candidates = filtered
+
+        # Semantic cosine reranking against context claim
+        best_title = clean_candidates[0]
+        if context_claim and len(clean_candidates) > 1:
+            try:
+                from sentence_transformers import util as st_util
+                import numpy as np
+                encoder = _get_encoder()
+                claim_emb = encoder.encode(context_claim)
+                cand_embs = encoder.encode(clean_candidates)
+                sims = [float(st_util.cos_sim(claim_emb, c_emb)[0][0]) for c_emb in cand_embs]
+                best_idx = int(np.argmax(sims))
+                best_title = clean_candidates[best_idx]
+            except Exception as sim_err:
+                print(f"  [KG Disambiguation] Similarity reranking fallback: {sim_err}")
+                best_title = clean_candidates[0]
+
         try:
-            page = wikipedia.page(e.options[0], auto_suggest=False)
+            page = wikipedia.page(best_title, auto_suggest=False)
             return {"title": page.title, "summary": page.summary[:1500], "url": page.url}
         except Exception:
-            return None
+            try:
+                page = wikipedia.page(best_title)
+                return {"title": page.title, "summary": page.summary[:1500], "url": page.url}
+            except Exception:
+                return None
     except Exception:
         return None
 
@@ -73,7 +120,7 @@ class KnowledgeGraph:
         self.graph = nx.Graph()
         self.node_data: dict[str, dict] = {}  # title -> {summary, url}
 
-    def build(self, entities: list[dict]) -> "KnowledgeGraph":
+    def build(self, entities: list[dict], claim: str = None) -> "KnowledgeGraph":
         """
         Builds the graph from a list of entity dicts (each has 'wikipedia_title').
         Fetches Wikipedia summaries, creates nodes, then connects related pairs.
@@ -87,7 +134,7 @@ class KnowledgeGraph:
             title = ent.get("wikipedia_title", "").strip()
             if not title:
                 continue
-            page_data = _fetch_wikipedia_summary(title)
+            page_data = _fetch_wikipedia_summary(title, context_claim=claim)
             if page_data:
                 node_id = page_data["title"]
                 self.graph.add_node(node_id, url=page_data["url"], summary=page_data["summary"])
