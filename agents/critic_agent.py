@@ -93,9 +93,10 @@ Step 1: Evaluate the Defense's argument against the actual Evidence. Is it logic
 Step 2: Evaluate the Prosecution's argument against the actual Evidence. Are they nitpicking or finding a genuine contradiction?
 Step 3: Decide which argument holds up better against the raw evidence.
 {academic_rule}
-RULES:
+CRITICAL DECISION & ABSTENTION RULES:
 1. Show your step-by-step reasoning first.
-2. The LAST line of your response must be exactly "VERDICT: SUPPORTED", "VERDICT: CONTRADICTED", or "VERDICT: UNKNOWN".
+2. CONSERVATIVE ABSTENTION POLICY: If the evidence is incomplete, ambiguous, or if neither the Defense nor the Prosecution provides decisive proof, DO NOT GUESS OR FORCE A VERDICT. You MUST output "VERDICT: UNKNOWN". In safety-critical fact verification, abstaining is strictly preferred over an uncertain guess.
+3. The LAST line of your response must be exactly "VERDICT: SUPPORTED", "VERDICT: CONTRADICTED", or "VERDICT: UNKNOWN".
 
 Reasoning and Verdict:
 """

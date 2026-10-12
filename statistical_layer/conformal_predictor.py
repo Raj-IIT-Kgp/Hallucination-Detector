@@ -1,5 +1,6 @@
 import json
 import os
+import math
 import numpy as np
 
 
@@ -7,18 +8,26 @@ class ConformalVerifier:
     """
     Split Conformal Prediction Layer for Natural Language Inference & Fact Verification.
     
-    Provides finite-sample, distribution-free theoretical guarantees:
+    Provides finite-sample, distribution-free theoretical coverage guarantees:
         P(Y in C(X)) >= 1 - alpha
-    where alpha is the user-specified significance level / error tolerance.
+        
+    IMPORTANT STATISTICAL ASSUMPTION (Exchangeability):
+    This guarantee holds under the standard statistical assumption that calibration and 
+    test samples (X_i, Y_i) are exchangeable (drawn from the same joint distribution P_{XY}).
+    If the deployment environment suffers from severe domain shift (e.g., calibrating on 
+    general-knowledge FEVER and deploying on complex scientific Climate-FEVER), coverage 
+    can degrade. In such cases, domain-specific calibration partitions are required.
     """
 
-    def __init__(self, alpha=0.10, calib_file=None):
+    def __init__(self, alpha=0.10, domain="general", calib_file=None):
         """
         Args:
             alpha (float): Significance level (e.g. 0.10 means 90% guaranteed coverage).
+            domain (str): Domain context ('general' or 'scientific').
             calib_file (str, optional): Path to a pre-saved calibration JSON file.
         """
         self.alpha = float(alpha)
+        self.domain = domain
         self.labels = ["contradicted", "unknown", "supported"]
         self.q_hat = None
         self.calibrated_scores = []
@@ -85,7 +94,10 @@ class ConformalVerifier:
                 - point_confidence (float)
                 - conformal_set (list of str)
                 - set_size (int)
-                - is_ambiguous (bool): True if set_size > 1 (statistically certified conflict)
+                - is_escalation_candidate (bool): True if set_size > 1 or contains 'unknown'.
+                  NOTE: Multiple labels reflect model posterior dispersion/indecision under 
+                  ambiguous evidence, serving as an escalation trigger rather than empirical proof 
+                  of conflicting external sources.
                 - p_values (dict of str -> float): Conformal p-values for each candidate label
                 - coverage_guarantee (str)
         """
@@ -119,21 +131,42 @@ class ConformalVerifier:
         point_pred = self.labels[argmax_idx]
         point_conf = float(prob_vector[argmax_idx])
 
+        # Escalation trigger: set size > 1 or includes 'unknown'
+        is_escalation = (len(prediction_set) > 1) or ("unknown" in prediction_set)
+
         return {
             "point_prediction": point_pred,
             "point_confidence": point_conf,
             "conformal_set": prediction_set,
             "set_size": len(prediction_set),
-            "is_ambiguous": len(prediction_set) > 1,
+            "is_escalation_candidate": is_escalation,
             "p_values": p_values,
             "coverage_guarantee": f"{int((1 - self.alpha) * 100)}%",
             "q_hat": self.q_hat
         }
 
+    @staticmethod
+    def compute_wilson_ci(k, n, confidence=0.95):
+        """
+        Calculates the Wilson score confidence interval for a binomial proportion k/n.
+        Essential for reporting empirical coverage with rigorous statistical uncertainty.
+        """
+        if n == 0:
+            return (0.0, 0.0)
+        z = 1.95996  # For 95% confidence
+        p_hat = k / n
+        denominator = 1.0 + (z**2) / n
+        center = (p_hat + (z**2) / (2.0 * n)) / denominator
+        margin = (z / denominator) * math.sqrt((p_hat * (1.0 - p_hat) / n) + ((z**2) / (4.0 * (n**2))))
+        lower = max(0.0, center - margin)
+        upper = min(1.0, center + margin)
+        return (lower, upper)
+
     def save_calibration(self, filepath):
         """Saves calibration parameters and scores to a JSON file."""
         data = {
             "alpha": self.alpha,
+            "domain": self.domain,
             "q_hat": self.q_hat,
             "n_samples": self.n_samples,
             "labels": self.labels,
@@ -148,6 +181,7 @@ class ConformalVerifier:
         with open(filepath, "r") as f:
             data = json.load(f)
         self.alpha = data["alpha"]
+        self.domain = data.get("domain", "general")
         self.q_hat = data["q_hat"]
         self.n_samples = data["n_samples"]
         self.labels = data["labels"]
