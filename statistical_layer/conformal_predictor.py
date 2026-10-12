@@ -53,11 +53,17 @@ class ConformalVerifier:
 
     def calibrate(self, probabilities_list, true_labels, save_path=None):
         """
-        Computes the empirical conformal quantile q_hat on a hold-out calibration set.
+        Computes the exact finite-sample conformal quantile q_hat on a hold-out calibration set.
         
-        Formula (Angelopoulos & Bates, 2021; Vovk et al.):
-            p_level = ceil((n + 1) * (1 - alpha)) / n
-            q_hat = Quantile(scores, p_level, method='higher')
+        Exact Formula (Vovk et al., 2005; Angelopoulos & Bates, 2021):
+            k = ceil((n + 1) * (1 - alpha))
+            q_hat = s_{(k)} = sorted_scores[k - 1]
+            
+        MATHEMATICAL AUDIT SAFEGUARD:
+        Avoid continuous np.quantile()! Continuous quantile implementations compute virtual
+        indices scaled by (n - 1), which causes off-by-one errors or continuous interpolation
+        that invalidates the finite-sample distribution-free coverage guarantee. 
+        Direct discrete order-statistic indexing sorted_scores[k - 1] is mathematically exact.
         """
         n = len(true_labels)
         if n == 0:
@@ -71,12 +77,22 @@ class ConformalVerifier:
         self.calibrated_scores = np.sort(np.array(scores))
         self.n_samples = n
 
-        # Finite-sample exact quantile index
-        p_level = np.ceil((n + 1) * (1.0 - self.alpha)) / n
-        p_level = min(1.0, max(0.0, float(p_level)))
+        # Finite-sample exact rank index (1-based)
+        k = int(math.ceil((n + 1) * (1.0 - self.alpha)))
 
-        # Compute empirical quantile
-        self.q_hat = float(np.quantile(self.calibrated_scores, p_level, method="higher"))
+        # Edge Case 1: Insufficient sample size for nominal coverage guarantee
+        if k > n:
+            import warnings
+            warnings.warn(
+                f"[ConformalVerifier] Sample size n={n} is insufficient to guarantee 1-alpha={1.0 - self.alpha:.2f} "
+                f"coverage (requires n >= {math.ceil(1.0 / self.alpha) - 1}). Setting q_hat=1.0 (conservative maximum)."
+            )
+            self.q_hat = 1.0
+        elif k <= 0:
+            self.q_hat = 0.0
+        else:
+            # Exact k-th order statistic (0-indexed: k - 1)
+            self.q_hat = float(self.calibrated_scores[k - 1])
 
         if save_path:
             self.save_calibration(save_path)

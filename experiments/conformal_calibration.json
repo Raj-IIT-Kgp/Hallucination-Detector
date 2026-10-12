@@ -1,7 +1,7 @@
 {
   "alpha": 0.1,
   "domain": "general",
-  "q_hat": 0.9168006926774979,
+  "q_hat": 0.898471511900425,
   "n_samples": 100,
   "labels": [
     "contradicted",

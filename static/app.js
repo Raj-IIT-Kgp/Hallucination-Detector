@@ -232,8 +232,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         svg.selectAll("*").remove();
 
-        // Arrow Marker
-        svg.append("defs").append("marker")
+        // Arrow Markers (Verified Blue vs Unverified Slate)
+        const defs = svg.append("defs");
+        defs.append("marker")
             .attr("id", "arrowhead")
             .attr("viewBox", "-0 -5 10 10")
             .attr("refX", 26)
@@ -243,7 +244,20 @@ document.addEventListener('DOMContentLoaded', () => {
             .attr("markerHeight", 5)
             .append("path")
             .attr("d", "M 0,-5 L 10,0 L 0,5")
-            .attr("fill", "#64748b")
+            .attr("fill", "#94a3b8")
+            .style("stroke", "none");
+
+        defs.append("marker")
+            .attr("id", "arrowhead-verified")
+            .attr("viewBox", "-0 -5 10 10")
+            .attr("refX", 26)
+            .attr("refY", 0)
+            .attr("orient", "auto")
+            .attr("markerWidth", 5)
+            .attr("markerHeight", 5)
+            .append("path")
+            .attr("d", "M 0,-5 L 10,0 L 0,5")
+            .attr("fill", "#2563eb")
             .style("stroke", "none");
 
         const simulation = d3.forceSimulation(nodes)
@@ -257,9 +271,10 @@ document.addEventListener('DOMContentLoaded', () => {
             .selectAll("line")
             .data(edges)
             .enter().append("line")
-            .attr("stroke", "#cbd5e1")
-            .attr("stroke-width", 1.5)
-            .attr("marker-end", "url(#arrowhead)");
+            .attr("stroke", d => d.verified ? "#2563eb" : "#cbd5e1")
+            .attr("stroke-width", d => d.verified ? 2.0 : 1.5)
+            .attr("stroke-dasharray", d => d.verified ? "none" : "4,3")
+            .attr("marker-end", d => d.verified ? "url(#arrowhead-verified)" : "url(#arrowhead)");
 
         // Edge Relationship Labels
         const edgeLabel = svg.append("g")
@@ -268,12 +283,14 @@ document.addEventListener('DOMContentLoaded', () => {
             .enter().append("text")
             .attr("font-family", "'Inter', sans-serif")
             .attr("font-size", "10px")
-            .attr("font-weight", "500")
-            .attr("fill", "#475569")
+            .attr("font-weight", d => d.verified ? "600" : "500")
+            .attr("fill", d => d.verified ? "#1d4ed8" : "#64748b")
             .attr("text-anchor", "middle")
             .text(d => {
+                const prefix = d.verified ? "✓ " : "";
                 const rel = d.relationship || "";
-                return rel.length > 30 ? rel.substring(0, 28) + "…" : rel;
+                const full = prefix + rel;
+                return full.length > 32 ? full.substring(0, 30) + "…" : full;
             });
 
         // Draw Nodes

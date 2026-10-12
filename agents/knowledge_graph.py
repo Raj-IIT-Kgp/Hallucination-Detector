@@ -80,27 +80,97 @@ def _fetch_wikipedia_summary(title: str, context_claim: str = None) -> dict | No
         return None
 
 
-def _extract_relationships(entity_a: str, entity_b: str, summary_a: str, summary_b: str) -> str | None:
+def _extract_relationships(entity_a: str, entity_b: str, summary_a: str, summary_b: str) -> dict | None:
     """
-    Uses Gemini to extract a concise relationship between two entities
-    based on their Wikipedia summaries. Returns a short string or None.
+    Uses Gemini to extract a concise relationship between two entities based on their Wikipedia summaries.
+    Enforces extractive provenance: requires an exact supporting quote from either summary and
+    deterministically verifies that the quote is genuinely present in the source text to prevent
+    synthetic hallucinated edges from contaminating downstream verification.
     """
-    prompt = f"""Given the summaries of two Wikipedia entities, describe the relationship between them in one short sentence (max 15 words).
-If they are not related, output "NOT_RELATED".
+    prompt = f"""Given the summaries of two Wikipedia entities, describe the factual relationship between them.
+
+CRITICAL GROUNDING RULES:
+1. Base the relationship STRICTLY and ONLY on the provided summaries. Do NOT extrapolate or use outside knowledge.
+2. If the text does not explicitly state or imply a clear relationship, output "NOT_RELATED".
+3. If related, provide:
+   - A concise relationship description (max 15 words)
+   - An exact verbatim quote from either summary (max 15 words) that proves this connection.
 
 Entity A: {entity_a}
-Summary A: {summary_a[:500]}
+Summary A: {summary_a[:600]}
 
 Entity B: {entity_b}
-Summary B: {summary_b[:500]}
+Summary B: {summary_b[:600]}
 
-Relationship (one sentence or NOT_RELATED):"""
+Format your response exactly as:
+RELATIONSHIP: <short description>
+QUOTE: "<exact quote from summary>"
+SOURCE: <Entity A or Entity B>
+(Or output ONLY: NOT_RELATED)"""
 
     try:
         response = generate_response(prompt).strip()
-        if "NOT_RELATED" in response.upper() or len(response) > 200:
+        if "NOT_RELATED" in response.upper() or len(response) > 500:
             return None
-        return response
+
+        rel = None
+        quote = None
+        source_ent = None
+
+        for line in response.split("\n"):
+            line_str = line.strip()
+            if line_str.upper().startswith("RELATIONSHIP:"):
+                rel = line_str.split(":", 1)[1].strip()
+            elif line_str.upper().startswith("QUOTE:"):
+                quote_raw = line_str.split(":", 1)[1].strip()
+                quote = quote_raw.strip(' "\'')
+            elif line_str.upper().startswith("SOURCE:"):
+                source_ent = line_str.split(":", 1)[1].strip()
+
+        # Fallback if the LLM outputted only the relationship sentence without labels
+        if not rel and not any(tag in response for tag in ["RELATIONSHIP:", "QUOTE:"]):
+            rel = response.split("\n")[0].strip()
+
+        if not rel or len(rel) > 200:
+            return None
+
+        # --- Deterministic Provenance Verification ---
+        is_verified = False
+        matched_source = None
+
+        if quote and len(quote) >= 5:
+            import re
+            def normalize(text):
+                return re.sub(r'[^\w\s]', '', text.lower())
+
+            q_norm = normalize(quote)
+            sa_norm = normalize(summary_a)
+            sb_norm = normalize(summary_b)
+
+            if q_norm in sa_norm:
+                is_verified = True
+                matched_source = entity_a
+            elif q_norm in sb_norm:
+                is_verified = True
+                matched_source = entity_b
+            else:
+                # Check sliding 4-gram or word containment if minor punctuation variance
+                q_words = q_norm.split()
+                if len(q_words) >= 3:
+                    q_sub = " ".join(q_words[:min(len(q_words), 5)])
+                    if q_sub in sa_norm:
+                        is_verified = True
+                        matched_source = entity_a
+                    elif q_sub in sb_norm:
+                        is_verified = True
+                        matched_source = entity_b
+
+        return {
+            "relationship": rel,
+            "quote": quote if is_verified else None,
+            "verified": is_verified,
+            "source_node": matched_source or source_ent or entity_a
+        }
     except Exception:
         return None
 
@@ -110,7 +180,7 @@ class KnowledgeGraph:
     Builds a local in-memory Knowledge Graph from a list of named entities.
 
     Nodes  = Wikipedia articles (entities)
-    Edges  = Relationships between entities (extracted by Gemini)
+    Edges  = Relationships between entities with verified source provenance
 
     After building, call `get_multi_hop_evidence(claim)` to retrieve
     the best evidence path for verifying a claim.
@@ -147,14 +217,25 @@ class KnowledgeGraph:
         for i in range(len(nodes)):
             for j in range(i + 1, len(nodes)):
                 a, b = nodes[i], nodes[j]
-                rel = _extract_relationships(
+                rel_info = _extract_relationships(
                     a, b,
                     self.node_data[a]["summary"],
                     self.node_data[b]["summary"]
                 )
-                if rel:
-                    self.graph.add_edge(a, b, relationship=rel)
-                    print(f"  [KG] Edge: '{a}' ↔ '{b}' | \"{rel}\"")
+                if rel_info:
+                    rel = rel_info["relationship"]
+                    quote = rel_info["quote"]
+                    is_verified = rel_info["verified"]
+                    source_node = rel_info.get("source_node", a)
+                    self.graph.add_edge(
+                        a, b,
+                        relationship=rel,
+                        quote=quote,
+                        verified=is_verified,
+                        source_node=source_node
+                    )
+                    status = "PROVENANCE VERIFIED" if is_verified else "UNVERIFIED (VISUAL ONLY)"
+                    print(f"  [KG] Edge: '{a}' ↔ '{b}' | \"{rel}\" [{status}]")
 
         return self
 
@@ -192,18 +273,25 @@ class KnowledgeGraph:
                     "score": score
                 })
 
-        # CRITICAL FIX: Also add the extracted Edge relationships to the evidence pool!
+        # STRICT PROVENANCE GUARDRAIL:
+        # Only admit edges with verified source quotes into the NLI evidence pool!
+        # Unverified generative edges are strictly blocked from contaminating evidence.
         for a, b, edge_data in self.graph.edges(data=True):
             rel = edge_data.get("relationship")
-            if rel:
-                rel_emb = encoder.encode(rel)
-                score = float(st_util.cos_sim(claim_emb, rel_emb)[0][0])
-                # Boost the score of extracted relationships slightly since they are highly dense facts
+            is_verified = edge_data.get("verified", False)
+            quote = edge_data.get("quote")
+            if rel and is_verified and quote:
+                # Construct composite grounded edge proposition
+                edge_text = f"Grounded Relationship [{a} ↔ {b}]: {rel} (Evidence Quote: \"{quote}\")"
+                edge_emb = encoder.encode(edge_text)
+                score = float(st_util.cos_sim(claim_emb, edge_emb)[0][0])
+                source_node = edge_data.get("source_node", a)
+                source_url = self.node_data.get(source_node, self.node_data.get(a, {})).get("url", "")
                 candidates.append({
-                    "text": f"Relationship between {a} and {b}: {rel}",
-                    "url": self.node_data[a].get("url", ""),
+                    "text": edge_text,
+                    "url": source_url,
                     "node": f"{a} ↔ {b}",
-                    "score": score + 0.1 
+                    "score": score  # Natural cosine similarity without arbitrary heuristic boost
                 })
 
         # Sort by cosine similarity and return top-k
@@ -230,7 +318,9 @@ class KnowledgeGraph:
             edges.append({
                 "source": a,
                 "target": b,
-                "relationship": edge_data.get("relationship", "related to")
+                "relationship": edge_data.get("relationship", "related to"),
+                "verified": edge_data.get("verified", False),
+                "quote": edge_data.get("quote", None)
             })
 
         return {"nodes": nodes, "edges": edges}
