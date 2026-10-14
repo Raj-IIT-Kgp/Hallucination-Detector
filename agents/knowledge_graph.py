@@ -2,10 +2,17 @@ import networkx as nx
 import wikipedia
 import warnings
 import json
+import threading
 from nltk.tokenize import sent_tokenize
 from llm.generator import generate_response
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 warnings.filterwarnings("ignore")
+try:
+    from bs4 import GuessedAtParserWarning
+    warnings.filterwarnings("ignore", category=GuessedAtParserWarning)
+except Exception:
+    pass
 try:
     wikipedia.set_user_agent("HallucinationDetectorBot/1.0 (academic-research@univ.edu)")
 except Exception:
@@ -13,12 +20,15 @@ except Exception:
 
 # Lazy-loaded encoder — instantiated on first use to avoid torch import at server startup
 _encoder = None
+_encoder_lock = threading.Lock()
 
 def _get_encoder():
     global _encoder
     if _encoder is None:
+        import os
+        os.environ.setdefault("HF_HUB_OFFLINE", "1")
         from sentence_transformers import SentenceTransformer
-        _encoder = SentenceTransformer("all-MiniLM-L6-v2")
+        _encoder = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
     return _encoder
 
 
@@ -57,9 +67,10 @@ def _fetch_wikipedia_summary(title: str, context_claim: str = None) -> dict | No
             try:
                 from sentence_transformers import util as st_util
                 import numpy as np
-                encoder = _get_encoder()
-                claim_emb = encoder.encode(context_claim)
-                cand_embs = encoder.encode(clean_candidates)
+                with _encoder_lock:
+                    encoder = _get_encoder()
+                    claim_emb = encoder.encode(context_claim)
+                    cand_embs = encoder.encode(clean_candidates)
                 sims = [float(st_util.cos_sim(claim_emb, c_emb)[0][0]) for c_emb in cand_embs]
                 best_idx = int(np.argmax(sims))
                 best_title = clean_candidates[best_idx]
@@ -193,35 +204,56 @@ class KnowledgeGraph:
     def build(self, entities: list[dict], claim: str = None) -> "KnowledgeGraph":
         """
         Builds the graph from a list of entity dicts (each has 'wikipedia_title').
-        Fetches Wikipedia summaries, creates nodes, then connects related pairs.
+        Fetches Wikipedia summaries concurrently, creates nodes, then extracts
+        relationships for all entity pairs concurrently.
         """
         self.graph.clear()
         self.node_data.clear()
 
-        # --- Step 1: Fetch Wikipedia data for each entity & add nodes ---
-        valid_entities = []
-        for ent in entities:
+        if not entities:
+            return self
+
+        # --- Step 1: Fetch Wikipedia data for all entities concurrently ---
+        def _fetch_entity(ent):
             title = ent.get("wikipedia_title", "").strip()
             if not title:
-                continue
+                return None
             page_data = _fetch_wikipedia_summary(title, context_claim=claim)
-            if page_data:
-                node_id = page_data["title"]
-                self.graph.add_node(node_id, url=page_data["url"], summary=page_data["summary"])
-                self.node_data[node_id] = page_data
-                valid_entities.append(node_id)
-                print(f"  [KG] Node added: '{node_id}'")
+            return page_data
 
-        # --- Step 2: Connect pairs of entities with relationship edges ---
+        valid_entities = []
+        with ThreadPoolExecutor(max_workers=max(1, min(len(entities), 6))) as executor:
+            future_to_ent = {executor.submit(_fetch_entity, ent): ent for ent in entities}
+            for future in as_completed(future_to_ent):
+                page_data = future.result()
+                if page_data:
+                    node_id = page_data["title"]
+                    self.graph.add_node(node_id, url=page_data["url"], summary=page_data["summary"])
+                    self.node_data[node_id] = page_data
+                    valid_entities.append(node_id)
+                    print(f"  [KG] Node added: '{node_id}'")
+
+        # --- Step 2: Extract relationships for all pairs concurrently ---
         nodes = list(valid_entities)
-        for i in range(len(nodes)):
-            for j in range(i + 1, len(nodes)):
-                a, b = nodes[i], nodes[j]
-                rel_info = _extract_relationships(
-                    a, b,
-                    self.node_data[a]["summary"],
-                    self.node_data[b]["summary"]
-                )
+        if len(nodes) < 2:
+            return self
+
+        pairs = [(nodes[i], nodes[j]) for i in range(len(nodes)) for j in range(i + 1, len(nodes))]
+        if not pairs:
+            return self
+
+        def _extract_pair(pair):
+            a, b = pair
+            rel_info = _extract_relationships(
+                a, b,
+                self.node_data[a]["summary"],
+                self.node_data[b]["summary"]
+            )
+            return a, b, rel_info
+
+        with ThreadPoolExecutor(max_workers=max(1, min(len(pairs), 6))) as executor:
+            for a, b, rel_info in executor.map(_extract_pair, pairs):
+
                 if rel_info:
                     rel = rel_info["relationship"]
                     quote = rel_info["quote"]
@@ -239,21 +271,26 @@ class KnowledgeGraph:
 
         return self
 
+
     def get_multi_hop_evidence(self, claim: str, k: int = 3) -> list[dict]:
         """
         Uses cosine similarity to find the top-k most relevant text chunks
         across ALL node summaries in the graph (multi-hop evidence pool).
         Returns a list of dicts: {text, url, node}.
+
+        Optimised: all chunks and edge texts are batch-encoded in a single
+        encoder.encode() call, avoiding the per-chunk overhead of N individual calls.
         """
         if not self.node_data:
             return []
 
         from sentence_transformers import util as st_util
         encoder = _get_encoder()
-        claim_emb = encoder.encode(claim)
 
-        candidates = []
-        # Build sliding windows of 3 sentences from node summaries
+        # ── Collect all candidate (text, url, node) triples ──────────────
+        candidate_meta = []  # list of {url, node}
+        candidate_texts = []  # parallel list of text strings
+
         for node_id, data in self.node_data.items():
             try:
                 sentences = sent_tokenize(data["summary"])
@@ -264,39 +301,44 @@ class KnowledgeGraph:
                 chunk = " ".join(sentences[i:i + 3])
                 if len(chunk) < 30:
                     continue
-                chunk_emb = encoder.encode(chunk)
-                score = float(st_util.cos_sim(claim_emb, chunk_emb)[0][0])
-                candidates.append({
-                    "text": chunk,
-                    "url": data["url"],
-                    "node": node_id,
-                    "score": score
-                })
+                candidate_texts.append(chunk)
+                candidate_meta.append({"url": data["url"], "node": node_id})
 
-        # STRICT PROVENANCE GUARDRAIL:
-        # Only admit edges with verified source quotes into the NLI evidence pool!
-        # Unverified generative edges are strictly blocked from contaminating evidence.
+        # Only admit edges with verified source quotes (provenance guardrail)
         for a, b, edge_data in self.graph.edges(data=True):
             rel = edge_data.get("relationship")
             is_verified = edge_data.get("verified", False)
             quote = edge_data.get("quote")
             if rel and is_verified and quote:
-                # Construct composite grounded edge proposition
                 edge_text = f"Grounded Relationship [{a} ↔ {b}]: {rel} (Evidence Quote: \"{quote}\")"
-                edge_emb = encoder.encode(edge_text)
-                score = float(st_util.cos_sim(claim_emb, edge_emb)[0][0])
                 source_node = edge_data.get("source_node", a)
                 source_url = self.node_data.get(source_node, self.node_data.get(a, {})).get("url", "")
-                candidates.append({
-                    "text": edge_text,
-                    "url": source_url,
-                    "node": f"{a} ↔ {b}",
-                    "score": score  # Natural cosine similarity without arbitrary heuristic boost
-                })
+                candidate_texts.append(edge_text)
+                candidate_meta.append({"url": source_url, "node": f"{a} ↔ {b}"})
+
+        if not candidate_texts:
+            return []
+
+        # ── Batch-encode all candidates in one shot ───────────────────────
+        # Lock prevents concurrent threads from hitting the SentenceTransformer
+        # C-extension simultaneously (macOS malloc double-free protection).
+        with _encoder_lock:
+            claim_emb = encoder.encode(claim, show_progress_bar=False)
+            all_embs = encoder.encode(candidate_texts, batch_size=64, show_progress_bar=False)
+        scores = [float(st_util.cos_sim(claim_emb, emb)[0][0]) for emb in all_embs]
 
         # Sort by cosine similarity and return top-k
-        candidates.sort(key=lambda x: x["score"], reverse=True)
-        return candidates[:k]
+        ranked = sorted(
+            zip(scores, candidate_texts, candidate_meta),
+            key=lambda x: x[0],
+            reverse=True
+        )
+
+        return [
+            {"text": text, "url": meta["url"], "node": meta["node"], "score": score}
+            for score, text, meta in ranked[:k]
+        ]
+
 
     def get_graph_json(self) -> dict:
         """

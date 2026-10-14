@@ -2,12 +2,13 @@ from agents.claim_extractor import extract_claims
 from agents.query_generator import generate_queries, rewrite_queries
 from agents.entity_linker import extract_entities
 from agents.knowledge_graph import KnowledgeGraph
-from verification.nli_verifier import verify_claim
+from verification.nli_verifier import verify_claim, verify_claims_batch
 from detector.report_generator import generate_report
 from agents.critic_agent import nli_override, evaluate_absence
 from statistical_layer.conformal_predictor import ConformalVerifier
 import os
 import numpy as np
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class HallucinationDetector:
@@ -27,9 +28,21 @@ class HallucinationDetector:
             self.conformal_verifier.q_hat = 0.9168
             self.conformal_verifier.calibrated_scores = np.linspace(0.0001, 0.999, 100)
 
+    def _verify_snippets(self, claim, evidence_list, domain):
+        """
+        Runs batched NLI verification on all evidence snippets in a single forward pass on GPU/MPS.
+        """
+        if not evidence_list:
+            return []
+        texts = [e['text'] for e in evidence_list]
+        verifications = verify_claims_batch(claim, texts, domain=domain)
+        return list(zip(verifications, texts))
+
+
     def _verify_claim_full(self, claim, answer, domain, search_queries, requires_current=False):
         max_retries = 1
         retry_count = 0
+        accumulated_evidence = []
         
         while retry_count <= max_retries:
             evidence = self.retriever.search(
@@ -38,6 +51,16 @@ class HallucinationDetector:
                 domain=domain,
                 k=3
             )
+
+            if evidence:
+                seen_texts = {e['text'] for e in accumulated_evidence}
+                for e in evidence:
+                    if e['text'] not in seen_texts:
+                        accumulated_evidence.append(e)
+                        seen_texts.add(e['text'])
+            elif accumulated_evidence:
+                # Retain and utilize evidence from earlier pass rather than treating as absent
+                evidence = list(accumulated_evidence)
 
             if not evidence:
                 if retry_count == 0:
@@ -72,11 +95,8 @@ class HallucinationDetector:
             source_url = ", ".join(list(set([e["url"] for e in evidence])))
 
             if len(evidence) > 1:
-                # Hierarchical Evidence Scoring: Score snippets individually
-                snippet_results = []
-                for e in evidence:
-                    res = verify_claim(claim, e['text'], domain=domain)
-                    snippet_results.append((res, e['text']))
+                # Hierarchical Evidence Scoring: Score snippets in PARALLEL
+                snippet_results = self._verify_snippets(claim, evidence, domain)
 
                 # 1. Calibrated Epistemic Contradiction Detection:
                 # Requires genuine high-confidence disagreement (>= 0.75 on both sides)
@@ -95,9 +115,15 @@ class HallucinationDetector:
                     # 2. Per-Paragraph Max Entailment:
                     # If any single snippet provides decisive proof (confidence >= 0.80),
                     # use that decisive snippet directly to prevent context dilution!
+                    # For shared/collaborative roles (e.g. co-founder, co-author), a snippet naming another
+                    # person is not a decisive contradiction; require multi-snippet evaluation or debate.
+                    _SHARED_ROLES = ["co-founder", "co founder", "cofounder", "co-author", "co author", "co-creator", "co creator", "member", "director", "investor", "actor"]
+                    is_shared_role = any(role in claim.lower() for role in _SHARED_ROLES)
+
                     decisive_snippets = [
                         r for r, _ in snippet_results 
-                        if r["label"] in ["supported", "contradicted"] and r["confidence"] >= 0.80
+                        if (r["label"] == "supported" and r["confidence"] >= 0.80) or
+                           (r["label"] == "contradicted" and r["confidence"] >= 0.80 and not is_shared_role)
                     ]
                     if decisive_snippets:
                         decisive_snippets.sort(key=lambda x: x["confidence"], reverse=True)
@@ -120,7 +146,7 @@ class HallucinationDetector:
                 "final_decision_policy": "conformal_singleton" if not conf_res["is_escalation_candidate"] else "escalation_required"
             })
 
-            is_escalation = verification["label"] == "unknown" or conf_res["is_escalation_candidate"]
+            is_escalation = verification["label"] == "unknown" or conf_res["is_escalation_candidate"] or (is_shared_role and verification["label"] == "contradicted")
 
             if is_escalation and retry_count == 0:
                 print(f"    NLI uncertain / Conformal dispersion {conf_res['conformal_set']}. Triggering Self-Reflective Retrieval to rewrite queries...")
@@ -162,33 +188,69 @@ class HallucinationDetector:
 
             return verification, evidence_text, source_url, graph_json
 
+    def _process_claim(self, claim, answer):
+        """
+        Processes a single claim end-to-end. Designed to be called from a thread pool
+        so that multiple claims can be processed concurrently.
+        """
+        query_info = generate_queries(claim, context=answer)
+        search_queries = query_info["queries"]
+        domain = query_info["domain"]
+        requires_current = query_info.get("requires_current_state", False)
+
+        print(f"Generated search queries: {search_queries} for claim: '{claim}' (Domain: {domain}, Temporal: {requires_current})")
+
+        verification, evidence_text, source_url, graph_json = self._verify_claim_full(
+            claim, answer, domain, search_queries, requires_current
+        )
+
+        return {
+            "claim": claim,
+            "evidence": evidence_text,
+            "source_url": source_url,
+            "verification": verification,
+            "graph": graph_json,
+            "correction": None
+        }
+
     def analyze(self, answer):
         claims = extract_claims(answer)
-        results = []
+        if not claims:
+            report = generate_report([])
+            return {
+                "claims": [],
+                "report": report,
+                "final_text": answer
+            }
 
-        for claim in claims:
-            query_info = generate_queries(claim, context=answer)
-            search_queries = query_info["queries"]
-            domain = query_info["domain"]
+        # Process all claims concurrently — each claim's retrieval + NLI runs in parallel
+        results_map = {}
+        with ThreadPoolExecutor(max_workers=max(1, min(len(claims), 5))) as executor:
+            future_to_idx = {
+                executor.submit(self._process_claim, claim, answer): i
+                for i, claim in enumerate(claims)
+            }
+            for future in as_completed(future_to_idx):
+                idx = future_to_idx[future]
+                try:
+                    results_map[idx] = future.result()
+                except Exception as e:
+                    print(f"[HallucinationDetector] Claim {idx} failed: {e}")
+                    results_map[idx] = {
+                        "claim": claims[idx],
+                        "evidence": f"Error during processing: {e}",
+                        "source_url": None,
+                        "verification": {"label": "unknown", "confidence": 0.0, "probabilities": [0.0, 1.0, 0.0]},
+                        "graph": {"nodes": [], "edges": []},
+                        "correction": None
+                    }
 
-            requires_current = query_info.get("requires_current_state", False)
-            print(f"Generated search queries: {search_queries} for claim: '{claim}' (Domain: {domain}, Temporal: {requires_current})")
-
-            verification, evidence_text, source_url, graph_json = self._verify_claim_full(
-                claim, answer, domain, search_queries, requires_current
-            )
-
-            results.append({
-                "claim": claim,
-                "evidence": evidence_text,
-                "source_url": source_url,
-                "verification": verification,
-                "graph": graph_json,
-                "correction": None
-            })
+        # Restore original order
+        results = [results_map[i] for i in range(len(claims))]
 
         report = generate_report(results)
         return {
+            "claims": results,
             "report": report,
             "final_text": answer
         }
@@ -197,18 +259,35 @@ class HallucinationDetector:
         import json
         yield json.dumps({"status": "progress", "message": "Extracting claims..."}) + "\n"
         claims = extract_claims(answer)
-        results = []
+        if not claims:
+            yield json.dumps({"status": "done", "report": generate_report([])}) + "\n"
+            return
+
+        results = [None] * len(claims)
+
+        # ── Pre-generate all queries in parallel before starting the main loop ──
+        yield json.dumps({"status": "progress", "message": f"Pre-generating search queries for {len(claims)} claims in parallel..."}) + "\n"
+
+        def _gen_queries(args):
+            i, claim = args
+            return i, generate_queries(claim, context=answer)
+
+        query_map = {}
+        with ThreadPoolExecutor(max_workers=max(1, min(len(claims), 5))) as executor:
+            for i, query_info in executor.map(_gen_queries, enumerate(claims)):
+                query_map[i] = query_info
 
         for i, claim in enumerate(claims):
             yield json.dumps({"status": "progress", "message": f"Processing claim {i+1} of {len(claims)}..."}) + "\n"
 
-            query_info = generate_queries(claim, context=answer)
+            query_info = query_map[i]
             search_queries = query_info["queries"]
             domain = query_info["domain"]
             requires_current = query_info.get("requires_current_state", False)
             
             max_retries = 1
             retry_count = 0
+            accumulated_evidence = []
             
             while retry_count <= max_retries:
                 msg = f"Searching ({domain} domain) for: {search_queries}..."
@@ -218,6 +297,15 @@ class HallucinationDetector:
 
                 # NLI pass
                 evidence = self.retriever.search(search_queries, claim=claim, domain=domain, k=3)
+
+                if evidence:
+                    seen_texts = {e['text'] for e in accumulated_evidence}
+                    for e in evidence:
+                        if e['text'] not in seen_texts:
+                            accumulated_evidence.append(e)
+                            seen_texts.add(e['text'])
+                elif accumulated_evidence:
+                    evidence = list(accumulated_evidence)
 
                 if not evidence:
                     if retry_count == 0:
@@ -245,14 +333,14 @@ class HallucinationDetector:
                         "final_decision_policy": "absence_heuristic"
                     }
                     
-                    results.append({
+                    results[i] = {
                         "claim": claim,
                         "evidence": "No evidence found. LLM Absence Evaluation: " + absence_label,
                         "source_url": None,
                         "verification": verification,
                         "graph": {"nodes": [], "edges": []},
                         "correction": None
-                    })
+                    }
                     break
 
                 evidence_text = "\n\n".join([f"Evidence {i+1}: {e['text']}" for i, e in enumerate(evidence)])
@@ -263,11 +351,9 @@ class HallucinationDetector:
 
                 # --- Phase 3.5: Hierarchical Evidence Scoring & Epistemic Contradiction ---
                 if len(evidence) > 1:
-                    yield json.dumps({"status": "progress", "message": "Evaluating evidence paragraphs with hierarchical scoring..."}) + "\n"
-                    snippet_results = []
-                    for e in evidence:
-                        res = verify_claim(claim, e['text'], domain=domain)
-                        snippet_results.append((res, e['text']))
+                    yield json.dumps({"status": "progress", "message": "Evaluating evidence paragraphs with hierarchical scoring (parallel)..."}) + "\n"
+                    # Run NLI on snippets in PARALLEL
+                    snippet_results = self._verify_snippets(claim, evidence, domain)
 
                     has_high_conf_supported = any(r["label"] == "supported" and r["confidence"] >= 0.75 for r, _ in snippet_results)
                     has_high_conf_contradicted = any(r["label"] == "contradicted" and r["confidence"] >= 0.75 for r, _ in snippet_results)
@@ -281,9 +367,13 @@ class HallucinationDetector:
                         }
                         evidence_text = "EPISTEMIC CONTRADICTION: Retrieved sources provide conflicting information regarding this claim.\n\n" + evidence_text
                     else:
+                        _SHARED_ROLES = ["co-founder", "co founder", "cofounder", "co-author", "co author", "co-creator", "co creator", "member", "director", "investor", "actor"]
+                        is_shared_role = any(role in claim.lower() for role in _SHARED_ROLES)
+
                         decisive_snippets = [
                             r for r, _ in snippet_results 
-                            if r["label"] in ["supported", "contradicted"] and r["confidence"] >= 0.80
+                            if (r["label"] == "supported" and r["confidence"] >= 0.80) or
+                               (r["label"] == "contradicted" and r["confidence"] >= 0.80 and not is_shared_role)
                         ]
                         if decisive_snippets:
                             decisive_snippets.sort(key=lambda x: x["confidence"], reverse=True)
@@ -311,7 +401,7 @@ class HallucinationDetector:
                 set_str = ", ".join(conf_res["conformal_set"]).upper()
                 yield json.dumps({"status": "progress", "message": f"Conformal Set: [{set_str}] (Guaranteed Coverage: {conf_res['coverage_guarantee']})"}) + "\n"
 
-                is_escalation = verification["label"] == "unknown" or conf_res["is_escalation_candidate"]
+                is_escalation = verification["label"] == "unknown" or conf_res["is_escalation_candidate"] or (is_shared_role and verification["label"] == "contradicted")
 
                 # --- Iterative RAG Trigger ---
                 if is_escalation and retry_count == 0:
@@ -369,14 +459,14 @@ class HallucinationDetector:
                     verification["debate_resolved"] = True
                     yield json.dumps({"status": "progress", "message": f"Debate completed: Final verdict '{llm_label.upper()}'"}) + "\n"
 
-                results.append({
+                results[i] = {
                     "claim": claim,
                     "evidence": evidence_text,
                     "source_url": source_url,
                     "verification": verification,
                     "graph": graph_json,
                     "correction": None
-                })
+                }
                 break
 
         yield json.dumps({"status": "progress", "message": "Generating final report..."}) + "\n"

@@ -9,6 +9,7 @@ wikipedia
 nltk
 Flask
 duckduckgo-search
+ddgs
 arxiv
 rank_bm25
 networkx

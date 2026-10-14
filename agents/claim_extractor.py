@@ -7,8 +7,25 @@ def extract_claims(answer):
     Extracts individual claims from a paragraph.
     Upgraded to use an LLM for Atomic Fact Decomposition, breaking complex sentences
     into simple, independent facts.
+    Includes an atomic fast-path to eliminate redundant 15-20s LLM calls for single-statement inputs.
     """
+    if not answer or not answer.strip():
+        return []
+
+    # Fast-path: If the input is already a single short atomic assertion without clauses, skip redundant LLM call
+    try:
+        sentences = nltk.sent_tokenize(answer.strip())
+        if len(sentences) == 1:
+            s = sentences[0].strip()
+            words = s.split()
+            complex_markers = [";", "—", "--", ",", " and ", " but ", " although ", " whereas ", " which ", " because ", " while ", " who ", " where ", " that ", " with "]
+            if len(words) <= 15 and not any(marker in s.lower() for marker in complex_markers):
+                return [s]
+    except Exception:
+        pass
+
     prompt = f"""
+
 Decompose the following text into a list of independent, atomic facts.
 An atomic fact is a short, simple sentence containing exactly one assertion.
 CRITICAL: You MUST resolve all pronouns (he, she, it) and implicit references (e.g. 'the associate', 'the film', 'the city') to their exact proper nouns from the context. Do not leave any vague references in the atomic facts.

@@ -2,6 +2,13 @@ import sys
 import os
 import random
 import time
+import warnings
+warnings.filterwarnings("ignore")
+try:
+    from bs4 import GuessedAtParserWarning
+    warnings.filterwarnings("ignore", category=GuessedAtParserWarning)
+except Exception:
+    pass
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from evaluation.benchmarks.fever_dataset import load_fever
