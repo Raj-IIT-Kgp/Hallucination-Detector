@@ -49,8 +49,40 @@ def test_evidence_pool_filtering():
     assert len(grounded_hits) > 0, "Verified edge should be admitted into evidence pool!"
     print("Test evidence pool filtering passed successfully!")
 
+def test_batch_relationship_extraction():
+    from agents.knowledge_graph import _extract_batch_relationships
+    node_data = {
+        "Christopher Nolan": {
+            "summary": "Christopher Nolan is a British filmmaker known for directing Inception and Oppenheimer.",
+            "url": "https://en.wikipedia.org/wiki/Christopher_Nolan"
+        },
+        "Inception": {
+            "summary": "Inception is a 2010 science fiction film written and directed by Christopher Nolan.",
+            "url": "https://en.wikipedia.org/wiki/Inception"
+        },
+        "Kangaroo": {
+            "summary": "Kangaroos are indigenous marsupials native to Australia.",
+            "url": "https://en.wikipedia.org/wiki/Kangaroo"
+        }
+    }
+    nodes = list(node_data.keys())
+    edges = _extract_batch_relationships(nodes, node_data)
+    print("Test batch extraction edges:", edges)
+    assert isinstance(edges, list)
+    # Nolan <-> Inception should be found and verified
+    nolan_inception = [e for e in edges if ("Christopher Nolan" in (e["source"], e["target"])) and ("Inception" in (e["source"], e["target"]))]
+    assert len(nolan_inception) == 1, f"Expected exactly 1 edge between Christopher Nolan and Inception, found: {nolan_inception}"
+    assert nolan_inception[0]["verified"] is True
+    assert nolan_inception[0]["quote"] is not None
+    # Kangaroo should NOT have verified relations with Nolan or Inception
+    kangaroo_edges = [e for e in edges if "Kangaroo" in (e["source"], e["target"]) and e["verified"]]
+    assert len(kangaroo_edges) == 0, "Kangaroo should have 0 verified edges"
+    print("Batch relationship extraction test passed!")
+
 if __name__ == "__main__":
     test_extract_relationships_provenance()
     test_unrelated_provenance()
+    test_batch_relationship_extraction()
     test_evidence_pool_filtering()
     print("All Knowledge Graph provenance tests passed!")
+

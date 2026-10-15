@@ -27,8 +27,9 @@ def extract_claims(answer):
     prompt = f"""
 
 Decompose the following text into a list of independent, atomic facts.
-An atomic fact is a short, simple sentence containing exactly one assertion.
-CRITICAL: You MUST resolve all pronouns (he, she, it) and implicit references (e.g. 'the associate', 'the film', 'the city') to their exact proper nouns from the context. Do not leave any vague references in the atomic facts.
+CRITICAL RULES:
+1. You MUST resolve all pronouns (he, she, it) and implicit references (e.g. 'the associate', 'the film', 'the city') to their exact proper nouns from the context. Do not leave any vague references in the atomic facts.
+2. STRICT POLARITY PRESERVATION: You MUST strictly preserve the exact truth value, falsity, and polarity (e.g. negations, 'not', 'never', 'outside', 'false', 'before/after') of the original text. NEVER 'correct', invert, or normalize false or hallucinated assertions into true ones.
 
 Text: "{answer}"
 

@@ -19,8 +19,9 @@ _SHARED_ROLES = [
 
 class HallucinationDetector:
 
-    def __init__(self, retriever, calib_file=None):
+    def __init__(self, retriever, calib_file=None, debate_mode="dialectical"):
         self.retriever = retriever
+        self.debate_mode = debate_mode
 
         # Load or locate pre-calibrated conformal parameters
         if calib_file is None:
@@ -162,7 +163,7 @@ class HallucinationDetector:
 
             graph_json = {"nodes": [], "edges": []}
             if is_escalation:
-                entities = extract_entities(claim, context=answer)
+                entities = search_queries if (search_queries and search_queries != [claim]) else extract_entities(claim, context=answer)
                 if entities:
                     kg = KnowledgeGraph()
                     kg.build(entities, claim=claim)
@@ -172,20 +173,10 @@ class HallucinationDetector:
                         kg_text = "\n\n".join([f"KG Evidence [{e['node']}]: {e['text']}" for e in kg_evidence])
                         evidence_text = evidence_text + "\n\n" + kg_text
                         source_url = source_url + ", " + ", ".join(list(set([e["url"] for e in kg_evidence])))
-                        verification = verify_claim(claim, evidence_text, domain=domain)
-                        conf_res = self.conformal_verifier.predict_set(verification.get("probabilities", [0.0, 1.0, 0.0]))
-                        verification.update({
-                            "conformal_set": conf_res["conformal_set"],
-                            "coverage_guarantee": conf_res["coverage_guarantee"],
-                            "is_escalation_candidate": conf_res["is_escalation_candidate"],
-                            "conformal_p_values": conf_res["p_values"],
-                            "conformal_q_hat": conf_res["q_hat"],
-                            "set_size": conf_res["set_size"]
-                        })
-                        is_escalation = verification["label"] == "unknown" or conf_res["is_escalation_candidate"]
 
-            if is_escalation:
-                llm_label = nli_override(claim, evidence_text, domain=domain)
+                # Directly route to Multi-Agent Debate with augmented KG evidence,
+                # bypassing redundant NLI cross-encoder evaluation on diluted concatenated text
+                llm_label = nli_override(claim, evidence_text, domain=domain, mode=self.debate_mode)
                 verification["label"] = llm_label
                 verification["final_decision_policy"] = "multi_agent_debate"
                 verification["debate_resolved"] = True
@@ -421,7 +412,7 @@ class HallucinationDetector:
                         yield json.dumps({"status": "progress", "message": "Deep Scan active — forcing Knowledge Graph generation..."}) + "\n"
                     else:
                         yield json.dumps({"status": "progress", "message": "Conformal escalation triggered — building Knowledge Graph for multi-hop reasoning..."}) + "\n"
-                    entities = extract_entities(claim, context=answer)
+                    entities = search_queries if (search_queries and search_queries != [claim]) else extract_entities(claim, context=answer)
 
                     if entities:
                         kg = KnowledgeGraph()
@@ -440,22 +431,11 @@ class HallucinationDetector:
                             source_url = source_url + ", " + ", ".join(
                                 list(set([e["url"] for e in kg_evidence]))
                             )
-                            verification = verify_claim(claim, evidence_text, domain=domain)
-                            conf_res = self.conformal_verifier.predict_set(verification.get("probabilities", [0.0, 1.0, 0.0]))
-                            verification.update({
-                                "conformal_set": conf_res["conformal_set"],
-                                "coverage_guarantee": conf_res["coverage_guarantee"],
-                                "is_escalation_candidate": conf_res["is_escalation_candidate"],
-                                "conformal_p_values": conf_res["p_values"],
-                                "conformal_q_hat": conf_res["q_hat"],
-                                "set_size": conf_res["set_size"]
-                            })
-                            is_escalation = verification["label"] == "unknown" or conf_res["is_escalation_candidate"]
 
                 # Critic LLM final fallback
                 if is_escalation:
-                    yield json.dumps({"status": "progress", "message": "Invoking Multi-Agent Debate (Defense, Prosecution, Judge) for final logic override..."}) + "\n"
-                    llm_label = nli_override(claim, evidence_text, domain=domain)
+                    yield json.dumps({"status": "progress", "message": "Invoking Multi-Agent Debate for final logic override..."}) + "\n"
+                    llm_label = nli_override(claim, evidence_text, domain=domain, mode=self.debate_mode)
                     verification["label"] = llm_label
                     verification["final_decision_policy"] = "multi_agent_debate"
                     verification["debate_resolved"] = True

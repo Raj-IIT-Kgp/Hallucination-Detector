@@ -32,7 +32,7 @@ labels = [
 ]
 
 
-def verify_claim(claim, evidence, domain="general"):
+def verify_claim(claim, evidence, domain="general", threshold=None):
 
     with _inference_lock:
         inputs = tokenizer(
@@ -62,11 +62,9 @@ def verify_claim(claim, evidence, domain="general"):
 
     label = labels[prediction]
 
-    # Dynamic confidence thresholding
-    threshold = 0.55 if domain == "scientific" else 0.75
-
-    # If the model is uncertain, default to unknown to prevent false positives
-    if confidence < threshold:
+    # Optional heuristic threshold override (e.g. for standalone scripts);
+    # by default None so Split Conformal Prediction handles uncertainty mathematically.
+    if threshold is not None and confidence < threshold:
         label = "unknown"
 
     return {
@@ -76,15 +74,13 @@ def verify_claim(claim, evidence, domain="general"):
     }
 
 
-def verify_claims_batch(claim, evidence_texts, domain="general"):
+def verify_claims_batch(claim, evidence_texts, domain="general", threshold=None):
     """
     Verifies multiple evidence snippets against a single claim in a SINGLE batched forward pass on GPU/MPS.
     Eliminates sequential loop overhead, delivering a massive speedup on snippet evaluation.
     """
     if not evidence_texts:
         return []
-
-    threshold = 0.55 if domain == "scientific" else 0.75
 
     with _inference_lock:
         inputs = tokenizer(
@@ -110,7 +106,7 @@ def verify_claims_batch(claim, evidence_texts, domain="general"):
             conf = probabilities[i][pred].item()
             prob_list = [probabilities[i][c].item() for c in range(len(labels))]
             lbl = labels[pred]
-            if conf < threshold:
+            if threshold is not None and conf < threshold:
                 lbl = "unknown"
             results.append({
                 "label": lbl,

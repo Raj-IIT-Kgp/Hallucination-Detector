@@ -169,8 +169,10 @@ class WebRetriever:
 
     def _fetch_all_for_query(self, query, domain):
         """
-        Dispatches ArXiv (if scientific), Wikipedia top-2 pages, and DuckDuckGo
-        concurrently for a single query. Returns aggregated paragraph list.
+        Dispatches ArXiv (if scientific) and Wikipedia top-2 pages concurrently
+        for a single entity query. Returns aggregated paragraph list.
+        DuckDuckGo is intentionally NOT queried per-entity to eliminate SEO noise
+        and prevent HTTP 429 rate limiting.
         """
         tasks = []
 
@@ -187,23 +189,22 @@ class WebRetriever:
         for match in top_matches:
             tasks.append(("wiki", match))
 
-        tasks.append(("ddg", query))
+        if not tasks:
+            return []
 
         paragraphs = []
-        max_w = min(len(tasks), 6)
+        max_w = min(len(tasks), 4)
         with ThreadPoolExecutor(max_workers=max_w) as executor:
             future_map = {}
             for kind, arg in tasks:
                 if kind == "arxiv":
                     f = executor.submit(self._fetch_arxiv, arg)
-                elif kind == "wiki":
+                else:  # wiki
                     f = executor.submit(self._fetch_wikipedia_page, arg)
-                else:  # ddg
-                    f = executor.submit(self._fetch_ddg, arg)
                 future_map[f] = kind
 
             try:
-                for future in as_completed(future_map, timeout=6.0):
+                for future in as_completed(future_map, timeout=5.0):
                     try:
                         paragraphs.extend(future.result())
                     except Exception as e:
@@ -219,8 +220,9 @@ class WebRetriever:
 
     def search(self, queries, claim, domain="general", k=3):
         """
-        Searches Wikipedia/DuckDuckGo or ArXiv for all queries concurrently,
-        then uses Cosine Similarity + BM25 RRF to find the best paragraphs.
+        Searches Wikipedia (top-2 pages per entity query) and ArXiv concurrently,
+        accompanied by a single propositional DuckDuckGo search on the claim string.
+        Then uses Cosine Similarity + BM25 RRF to find the best paragraphs.
         """
         if not isinstance(queries, list):
             queries = [queries]
@@ -233,14 +235,17 @@ class WebRetriever:
                 flat_queries.append(str(q).strip())
         queries = flat_queries if flat_queries else [claim]
 
-
-        # Fetch all queries concurrently (each query also fetches its pages concurrently)
+        # Fetch all entity queries concurrently (Wikipedia + ArXiv),
+        # plus a SINGLE unified DuckDuckGo web search on the full claim string.
         all_paragraphs = []
-        max_workers = min(len(queries) + 1, 5)
+        max_workers = min(len(queries) + 1, 6)
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [executor.submit(self._fetch_all_for_query, q, domain) for q in queries]
-            if claim and claim.strip() and claim.strip() not in queries:
+            # Single-shot propositional web search: query DuckDuckGo ONCE for the claim proposition,
+            # avoiding rate limits and SEO snippet pollution from multiple entity-noun queries.
+            if claim and claim.strip():
                 futures.append(executor.submit(self._fetch_ddg, claim.strip()))
+
             for future in as_completed(futures):
                 try:
                     all_paragraphs.extend(future.result())
