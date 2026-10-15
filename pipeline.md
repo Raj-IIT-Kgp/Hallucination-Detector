@@ -83,7 +83,7 @@ For each atomic claim, a **Query Generator Agent (powered by Gemini)** or determ
 To eliminate network I/O serialization bottlenecks, the pipeline implements a **Two-Tier Concurrent Web Retrieval Engine** backed by batch semantic re-ranking:
 * **Tier 1 (Inter-Query Concurrency):** When multiple queries are synthesized for a claim, all search queries are executed concurrently across worker threads (`ThreadPoolExecutor(max_workers=4)`).
 * **Tier 2 (Intra-Query Multi-Source Parallelism):** Within each entity query, retrieval calls are dispatched simultaneously across the **Wikipedia API** (top 2 candidate articles fetched and parsed in parallel) and the **ArXiv API** (for scientific claims). Simultaneously, a single, unthrottled **DuckDuckGo** web search is dispatched on the full natural language claim to capture broad web and breaking-event context.
-* **Single-Shot Propositional DuckDuckGo Engine:** Rather than blasting DuckDuckGo with redundant searches for individual entity nouns (which return commercial SEO snippets and trigger HTTP 429 rate limits), DuckDuckGo is queried **once per claim** using the full proposition. Web search requests employ the modern `ddgs` library (with fallback to `duckduckgo_search`), configured with `backend="lite"` (with automatic failover to `"auto"` if unavailable) and a resilient 5-second socket timeout (`DDGS(timeout=5)`), eliminating rate limits and preventing tail-latency stalling.
+* **Single-Shot Propositional DuckDuckGo Engine:** Rather than blasting DuckDuckGo with redundant searches for individual entity nouns (which return commercial SEO snippets and trigger HTTP 429 rate limits), DuckDuckGo is queried **once per claim** using the full proposition. Web search requests employ the modern `ddgs` library (with fallback to `duckduckgo_search`), configured with `backend="lite"` (with automatic failover to `"auto"` if unavailable) and a resilient 8-second socket timeout (`DDGS(timeout=8)`), eliminating rate limits and preventing tail-latency stalling.
 * **Wikipedia API Status-Code Hardening:** To prevent Wikimedia foundation rate limiting and Cloudflare challenges from crashing the parser with HTML `JSONDecodeError`, `_patched_wiki_request` verifies `r.status_code == 200` before JSON decoding, reinforced with a strict `timeout=5.0` socket guard, falling back cleanly if blocked.
 * **Sliding-Window Paragraph Chunking:** Retrieved articles are stripped of boilerplate and segmented into sliding windows of 5 sentences with a 2-sentence overlap ($\text{stride} = 3$), ensuring boundary facts spanning adjacent sentences are preserved without losing local context.
 * **Absence Evaluation:** If zero evidence is returned across all retrieval backends even after query reformulation, an LLM evaluates the epistemic salience of the queried entity: absence of evidence for prominent, globally recorded historical or scientific entities strongly indicates refutation (`CONTRADICTED`), whereas lack of evidence for obscure or low-salience entities yields conservative abstention (`UNKNOWN`).
@@ -295,7 +295,7 @@ To scale verification throughput without degrading statistical guarantees, the p
 
 2. **Two-Tier Concurrent Web Retrieval Engine:**
    - **Inter-Query Concurrency:** Multiple search queries synthesized for an atomic claim are dispatched simultaneously across threads.
-   - **Intra-Query Concurrency:** For each entity query, requests to Wikipedia (top 2 articles) and ArXiv (scientific claims) are fetched simultaneously in parallel worker waves. A single, unthrottled DuckDuckGo web search (enforced with `backend="lite"`, automatic fallback to `"auto"`, and a 5.0-second timeout) is executed concurrently on the raw natural language claim to capture broad web and breaking-event context without triggering rate limits.
+   - **Intra-Query Concurrency:** For each entity query, requests to Wikipedia (top 2 articles) and ArXiv (scientific claims) are fetched simultaneously in parallel worker waves. A single, unthrottled DuckDuckGo web search (enforced with `backend="lite"`, automatic fallback to `"auto"`, and an 8.0-second timeout via `DDGS(timeout=8)`) is executed concurrently on the raw natural language claim to capture broad web and breaking-event context without triggering rate limits.
 
 3. **Parallel Multi-Agent Debate Argumentation:**
    In Phase 5b, the Defense and Prosecution LLM agent prompts are dispatched concurrently via worker threads (`ThreadPoolExecutor(max_workers=2)`). This achieves a ~50% latency reduction during the argument generation phase before the Judge evaluates both arguments.
@@ -331,11 +331,11 @@ $$
 
 9. **Wikipedia API Academic User-Agent & Status-Code Socket Guard (`web_search.py`):**
    - The default `wikipedia` library user-agent is throttled/blocked by Wikimedia foundation servers, causing 403/429 HTML responses, `JSONDecodeError`, and indefinite TCP socket hangs (averaging 75.5s per claim).
-   - Configured custom academic user-agent `VeriFactBot/1.0` and patched `_wiki_request` with a strict `timeout=5.0` guard. Capped fetched page text to first 25,000 characters and set bounded `as_completed(timeout=6.0)` on parallel retrieval futures.
+   - Configured custom academic user-agent `VeriFactBot/1.0` and patched `_wiki_request` with a strict `timeout=5.0` guard. Capped fetched page text to first 25,000 characters and set bounded `as_completed(timeout=5.0)` on parallel retrieval futures.
    - Hardened `_patched_wiki_request` to check `r.status_code == 200` before JSON decoding, preventing HTML error payloads from triggering `JSONDecodeError`. Cut retrieval phase latency from **75.52s down to 8.79s (8.5× speedup)**.
 
 10. **Dynamic Quota Exhaustion & Degradation Cooldown (`llm/gemini.py`):**
-    - When a model hits free-tier quota limits (HTTP 429) or demand spikes (HTTP 503), the client caches a 5-minute cooldown state for that specific model identifier.
+    - When a model hits free-tier quota limits (HTTP 429) or demand spikes (HTTP 503), the client caches a 45-second rolling cooldown state for that specific model identifier.
     - Subsequent calls immediately route to the fallback model tier in $0.00\text{s}$, completely eliminating repeated 429 network stalls and error propagation.
 
 11. **Entity-Aware Fast Path with LLM Fallback (`query_generator.py`):**
