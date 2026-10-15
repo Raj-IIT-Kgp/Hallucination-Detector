@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (uniqueNodes.length > 0) {
             document.getElementById('kgPanel').classList.remove('hidden');
             document.getElementById('kgSubtitle').textContent =
-                `${uniqueNodes.length} entity concepts and ${uniqueEdges.length} semantic relationships mapped`;
+                `${uniqueNodes.length} entity concepts and ${uniqueEdges.length} semantic relationships mapped • Hover nodes or edges for full details`;
             renderKnowledgeGraph(uniqueNodes, uniqueEdges);
         }
     }
@@ -200,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function clearKnowledgeGraph() {
         const svg = document.getElementById('kgSvg');
         if (svg) svg.innerHTML = '';
+        d3.selectAll(".kg-node-tooltip, .kg-edge-tooltip").remove();
     }
 
     function deduplicateById(nodes) {
@@ -221,10 +222,57 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function positionKgTooltip(event, tooltipSelection) {
+        const tooltipNode = tooltipSelection.node();
+        if (!tooltipNode) return;
+        const width = tooltipNode.offsetWidth || 320;
+        const height = tooltipNode.offsetHeight || 90;
+
+        let left = event.pageX + 14;
+        let top = event.pageY - 12;
+
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft || 0;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop || 0;
+
+        // Viewport bounds detection
+        const maxLeft = scrollLeft + window.innerWidth - width - 16;
+        if (left > maxLeft) {
+            left = event.pageX - width - 14;
+        }
+        if (left < scrollLeft + 16) {
+            left = scrollLeft + 16;
+        }
+
+        const maxTop = scrollTop + window.innerHeight - height - 16;
+        if (top > maxTop) {
+            top = event.pageY - height - 12;
+        }
+        if (top < scrollTop + 16) {
+            top = scrollTop + 16;
+        }
+
+        tooltipSelection
+            .style("left", `${left}px`)
+            .style("top", `${top}px`);
+    }
+
     function renderKnowledgeGraph(nodes, edges) {
         const container = document.getElementById('kgContainer');
         const width = container.clientWidth || 800;
         const height = 380;
+
+        // Clear existing SVG and lingering tooltips
+        d3.selectAll(".kg-node-tooltip, .kg-edge-tooltip").remove();
 
         const svg = d3.select("#kgSvg")
             .attr("width", width)
@@ -266,32 +314,164 @@ document.addEventListener('DOMContentLoaded', () => {
             .force("center", d3.forceCenter(width / 2, height / 2))
             .force("collision", d3.forceCollide().radius(50));
 
+        // Tooltip Elements
+        const kgTooltip = d3.select("body").append("div")
+            .attr("class", "kg-node-tooltip");
+
+        const kgEdgeTooltip = d3.select("body").append("div")
+            .attr("class", "kg-edge-tooltip");
+
+        // Helper to generate full rich edge tooltip
+        function renderEdgeTooltipHtml(d) {
+            const sName = typeof d.source === 'object' ? (d.source.label || d.source.id) : d.source;
+            const tName = typeof d.target === 'object' ? (d.target.label || d.target.id) : d.target;
+            const rel = d.relationship || "related to";
+            const isVer = Boolean(d.verified);
+            const quote = d.quote;
+
+            let html = `
+                <div class="kg-tooltip-header">
+                    <span class="kg-tooltip-badge ${isVer ? 'verified' : 'unverified'}">
+                        ${isVer ? '✓ Verified Relation' : 'Extracted Relation'}
+                    </span>
+                    <span class="kg-tooltip-endpoints">${escapeHtml(sName)} ➔ ${escapeHtml(tName)}</span>
+                </div>
+                <div class="kg-tooltip-relation">
+                    ${escapeHtml(rel)}
+                </div>
+            `;
+
+            if (quote) {
+                html += `
+                    <div class="kg-tooltip-quote">
+                        <div class="kg-tooltip-quote-label">Evidence Quote</div>
+                        <div class="kg-tooltip-quote-text">"${escapeHtml(quote)}"</div>
+                    </div>
+                `;
+            }
+
+            return html;
+        }
+
         // Draw Links
-        const link = svg.append("g")
-            .selectAll("line")
+        const linkGroup = svg.append("g").attr("class", "kg-links");
+
+        // Transparent wide hit-area line for effortless hovering
+        const linkHit = linkGroup.selectAll(".kg-link-hit")
             .data(edges)
             .enter().append("line")
+            .attr("class", "kg-link-hit")
+            .attr("stroke", "#000000")
+            .attr("stroke-opacity", 0)
+            .attr("stroke-width", 24)
+            .attr("stroke-linecap", "round")
+            .style("pointer-events", "stroke")
+            .attr("cursor", "pointer");
+
+        // Visible link line
+        const link = linkGroup.selectAll(".kg-link-visible")
+            .data(edges)
+            .enter().append("line")
+            .attr("class", "kg-link-visible")
             .attr("stroke", d => d.verified ? "#2563eb" : "#cbd5e1")
             .attr("stroke-width", d => d.verified ? 2.0 : 1.5)
             .attr("stroke-dasharray", d => d.verified ? "none" : "4,3")
-            .attr("marker-end", d => d.verified ? "url(#arrowhead-verified)" : "url(#arrowhead)");
+            .attr("marker-end", d => d.verified ? "url(#arrowhead-verified)" : "url(#arrowhead)")
+            .attr("cursor", "pointer")
+            .style("transition", "stroke 0.15s ease, stroke-width 0.15s ease");
 
         // Edge Relationship Labels
-        const edgeLabel = svg.append("g")
-            .selectAll("text")
+        const edgeLabelGroup = svg.append("g").attr("class", "kg-edge-labels");
+
+        const edgeLabel = edgeLabelGroup.selectAll(".kg-edge-label")
             .data(edges)
             .enter().append("text")
+            .attr("class", "kg-edge-label")
             .attr("font-family", "'Inter', sans-serif")
             .attr("font-size", "10px")
             .attr("font-weight", d => d.verified ? "600" : "500")
             .attr("fill", d => d.verified ? "#1d4ed8" : "#64748b")
             .attr("text-anchor", "middle")
+            .attr("cursor", "pointer")
+            .style("pointer-events", "all")
+            .style("paint-order", "stroke fill")
+            .style("stroke", "#f8fafc")
+            .style("stroke-width", "5px")
+            .style("stroke-linecap", "round")
+            .style("stroke-linejoin", "round")
+            .style("transition", "fill 0.15s ease, font-weight 0.15s ease")
             .text(d => {
                 const prefix = d.verified ? "✓ " : "";
                 const rel = d.relationship || "";
                 const full = prefix + rel;
                 return full.length > 32 ? full.substring(0, 30) + "…" : full;
             });
+
+        // Edge Hover Listeners (attached to hit line, visible line, and edge label)
+        function handleEdgeMouseOver(event, d) {
+            kgEdgeTooltip.html(renderEdgeTooltipHtml(d));
+            kgEdgeTooltip.classed("visible", true);
+            positionKgTooltip(event, kgEdgeTooltip);
+
+            // Highlight corresponding edge line
+            link.filter(l => l === d)
+                .attr("stroke-width", 3.5)
+                .attr("stroke", d.verified ? "#1d4ed8" : "#334155");
+
+            // Highlight corresponding label
+            edgeLabel.filter(l => l === d)
+                .attr("fill", d.verified ? "#1e40af" : "#0f172a")
+                .attr("font-weight", "700");
+
+            // Highlight connected source and target nodes
+            const sId = d.source.id || d.source;
+            const tId = d.target.id || d.target;
+            nodeGroup.filter(n => n.id === sId || n.id === tId)
+                .select("circle")
+                .attr("stroke-width", 3.5)
+                .attr("stroke", "#1d4ed8");
+        }
+
+        function handleEdgeMouseMove(event, d) {
+            positionKgTooltip(event, kgEdgeTooltip);
+        }
+
+        function handleEdgeMouseOut(event, d) {
+            kgEdgeTooltip.classed("visible", false);
+
+            // Restore edge line
+            link.filter(l => l === d)
+                .attr("stroke-width", d => d.verified ? 2.0 : 1.5)
+                .attr("stroke", d => d.verified ? "#2563eb" : "#cbd5e1");
+
+            // Restore label
+            edgeLabel.filter(l => l === d)
+                .attr("fill", d => d.verified ? "#1d4ed8" : "#64748b")
+                .attr("font-weight", d => d.verified ? "600" : "500");
+
+            // Restore connected nodes
+            const sId = d.source.id || d.source;
+            const tId = d.target.id || d.target;
+            nodeGroup.filter(n => n.id === sId || n.id === tId)
+                .select("circle")
+                .attr("stroke-width", 2)
+                .attr("stroke", "#2563eb");
+        }
+
+        linkHit
+            .on("mouseover", handleEdgeMouseOver)
+            .on("mousemove", handleEdgeMouseMove)
+            .on("mouseout", handleEdgeMouseOut);
+
+        link
+            .on("mouseover", handleEdgeMouseOver)
+            .on("mousemove", handleEdgeMouseMove)
+            .on("mouseout", handleEdgeMouseOut);
+
+        edgeLabel
+            .on("mouseover", handleEdgeMouseOver)
+            .on("mousemove", handleEdgeMouseMove)
+            .on("mouseout", handleEdgeMouseOut);
 
         // Draw Nodes
         const nodeGroup = svg.append("g")
@@ -311,7 +491,8 @@ document.addEventListener('DOMContentLoaded', () => {
             .attr("r", 25)
             .attr("fill", "#eff6ff")
             .attr("stroke", "#2563eb")
-            .attr("stroke-width", 2);
+            .attr("stroke-width", 2)
+            .style("transition", "stroke 0.15s ease, stroke-width 0.15s ease");
 
         nodeGroup.append("text")
             .attr("text-anchor", "middle")
@@ -325,39 +506,60 @@ document.addEventListener('DOMContentLoaded', () => {
                 return label.length > 13 ? label.substring(0, 12) + "…" : label;
             });
 
-        // Hover Node Tooltip
-        const kgTooltip = d3.select("body").append("div")
-            .attr("class", "kg-node-tooltip")
-            .style("opacity", 0)
-            .style("position", "absolute")
-            .style("background", "#ffffff")
-            .style("border", "1px solid #cbd5e1")
-            .style("border-radius", "6px")
-            .style("padding", "8px 12px")
-            .style("font-family", "'Inter', sans-serif")
-            .style("font-size", "11px")
-            .style("color", "#0f172a")
-            .style("box-shadow", "0 4px 6px -1px rgba(0,0,0,0.1)")
-            .style("max-width", "260px")
-            .style("pointer-events", "none")
-            .style("z-index", "9999");
-
+        // Hover Node Listeners
         nodeGroup
             .on("mouseover", (event, d) => {
-                kgTooltip.transition().duration(150).style("opacity", 1);
-                kgTooltip.html(`<strong>${d.label}</strong><br><span style="color:#64748b;">${d.summary_snippet || ""}</span>`)
-                    .style("left", (event.pageX + 14) + "px")
-                    .style("top", (event.pageY - 10) + "px");
+                let nodeHtml = `
+                    <div class="kg-tooltip-header">
+                        <span class="kg-tooltip-badge verified">Entity Node</span>
+                        <span class="kg-tooltip-endpoints">${escapeHtml(d.label || d.id)}</span>
+                    </div>
+                    <div class="kg-tooltip-relation" style="font-size: 0.82rem; font-weight: 500; color: #334155;">
+                        ${escapeHtml(d.summary_snippet || "Knowledge graph concept")}
+                    </div>
+                `;
+                if (d.url && d.url !== "#") {
+                    nodeHtml += `<div style="margin-top: 6px; font-size: 0.72rem; color: #2563eb; font-weight: 600;">
+                        Click to view source Wikipedia article ↗
+                    </div>`;
+                }
+
+                kgTooltip.html(nodeHtml);
+                kgTooltip.classed("visible", true);
+                positionKgTooltip(event, kgTooltip);
+
+                // Highlight node
+                d3.select(event.currentTarget).select("circle")
+                    .attr("stroke-width", 3.5)
+                    .attr("stroke", "#1d4ed8");
+
+                // Highlight incident edges
+                link.filter(l => (l.source.id || l.source) === d.id || (l.target.id || l.target) === d.id)
+                    .attr("stroke-width", 3.0)
+                    .attr("stroke", "#1d4ed8");
             })
             .on("mousemove", (event) => {
-                kgTooltip.style("left", (event.pageX + 14) + "px")
-                    .style("top", (event.pageY - 10) + "px");
+                positionKgTooltip(event, kgTooltip);
             })
-            .on("mouseout", () => {
-                kgTooltip.transition().duration(200).style("opacity", 0);
+            .on("mouseout", (event, d) => {
+                kgTooltip.classed("visible", false);
+
+                d3.select(event.currentTarget).select("circle")
+                    .attr("stroke-width", 2)
+                    .attr("stroke", "#2563eb");
+
+                link.filter(l => (l.source.id || l.source) === d.id || (l.target.id || l.target) === d.id)
+                    .attr("stroke-width", l => l.verified ? 2.0 : 1.5)
+                    .attr("stroke", l => l.verified ? "#2563eb" : "#cbd5e1");
             });
 
         simulation.on("tick", () => {
+            linkHit
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
             link
                 .attr("x1", d => d.source.x)
                 .attr("y1", d => d.source.y)
@@ -386,6 +588,7 @@ document.addEventListener('DOMContentLoaded', () => {
             d.fy = null;
         }
     }
+    window.renderKnowledgeGraph = renderKnowledgeGraph;
 
     // ==========================================
     //   TOOLTIP POPOVER LOGIC

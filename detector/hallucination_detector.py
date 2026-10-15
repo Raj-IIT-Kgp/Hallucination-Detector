@@ -10,6 +10,12 @@ import os
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+_SHARED_ROLES = [
+    "co-founder", "co founder", "cofounder", 
+    "co-author", "co author", "co-creator", "co creator", 
+    "member", "director", "investor", "actor"
+]
+
 
 class HallucinationDetector:
 
@@ -25,7 +31,7 @@ class HallucinationDetector:
             self.conformal_verifier = ConformalVerifier(calib_file=calib_file)
         else:
             self.conformal_verifier = ConformalVerifier(alpha=0.10)
-            self.conformal_verifier.q_hat = 0.9168
+            self.conformal_verifier.q_hat = 0.8985
             self.conformal_verifier.calibrated_scores = np.linspace(0.0001, 0.999, 100)
 
     def _verify_snippets(self, claim, evidence_list, domain):
@@ -43,6 +49,7 @@ class HallucinationDetector:
         max_retries = 1
         retry_count = 0
         accumulated_evidence = []
+        is_shared_role = any(role in claim.lower() for role in _SHARED_ROLES)
         
         while retry_count <= max_retries:
             evidence = self.retriever.search(
@@ -117,9 +124,6 @@ class HallucinationDetector:
                     # use that decisive snippet directly to prevent context dilution!
                     # For shared/collaborative roles (e.g. co-founder, co-author), a snippet naming another
                     # person is not a decisive contradiction; require multi-snippet evaluation or debate.
-                    _SHARED_ROLES = ["co-founder", "co founder", "cofounder", "co-author", "co author", "co-creator", "co creator", "member", "director", "investor", "actor"]
-                    is_shared_role = any(role in claim.lower() for role in _SHARED_ROLES)
-
                     decisive_snippets = [
                         r for r, _ in snippet_results 
                         if (r["label"] == "supported" and r["confidence"] >= 0.80) or
@@ -278,6 +282,7 @@ class HallucinationDetector:
                 query_map[i] = query_info
 
         for i, claim in enumerate(claims):
+            is_shared_role = any(role in claim.lower() for role in _SHARED_ROLES)
             yield json.dumps({"status": "progress", "message": f"Processing claim {i+1} of {len(claims)}..."}) + "\n"
 
             query_info = query_map[i]
@@ -367,9 +372,6 @@ class HallucinationDetector:
                         }
                         evidence_text = "EPISTEMIC CONTRADICTION: Retrieved sources provide conflicting information regarding this claim.\n\n" + evidence_text
                     else:
-                        _SHARED_ROLES = ["co-founder", "co founder", "cofounder", "co-author", "co author", "co-creator", "co creator", "member", "director", "investor", "actor"]
-                        is_shared_role = any(role in claim.lower() for role in _SHARED_ROLES)
-
                         decisive_snippets = [
                             r for r, _ in snippet_results 
                             if (r["label"] == "supported" and r["confidence"] >= 0.80) or

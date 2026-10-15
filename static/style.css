@@ -781,6 +781,118 @@ input:checked + .slider-round:before {
 }
 
 /* ==========================================================================
+   Knowledge Graph Node & Edge Tooltips
+   ========================================================================== */
+
+.kg-node-tooltip,
+.kg-edge-tooltip {
+    position: absolute;
+    background-color: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-tooltip);
+    padding: 0.85rem 1rem;
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    pointer-events: none;
+    z-index: 9999;
+    max-width: 360px;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    line-height: 1.5;
+}
+
+.kg-node-tooltip.visible,
+.kg-edge-tooltip.visible {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    display: block !important;
+}
+
+.kg-tooltip-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-bottom: 0.45rem;
+    margin-bottom: 0.55rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.kg-tooltip-badge {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius-sm);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.kg-tooltip-badge.verified {
+    background-color: var(--primary-light);
+    color: var(--primary-hover);
+    border: 1px solid var(--primary-border);
+}
+
+.kg-tooltip-badge.unverified {
+    background-color: var(--bg-card-subtle);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+}
+
+.kg-tooltip-endpoints {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kg-tooltip-relation {
+    font-size: 0.84rem;
+    font-weight: 600;
+    line-height: 1.45;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+.kg-tooltip-quote {
+    background-color: #f8fafc;
+    border-left: 3px solid var(--primary);
+    padding: 0.45rem 0.65rem;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    font-style: italic;
+    margin-top: 0.55rem;
+}
+
+.kg-tooltip-quote-label {
+    font-family: var(--font-mono);
+    font-style: normal;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 0.2rem;
+}
+
+.kg-tooltip-quote-text {
+    word-break: break-word;
+}
+
+
+/* ==========================================================================
    Clean Academic Tooltip
    ========================================================================== */
 
