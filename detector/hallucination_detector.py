@@ -107,11 +107,12 @@ class HallucinationDetector:
                 snippet_results = self._verify_snippets(claim, evidence, domain)
 
                 # 1. Calibrated Epistemic Contradiction Detection:
-                # Requires genuine high-confidence disagreement (>= 0.75 on both sides)
-                has_high_conf_supported = any(r["label"] == "supported" and r["confidence"] >= 0.75 for r, _ in snippet_results)
-                has_high_conf_contradicted = any(r["label"] == "contradicted" and r["confidence"] >= 0.75 for r, _ in snippet_results)
+                # Requires genuine symmetric high-confidence disagreement (>= 0.85 on both sides within 0.12 margin)
+                max_sup_conf = max([r["confidence"] for r, _ in snippet_results if r["label"] == "supported"], default=0.0)
+                max_con_conf = max([r["confidence"] for r, _ in snippet_results if r["label"] == "contradicted"], default=0.0)
+                is_epistemic_conflict = (max_sup_conf >= 0.85 and max_con_conf >= 0.85 and abs(max_sup_conf - max_con_conf) < 0.12)
 
-                if has_high_conf_supported and has_high_conf_contradicted:
+                if is_epistemic_conflict:
                     # Genuinely conflicting sources: escalate to debate
                     verification = {
                         "label": "unknown",
@@ -123,8 +124,8 @@ class HallucinationDetector:
                     # 2. Per-Paragraph Max Entailment:
                     # If any single snippet provides decisive proof (confidence >= 0.80),
                     # use that decisive snippet directly to prevent context dilution!
-                    # For shared/collaborative roles (e.g. co-founder, co-author), a snippet naming another
-                    # person is not a decisive contradiction; require multi-snippet evaluation or debate.
+                    # For shared/collaborative roles, a single snippet asserting co-authorship/founding
+                    # cannot short-circuit rejection of an exclusive founder claim.
                     decisive_snippets = [
                         r for r, _ in snippet_results 
                         if (r["label"] == "supported" and r["confidence"] >= 0.80) or
@@ -151,10 +152,17 @@ class HallucinationDetector:
                 "final_decision_policy": "conformal_singleton" if not conf_res["is_escalation_candidate"] else "escalation_required"
             })
 
-            is_escalation = verification["label"] == "unknown" or conf_res["is_escalation_candidate"] or (is_shared_role and verification["label"] == "contradicted")
+            is_escalation = (
+                verification["label"] == "unknown" or 
+                conf_res["is_escalation_candidate"] or 
+                (is_shared_role and verification["label"] == "contradicted")
+            )
 
-            if is_escalation and retry_count == 0:
-                print(f"    NLI uncertain / Conformal dispersion {conf_res['conformal_set']}. Triggering Self-Reflective Retrieval to rewrite queries...")
+            # Only trigger query rewrite when evidence was inconclusive (unknown).
+            # When label is already supported/contradicted with conformal dispersion,
+            # evidence is already present—escalate directly to KG + Critic Debate.
+            if verification["label"] == "unknown" and retry_count == 0:
+                print(f"    NLI uncertain ({conf_res['conformal_set']}). Triggering Self-Reflective Retrieval to rewrite queries...")
                 new_queries = rewrite_queries(claim, evidence_text, search_queries)
                 if new_queries:
                     search_queries = new_queries
@@ -165,8 +173,9 @@ class HallucinationDetector:
             if is_escalation:
                 entities = search_queries if (search_queries and search_queries != [claim]) else extract_entities(claim, context=answer)
                 if entities:
+                    cached_pages = self.retriever.get_page_cache() if hasattr(self.retriever, "get_page_cache") else None
                     kg = KnowledgeGraph()
-                    kg.build(entities, claim=claim)
+                    kg.build(entities, claim=claim, cached_pages=cached_pages, evidence=evidence_text)
                     graph_json = kg.get_graph_json()
                     kg_evidence = kg.get_multi_hop_evidence(claim, k=3)
                     if kg_evidence:
@@ -180,6 +189,17 @@ class HallucinationDetector:
                 verification["label"] = llm_label
                 verification["final_decision_policy"] = "multi_agent_debate"
                 verification["debate_resolved"] = True
+
+                # If the debate concluded SUPPORTED and the graph had nodes without edges,
+                # ensure the supporting edge is linked between primary nodes using the verified evidence
+                if llm_label == "supported" and graph_json.get("nodes") and len(graph_json["nodes"]) >= 2 and not graph_json.get("edges"):
+                    n1 = graph_json["nodes"][0]["id"]
+                    n2 = graph_json["nodes"][1]["id"]
+                    from agents.knowledge_graph import _extract_direct_relationship_from_evidence
+                    direct = _extract_direct_relationship_from_evidence(n1, n2, claim, evidence_text)
+                    if direct:
+                        kg.add_grounded_edge(direct["source"], direct["target"], direct["relationship"], quote=direct["quote"], verified=direct["verified"])
+                        graph_json = kg.get_graph_json()
 
             return verification, evidence_text, source_url, graph_json
 
@@ -208,8 +228,12 @@ class HallucinationDetector:
             "correction": None
         }
 
-    def analyze(self, answer):
-        claims = extract_claims(answer)
+    def analyze(self, answer, context=None, extract_atomic_facts=True):
+        if extract_atomic_facts:
+            claims = extract_claims(answer)
+        else:
+            claims = [answer.strip()] if answer and answer.strip() else []
+
         if not claims:
             report = generate_report([])
             return {
@@ -218,11 +242,12 @@ class HallucinationDetector:
                 "final_text": answer
             }
 
+        claim_context = context if context else answer
         # Process all claims concurrently — each claim's retrieval + NLI runs in parallel
         results_map = {}
         with ThreadPoolExecutor(max_workers=max(1, min(len(claims), 5))) as executor:
             future_to_idx = {
-                executor.submit(self._process_claim, claim, answer): i
+                executor.submit(self._process_claim, claim, claim_context): i
                 for i, claim in enumerate(claims)
             }
             for future in as_completed(future_to_idx):
@@ -351,10 +376,11 @@ class HallucinationDetector:
                     # Run NLI on snippets in PARALLEL
                     snippet_results = self._verify_snippets(claim, evidence, domain)
 
-                    has_high_conf_supported = any(r["label"] == "supported" and r["confidence"] >= 0.75 for r, _ in snippet_results)
-                    has_high_conf_contradicted = any(r["label"] == "contradicted" and r["confidence"] >= 0.75 for r, _ in snippet_results)
+                    max_sup_conf = max([r["confidence"] for r, _ in snippet_results if r["label"] == "supported"], default=0.0)
+                    max_con_conf = max([r["confidence"] for r, _ in snippet_results if r["label"] == "contradicted"], default=0.0)
+                    is_epistemic_conflict = (max_sup_conf >= 0.85 and max_con_conf >= 0.85 and abs(max_sup_conf - max_con_conf) < 0.12)
 
-                    if has_high_conf_supported and has_high_conf_contradicted:
+                    if is_epistemic_conflict:
                         yield json.dumps({"status": "progress", "message": "High-confidence epistemic contradiction detected between sources! Escalating to debate..."}) + "\n"
                         verification = {
                             "label": "unknown",
@@ -397,8 +423,10 @@ class HallucinationDetector:
                 is_escalation = verification["label"] == "unknown" or conf_res["is_escalation_candidate"] or (is_shared_role and verification["label"] == "contradicted")
 
                 # --- Iterative RAG Trigger ---
-                if is_escalation and retry_count == 0:
-                    yield json.dumps({"status": "progress", "message": f"Conformal set size {conf_res['set_size']} indicates posterior dispersion — triggering Self-Reflective Retrieval..."}) + "\n"
+                # Only rewrite queries when evidence was inconclusive (unknown).
+                # If label is already supported/contradicted, escalate directly to KG multi-hop + debate.
+                if verification["label"] == "unknown" and retry_count == 0:
+                    yield json.dumps({"status": "progress", "message": f"NLI uncertain ({conf_res['conformal_set']}) — triggering Self-Reflective Retrieval to rewrite queries..."}) + "\n"
                     new_queries = rewrite_queries(claim, evidence_text, search_queries)
                     if new_queries:
                         search_queries = new_queries
@@ -415,8 +443,9 @@ class HallucinationDetector:
                     entities = search_queries if (search_queries and search_queries != [claim]) else extract_entities(claim, context=answer)
 
                     if entities:
+                        cached_pages = self.retriever.get_page_cache() if hasattr(self.retriever, "get_page_cache") else None
                         kg = KnowledgeGraph()
-                        kg.build(entities, claim=claim)
+                        kg.build(entities, claim=claim, cached_pages=cached_pages, evidence=evidence_text)
                         
                         graph_json = kg.get_graph_json()
 
@@ -441,6 +470,15 @@ class HallucinationDetector:
                     verification["debate_resolved"] = True
                     yield json.dumps({"status": "progress", "message": f"Debate completed: Final verdict '{llm_label.upper()}'"}) + "\n"
 
+                    if llm_label == "supported" and graph_json.get("nodes") and len(graph_json["nodes"]) >= 2 and not graph_json.get("edges"):
+                        n1 = graph_json["nodes"][0]["id"]
+                        n2 = graph_json["nodes"][1]["id"]
+                        from agents.knowledge_graph import _extract_direct_relationship_from_evidence
+                        direct = _extract_direct_relationship_from_evidence(n1, n2, claim, evidence_text)
+                        if direct:
+                            kg.add_grounded_edge(direct["source"], direct["target"], direct["relationship"], quote=direct["quote"], verified=direct["verified"])
+                            graph_json = kg.get_graph_json()
+
                 results[i] = {
                     "claim": claim,
                     "evidence": evidence_text,
@@ -459,10 +497,3 @@ class HallucinationDetector:
             "report": report,
             "final_text": answer
         }) + "\n"
-
-    def calculate_score(self, results):
-        total = len(results)
-        if total == 0:
-            return 0
-        hallucinated = sum(1 for item in results if item["verification"]["label"] in ["contradicted", "contradiction"])
-        return hallucinated / total

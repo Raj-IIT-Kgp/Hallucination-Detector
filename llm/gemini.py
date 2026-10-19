@@ -17,7 +17,7 @@ client = genai.Client(
 PRIMARY_MODELS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]
 
 # Safety fallback pool: used only if both primary endpoints encounter burst rate limits
-BACKUP_MODELS = ["gemini-3.8-flash", "gemini-2.5-flash"]
+BACKUP_MODELS = ["gemini-3.8-flash", "gemini-3.5-flash"]
 
 _rr_counter = 0
 _rr_lock = threading.Lock()
@@ -45,12 +45,9 @@ def generate_gemini_response(prompt):
     # Order primary models starting from current round-robin turn
     ordered_primaries = [PRIMARY_MODELS[(start_idx + i) % len(PRIMARY_MODELS)] for i in range(len(PRIMARY_MODELS))]
 
-    # Build candidate sequence: available primaries -> available backups -> earliest cooldown
+    # Build candidate sequence: available primaries followed by available backups
     candidate_models = [m for m in ordered_primaries if now >= _model_cooldown.get(m, 0)]
-    
-    if not candidate_models:
-        # Check backups if primaries are cooling down
-        candidate_models = [m for m in BACKUP_MODELS if now >= _model_cooldown.get(m, 0)]
+    candidate_models += [m for m in BACKUP_MODELS if now >= _model_cooldown.get(m, 0) and m not in candidate_models]
 
     if not candidate_models:
         # If everything is on cooldown, pick whichever model expires earliest

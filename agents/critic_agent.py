@@ -1,50 +1,6 @@
 from llm.generator import generate_response
 from concurrent.futures import ThreadPoolExecutor
 
-def review_correction(claim, draft_correction, evidence):
-    """
-    Acts as a Critic Agent that reviews the Correction Agent's work.
-    Ensures the correction is logically sound and strictly matches the evidence.
-    """
-    
-    prompt = f"""
-You are a strict Critic Agent. Your job is to review a draft correction for a factual error.
-You must ensure the draft correction is 100% supported by the evidence and does not introduce new hallucinations or weird logic.
-
-Original False Claim: {claim}
-Factual Evidence: {evidence}
-Draft Correction (written by another agent): {draft_correction}
-
-CHAIN OF THOUGHT REASONING:
-Step 1: Identify all entities, dates, and relationships in the Draft Correction.
-Step 2: Check if EACH entity/date/relationship is explicitly stated in the Factual Evidence.
-Step 3: Compare the Draft Correction with the Original False Claim. Does it properly fix the error without adding unrelated fluff?
-Step 4: Based on these steps, decide if it PASSES or FAILS.
-
-RULES:
-1. You must show your step-by-step reasoning first.
-2. The LAST line of your response must be exactly "VERDICT: PASS" if the correction is perfect, or "VERDICT: FAIL - [reason]" if it has weird logic, hallucinations, or irrelevant details.
-
-Reasoning and Verdict:
-"""
-    
-    response = generate_response(prompt).strip()
-    print(f"    Critic reasoning:\n{response}")
-    
-    lines = response.split('\n')
-    verdict_line = next((line for line in reversed(lines) if line.strip().upper().startswith("VERDICT:")), response)
-    
-    if "VERDICT: PASS" in verdict_line.upper():
-        return {"is_accurate": True, "feedback": None}
-    else:
-        # Extract the reason after "FAIL" if present
-        feedback = verdict_line
-        if "FAIL" in verdict_line.upper():
-            parts = verdict_line.split("FAIL", 1)
-            if len(parts) > 1:
-                feedback = parts[1].strip(" :-")
-        return {"is_accurate": False, "feedback": feedback}
-
 def _defense_agent(claim, evidence):
     prompt = f"""
 You are the Defense Attorney in a debate. Your ONLY goal is to prove that the following claim is SUPPORTED by the provided evidence.
@@ -100,6 +56,11 @@ CRITICAL DECISION & ABSTENTION RULES:
    - When a claim asserts a founder or creator is from a country (e.g. 'X founder is from India'), and evidence establishes that the entity is an indigenous national company/service (e.g. 'Indian online food ordering service') founded domestically by that individual, treat the claim as SUPPORTED.
    - Do NOT adopt hyper-literal skepticism (e.g., claiming 'the text describes the company as Indian, but not the person') to force an UNKNOWN verdict unless there is affirmative evidence indicating foreign citizenship, foreign birth, or that the organization is a local subsidiary of a foreign multinational.
    - For shared titles (e.g., 'co-founder', 'director'), companies often have multiple co-founders; mentioning one co-founder does NOT contradict another being a co-founder, and reciprocal phrasing like 'fellow co-founder' or 'former co-founder' directly entails co-founder status.
+   - Awards and Accolades: When a claim asserts that a person or entity *won* an award, and authoritative biographical evidence specifies they received only *nominations* (e.g. 'earned four nominations'), treat the claim as CONTRADICTED.
+   - Geographic Venues vs Component Suppliers: Distinguish the primary medical center or hospital where a procedure or event occurred from secondary facilities or genetic suppliers located elsewhere.
+   - Media Framing vs Core Historical Assertion: When a claim is framed as 'Photo/Video/Image showing [X]', if authoritative evidence verifies the underlying historical event, entities, and described scene (e.g. Vladimir Komarov's fatal space crash and open casket viewing in 1967), treat the claim as SUPPORTED. Do NOT force an UNKNOWN verdict simply because the evidence is written text rather than an image.
+   - Compound Health & Scientific Assertions: In compound claims pairing real statistics with an absolute negation of medical/scientific precautions (e.g. 'X fell ill but nobody needs to wear a mask'), the second clause cannot be overlooked. If medical guidance recommends or requires precautions (like N95 respirators for tuberculosis), treat the claim as CONTRADICTED.
+   - Legislative Leadership vs Personal Incumbency: When a claim asserts a legislative leader or Speaker 'lost a [Party]-held seat', this refers to the caucus/party losing a seat in that legislative body under their leadership, not their personal reelection to their own district.
 3. CONSERVATIVE ABSTENTION POLICY: Reserve VERDICT: UNKNOWN strictly for cases where the evidence is genuinely absent, completely unrelated, or truly contradictory without a preponderance of evidence. Do not use abstention to reject the direct contextual entailments specified in Rule 2.
 4. The LAST line of your response must be exactly "VERDICT: SUPPORTED", "VERDICT: CONTRADICTED", or "VERDICT: UNKNOWN".
 
@@ -130,6 +91,11 @@ Weigh Perspective A against Perspective B strictly against the raw evidence text
 CRITICAL DECISION & ABSTENTION RULES:
 - Natural Entailment: Domestic founders/creators are supported unless foreign origin or external subsidiary status is proven. Do not adopt hyper-literal skepticism.
 - Non-Exclusive Roles: Mentioning one co-founder/director does not contradict another being a co-founder; reciprocal phrasing like 'fellow co-founder' directly entails co-founder status.
+- Awards and Accolades: When a claim asserts that a person or entity *won* an award, and authoritative biographical evidence specifies they received only *nominations* (e.g. 'earned four nominations'), treat the claim as CONTRADICTED.
+- Geographic Venues vs Component Suppliers: Distinguish the primary medical center or hospital where a procedure occurred from secondary facilities or genetic suppliers located elsewhere.
+- Media Framing vs Core Historical Assertion: When a claim is framed as 'Photo/Video/Image showing [X]', if authoritative evidence verifies the underlying historical event, entities, and described scene (e.g. Vladimir Komarov's fatal space crash and open casket viewing in 1967), treat the claim as SUPPORTED. Do NOT force an UNKNOWN verdict simply because the evidence is written text rather than an image.
+- Compound Health & Scientific Assertions: In compound claims pairing real statistics with an absolute negation of medical/scientific precautions (e.g. 'X fell ill but nobody needs to wear a mask'), the second clause cannot be overlooked. If medical guidance recommends or requires precautions (like N95 respirators for tuberculosis), treat the claim as CONTRADICTED.
+- Legislative Leadership vs Personal Incumbency: When a claim asserts a legislative leader or Speaker 'lost a [Party]-held seat', this refers to the caucus/party losing a seat in that legislative body under their leadership, not their personal reelection to their own district.
 - Conservative Abstention: Reserve VERDICT: UNKNOWN strictly for cases where the evidence is genuinely absent, completely unrelated, or truly contradictory without a preponderance of evidence.
 
 The LAST line of your response must be exactly:

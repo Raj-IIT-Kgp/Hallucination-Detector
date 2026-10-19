@@ -1,0 +1,258 @@
+{
+  "set_results": [
+    {
+      "set": "Set 1",
+      "evaluated_claims": 20,
+      "correct_claims": 16,
+      "accuracy": 0.8,
+      "precision": 0.8181818181818182,
+      "recall": 0.9,
+      "f1": 0.8571428571428572,
+      "tp": 9,
+      "fp": 2,
+      "fn": 1
+    },
+    {
+      "set": "Set 2",
+      "evaluated_claims": 20,
+      "correct_claims": 16,
+      "accuracy": 0.8,
+      "precision": 0.75,
+      "recall": 0.9,
+      "f1": 0.8181818181818182,
+      "tp": 9,
+      "fp": 3,
+      "fn": 1
+    },
+    {
+      "set": "Set 3",
+      "evaluated_claims": 20,
+      "correct_claims": 17,
+      "accuracy": 0.85,
+      "precision": 0.8888888888888888,
+      "recall": 0.8,
+      "f1": 0.8421052631578948,
+      "tp": 8,
+      "fp": 1,
+      "fn": 2
+    },
+    {
+      "set": "Set 4",
+      "evaluated_claims": 20,
+      "correct_claims": 15,
+      "accuracy": 0.75,
+      "precision": 0.875,
+      "recall": 0.7,
+      "f1": 0.7777777777777777,
+      "tp": 7,
+      "fp": 1,
+      "fn": 3
+    },
+    {
+      "set": "Set 5",
+      "evaluated_claims": 20,
+      "correct_claims": 16,
+      "accuracy": 0.8,
+      "precision": 0.8888888888888888,
+      "recall": 0.8,
+      "f1": 0.8421052631578948,
+      "tp": 8,
+      "fp": 1,
+      "fn": 2
+    }
+  ],
+  "pooled": {
+    "total_evaluated": 100,
+    "total_correct": 80,
+    "accuracy": 0.8,
+    "precision": 0.8367346938775511,
+    "recall": 0.82,
+    "f1": 0.8282828282828283,
+    "standard_error": 0.04,
+    "ci_margin_95": 0.0784,
+    "ci_lower_95": 0.7216,
+    "ci_upper_95": 0.8784000000000001
+  },
+  "failures": [
+    {
+      "set": 1,
+      "claim": "There are 2 core UMass NLP faculty currently primarily affiliated with the lab who have been there for more than five years.",
+      "raw_question": "How many core UMass NLP faculty are currently primarily affiliated with the lab and have been there for more than five years?",
+      "fact_type": "slow-changing",
+      "true_label": "supported",
+      "prediction": "unknown",
+      "evidence_used": "Fact 1: [SYSTEM TIMESTAMP: 2026-10-17]\nEvidence 1: Using NLP to make practical tools for users (e.g. in information retrieval, human-computer interaction, educational technology, multimodal systems, etc.). Below are some of the many faculty at UMass Amherst who teach, research, and collaborate acros"
+    },
+    {
+      "set": 1,
+      "claim": "The highest-grossing film in the United States last year was Zootopia 2.",
+      "raw_question": "What was the highest-grossing film in the United States last year?",
+      "fact_type": "fast-changing",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: Zootopia 2 premiered at El Capitan Theatre in Hollywood, Los Angeles on November 13, 2025, and was released in the United States on November 26. The film received positive reviews from critics and grossed $1.87 billion worldwide, becoming the second-highest-grossing animated film"
+    },
+    {
+      "set": 1,
+      "claim": "Princeton University is the top-ranked university in the US according to the US News Ranking.",
+      "raw_question": "What is the top-ranked university in the US according to the US News Ranking?",
+      "fact_type": "slow-changing",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: On Monday, U.S. News and World Report released the latest version of its annual rankings for best national universities, dropping Princeton from No. 1 to No. 2 for the first time in 15 years. University students and faculty had mixed reactions to the new ranking. When Princeton t"
+    },
+    {
+      "set": 1,
+      "claim": "Elon Musk acquired Instagram.",
+      "raw_question": "How much did Elon Musk acquire Instagram for?",
+      "fact_type": "slow-changing",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: Evidence 1: Apr 15, 2026 \u00b7 In a tech world twist, Elon Musk now owns Instagram through X's acquisition, marking a $200 billion milestone. Once calling Instagram 'profoundly depressing,' Musk's new plans aim at authentic creativity by integrating it into X's ecosystem.\n\nEvidence 2: Apr 1, 202"
+    },
+    {
+      "set": 2,
+      "claim": "Lazarus Chakwera is the most recent incumbent president worldwide who ran for re-election but was not reelected.",
+      "raw_question": "Who was the most recent incumbent president worldwide who ran for re-election but was not reelected?",
+      "fact_type": "fast-changing",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: [SYSTEM TIMESTAMP: 2026-10-17]\nEvidence 1: His running mate was Dr. Rex Kalolo. The first debate was held on 21 August 2025 at the BICC and broadcast nationally. A second debate was rescheduled to 9 September 2025. President Lazarus Chakwera and former president Peter Mutharika did not parti"
+    },
+    {
+      "set": 2,
+      "claim": "The 1939 German invasion of Poland began soon after Germany signed a non-aggression pact with the Soviet Union.",
+      "raw_question": "The 1939 German invasion of Poland began soon after Germany signed a non-aggression pact with what other nation?",
+      "fact_type": "never-changing",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: The invasion of Poland, also known as the September Campaign, Polish Campaign, and Polish Defensive War of 1939 (1 September \u2013 6 October 1939), was a joint attack on the Republic of Poland by Nazi Germany, the Slovak Republic, and the Soviet Union, which marked the beginning of W"
+    },
+    {
+      "set": 2,
+      "claim": "The title of Stephen King's most recent novel is The End Times.",
+      "raw_question": "What is the title of Stephen King's most recent novel?",
+      "fact_type": "fast-changing",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: [SYSTEM TIMESTAMP: 2026-10-17]\nEvidence 1: The End Times is an ongoing serialized epistolary novel by Benjamin Percy and Stephen King (writing as Claudia Inez Bachman, the fictional widow of King's pseudonym Richard Bachman), which began publishing in newspaper format (in limited-edition pri"
+    },
+    {
+      "set": 2,
+      "claim": "There are days left until the next season of Atlanta airs.",
+      "raw_question": "How many days are left until the next season of Atlanta airs?",
+      "fact_type": "never-changing",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: [SYSTEM TIMESTAMP: 2026-10-17]\nEvidence 1: Never Miss a New Season Every tracked show on your dashboard includes countdown timers showing exactly how many days until the next episode airs. Check your personalized calendar to see the full schedule of upcoming episodes across all your shows. S"
+    },
+    {
+      "set": 3,
+      "claim": "The alpha Kappa Delta Phi sorority has a chapter at American University.",
+      "raw_question": "When was the chapter of alpha Kappa Delta Phi established at American University?",
+      "fact_type": "slow-changing",
+      "true_label": "contradicted",
+      "prediction": "unknown",
+      "evidence_used": "Fact 1: Evidence 1: The chapter (s) listed below have been deemed inactive by the Sorority and are not recognized by the University. alpha Kappa Delta Phi prohibits chapter operations on the campuses of the Inactive chapters listed below.\n\nEvidence 2: alpha Kappa Delta Phi is an international Asian-"
+    },
+    {
+      "set": 3,
+      "claim": "Nine people from Princeton University have won the Fields Medal.",
+      "raw_question": "How many people from Princeton University have won the Fields Medal?",
+      "fact_type": "slow-changing",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: In total, 68 people have been awarded the Fields Medal as of 2026. [13] The most recent group of Fields Medalists received their awards on 23 July 2026, in Philadelphia.\n\nEvidence 2: In 2014, the Iranian mathematician Maryam Mirzakhani became the first female Fields Medalist. Wit"
+    },
+    {
+      "set": 3,
+      "claim": "Walt Disney Animation Studios' 60th animated film is being released this year.",
+      "raw_question": "What date this year will Walt Disney Animation Studios' 60th animated film be released?",
+      "fact_type": "never-changing",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: [SYSTEM TIMESTAMP: 2026-10-17]\nEvidence 1: Oct 9, 2021 \u00b7 Set in the South American country of Colombia and featuring music by Lin-Manuel Miranda, Encanto is the 60th animated feature from Walt Disney Animation Studios. [3] Originally known as Walt Disney Productions (1937\u20131985), Walt Disney "
+    },
+    {
+      "set": 4,
+      "claim": "The world record time for running a mile is 3:43.13.",
+      "raw_question": "What's the world record time for running a mile?",
+      "fact_type": "slow-changing",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: The world record in the mile run is the fastest time set by a runner  Josh Kerr is the current men's record holder with his time of 3:42.66, while Faith Kipyegon has the women's record of 4:07.64. Since 1976, the mile has been the only non-metric distance recognized by World Athl"
+    },
+    {
+      "set": 4,
+      "claim": "The United Kingdom is the country President Joe Biden has visited the most during his presidency so far.",
+      "raw_question": "Which country has President Joe Biden visited the most during his presidency so far?",
+      "fact_type": "slow-changing",
+      "true_label": "supported",
+      "prediction": "unknown",
+      "evidence_used": "Fact 1: Evidence 1: Joe Biden, the 46th president of the United States, made 21 international trips to 28 countries and the West Bank during his presidency from January 20, 2021 to January 20, 2025.\n\nEvidence 2: This is a list of presidential trips made by Joe Biden during 2024 and early 2025, the f"
+    },
+    {
+      "set": 4,
+      "claim": "Joe Biden announced his second presidential campaign in 2023.",
+      "raw_question": "When did Joe Biden announce his second presidential campaign in 2023?",
+      "fact_type": "never-changing",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: Evidence 1: Joe Biden, the 46th president of the United States, announced his candidacy for re-election for a second presidential term on April 25, 2023, confirming that Vice President Kamala Harris would remain as his running mate.\n\nEvidence 2: Joe Biden, the 46th president of the United St"
+    },
+    {
+      "set": 4,
+      "claim": "Hikaru Nakamura became the World Chess Champion.",
+      "raw_question": "In what year did Hikaru Nakamura become the World Chess Champion?",
+      "fact_type": "slow-changing",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: Evidence 1: Christopher Hikaru Nakamura (Japanese: \u4e2d\u6751\u5149; born December 9, 1987) is an American chess grandmaster, internet personality, five-time U.S. Chess Champion, and the 2022 World Fischer Random Chess Champion. A chess prodigy, he earned his grandmaster title at the age of 15, the young"
+    },
+    {
+      "set": 4,
+      "claim": "The M1 Macbook Air has a dedicated graphics processing unit.",
+      "raw_question": "What dedicated graphics processing unit does the M1 Macbook Air have?",
+      "fact_type": "never-changing",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: Evidence 1: The M1 MacBook Air can only run one external display, compared to the previous Intel-based model which was capable of running two 4K displays. The FaceTime camera remains 720p, drawing some criticism, but Apple advertises an improved image signal processor for higher quality vide"
+    },
+    {
+      "set": 5,
+      "claim": "The Pokemon Franchise has already celebrated its thirtieth anniversary.",
+      "raw_question": "When did the Pokemon Franchise celebrate its thirtieth anniversary?",
+      "fact_type": "slow-changing",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: [SYSTEM TIMESTAMP: 2026-10-17]\nEvidence 1: Oct 10, 2026 \u00b7 The entire year of 2026 is being celebrated as Pok\u00e9mon's 30th Anniversary, as February 27, 2026 marked the thirtieth anniversary of the original Japanese release of Pok\u00e9mon Red and Green and therefore the thirtieth anniversary of the "
+    },
+    {
+      "set": 5,
+      "claim": "Geoff Hinton\u2019s h-index is 190.",
+      "raw_question": "What is Geoff Hinton\u2019s h-index?",
+      "fact_type": "fast-changing",
+      "true_label": "supported",
+      "prediction": "unknown",
+      "evidence_used": "Fact 1: Evidence 1: In their article 'The inconsistency of the h-index' Ludo Waltman and Nees Jan van Neck give three examples to demonstrate the inconsistency of the h-index. As will be explained, a little extension of their examples just illustrate the opposite, a stable feature of the h-index. Fo"
+    },
+    {
+      "set": 5,
+      "claim": "Democrats currently control the United States Senate.",
+      "raw_question": "By how many seats do Democrats currently control the United States Senate?",
+      "fact_type": "slow-changing",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: [SYSTEM TIMESTAMP: 2026-10-17]\nEvidence 1: Jeffords announced that he would caucus with the Democrats, giving the Democrats a one-seat advantage, changing control of the Senate from the Republicans back to the Democrats.\n\nEvidence 2: Under the Obama presidency, the party moved forward with r"
+    },
+    {
+      "set": 5,
+      "claim": "Sunderland, Massachusetts is located to the north of Amherst, Massachusetts.",
+      "raw_question": "Is Sunderland, MA to the north or south of Amherst, MA?",
+      "fact_type": "never-changing",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: Sunderland, Massachusetts is a town located in Franklin County with a population of 3,607 as of the 2025 US Census. Incorporated in 1718, the community was originally known as Swampfield and is situated in the Pioneer Valley along the Connecticut River.\n\nEvidence 2: At the 2020 c"
+    }
+  ]
+}

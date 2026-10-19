@@ -1,27 +1,25 @@
 import sys
-from agents.knowledge_graph import KnowledgeGraph, _extract_relationships
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from agents.knowledge_graph import KnowledgeGraph, _verify_quote_provenance, _extract_batch_relationships
 
-def test_extract_relationships_provenance():
-    # Mock summaries
+def test_deterministic_quote_provenance():
     summary_a = "Christopher Nolan is a British filmmaker known for directing Inception and Oppenheimer."
     summary_b = "Inception is a 2010 science fiction film written and directed by Christopher Nolan."
     
-    # Test relationship extraction
-    res = _extract_relationships("Christopher Nolan", "Inception", summary_a, summary_b)
-    print("Test direct relation:", res)
-    assert res is not None, "Expected relation to be found"
-    assert "relationship" in res
-    assert "verified" in res
-    assert res["verified"] is True, "Expected quote to be verified in text"
-    assert res["quote"] is not None
-
-def test_unrelated_provenance():
-    summary_a = "Kangaroos are indigenous to Australia."
-    summary_b = "Quantum mechanics is a fundamental theory in physics."
+    # 1. Authentic quote verification
+    is_verified, matched = _verify_quote_provenance(
+        "directing Inception and Oppenheimer", "Christopher Nolan", summary_a, "Inception", summary_b
+    )
+    assert is_verified is True, "Authentic quote should be verified"
+    assert matched == "Christopher Nolan"
     
-    res = _extract_relationships("Kangaroo", "Quantum Mechanics", summary_a, summary_b)
-    print("Test unrelated:", res)
-    assert res is None or res.get("relationship") is None or res.get("verified") is False
+    # 2. Fabricated/hallucinated quote verification
+    is_verified_fake, _ = _verify_quote_provenance(
+        "Kangaroos can travel through black holes", "Christopher Nolan", summary_a, "Inception", summary_b
+    )
+    assert is_verified_fake is False, "Hallucinated quote must fail provenance check"
+    print("Deterministic quote provenance tests passed!")
 
 def test_evidence_pool_filtering():
     kg = KnowledgeGraph()
@@ -80,8 +78,7 @@ def test_batch_relationship_extraction():
     print("Batch relationship extraction test passed!")
 
 if __name__ == "__main__":
-    test_extract_relationships_provenance()
-    test_unrelated_provenance()
+    test_deterministic_quote_provenance()
     test_batch_relationship_extraction()
     test_evidence_pool_filtering()
     print("All Knowledge Graph provenance tests passed!")

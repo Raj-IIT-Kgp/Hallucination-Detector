@@ -42,7 +42,7 @@ def verify_claim(claim, evidence, domain="general", threshold=None):
             truncation=True
         ).to(device)
 
-        with torch.no_grad():
+        with torch.inference_mode():
             outputs = model(**inputs)
 
         probabilities = torch.softmax(
@@ -91,7 +91,7 @@ def verify_claims_batch(claim, evidence_texts, domain="general", threshold=None)
             return_tensors="pt"
         ).to(device)
 
-        with torch.no_grad():
+        with torch.inference_mode():
             outputs = model(**inputs)
 
         probabilities = torch.softmax(

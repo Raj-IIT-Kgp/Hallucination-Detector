@@ -2,25 +2,48 @@ import sys
 import os
 import random
 import time
+import argparse
+import warnings
+
+warnings.filterwarnings("ignore")
+try:
+    from bs4 import GuessedAtParserWarning
+    warnings.filterwarnings("ignore", category=GuessedAtParserWarning)
+except Exception:
+    pass
+
+import torch
+torch.set_num_threads(2)
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from datasets import load_dataset
+from evaluation.benchmarks.climate_fever_dataset import load_climate_fever
 from retrieval.web_search import WebRetriever
 from detector.hallucination_detector import HallucinationDetector
 from evaluation.metrics import precision, recall, f1_score
 from tqdm import tqdm
 
-def run_climate_fever_benchmark(num_samples=10):
-    print("Loading Climate-FEVER dataset from HuggingFace...")
-    ds = load_dataset('tdiggelm/climate_fever', split='test')
+def run_climate_fever_benchmark(num_samples=20, seed=42):
+    print("=" * 60)
+    print("  Climate-FEVER Benchmark Evaluation (NeurIPS, 2020)  ")
+    print("  Real-world scientific, environmental & statistical claims")
+    print("=" * 60)
+
+    print("\nLoading Climate-FEVER dataset from HuggingFace...")
+    ds = load_climate_fever(split='test')
     
-    # 0 is SUPPORTS, 1 is REFUTES, 2 is NOT_ENOUGH_INFO
-    # We will grab half SUPPORTS and half REFUTES
-    supported_claims = [item for item in ds if item["claim_label"] == 0]
-    refuted_claims = [item for item in ds if item["claim_label"] == 1]
+    supported_claims = [item for item in ds if item["label"] == "SUPPORTS"]
+    refuted_claims = [item for item in ds if item["label"] == "REFUTES"]
+    
+    print(f"Total pool available: {len(supported_claims)} SUPPORTS, {len(refuted_claims)} REFUTES")
+
+    if seed is not None:
+        random.seed(seed)
     
     half = num_samples // 2
-    sample_dataset = random.sample(supported_claims, half) + random.sample(refuted_claims, num_samples - half)
+    selected_supported = random.sample(supported_claims, min(half, len(supported_claims)))
+    selected_refuted = random.sample(refuted_claims, min(num_samples - len(selected_supported), len(refuted_claims)))
+    sample_dataset = selected_supported + selected_refuted
     random.shuffle(sample_dataset)
     
     retriever = WebRetriever()
@@ -32,13 +55,13 @@ def run_climate_fever_benchmark(num_samples=10):
     
     print(f"\nEvaluating FULL PIPELINE on {len(sample_dataset)} Climate-FEVER samples...")
     print("WARNING: This will make live HTTP requests. Please be patient to avoid API rate limits.\n")
-    
     for idx, item in enumerate(tqdm(sample_dataset)):
         claim = item["claim"]
-        true_label = "supported" if item["claim_label"] == 0 else "contradicted"
+        true_label = "supported" if item.get("label") == "SUPPORTS" or item.get("claim_label") == 0 else "contradicted"
         
         try:
-            response = detector.analyze(claim)
+            # Claims are atomic propositions; bypass redundant decomposition
+            response = detector.analyze(claim, extract_atomic_facts=False)
             
             report_dict = response.get("report", {})
             claims_list = report_dict.get("claims", [])
@@ -47,9 +70,17 @@ def run_climate_fever_benchmark(num_samples=10):
                 prediction = "unknown"
                 evidence = "No report generated."
             else:
-                claim_result = claims_list[0]
-                prediction = claim_result["verification"]["label"]
-                evidence = claim_result["evidence"]
+                predictions = [c["verification"]["label"] for c in claims_list]
+                if "contradicted" in predictions:
+                    prediction = "contradicted"
+                elif "disputed" in predictions:
+                    prediction = "disputed"
+                elif "unknown" in predictions:
+                    prediction = "unknown"
+                else:
+                    prediction = "supported"
+                
+                evidence = "\n".join([f"Fact {i+1}: {c.get('evidence', '')}" for i, c in enumerate(claims_list)])
                 
             y_true.append(true_label)
             y_pred.append(prediction)
@@ -99,4 +130,9 @@ def run_climate_fever_benchmark(num_samples=10):
             print("-" * 30)
 
 if __name__ == "__main__":
-    run_climate_fever_benchmark(num_samples=20)
+    parser = argparse.ArgumentParser(description="Run Climate-FEVER benchmark evaluation.")
+    parser.add_argument("--samples", type=int, default=20, help="Number of samples to evaluate (default: 20)")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility (default: 42)")
+    args = parser.parse_args()
+    
+    run_climate_fever_benchmark(num_samples=args.samples, seed=args.seed)

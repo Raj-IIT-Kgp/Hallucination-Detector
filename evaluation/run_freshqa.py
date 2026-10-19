@@ -2,24 +2,47 @@ import sys
 import os
 import random
 import time
+import argparse
+import warnings
+
+warnings.filterwarnings("ignore")
+try:
+    from bs4 import GuessedAtParserWarning
+    warnings.filterwarnings("ignore", category=GuessedAtParserWarning)
+except Exception:
+    pass
+
+import torch
+torch.set_num_threads(2)
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evaluation.benchmarks.halueval import load_halueval
+from evaluation.benchmarks.freshqa_dataset import load_freshqa
 from retrieval.web_search import WebRetriever
 from detector.hallucination_detector import HallucinationDetector
 from evaluation.metrics import precision, recall, f1_score
 from tqdm import tqdm
 
-def run_halueval_benchmark(num_samples=6):
-    print("Loading HaluEval dataset...")
-    data = load_halueval()
+def run_freshqa_benchmark(num_samples=20, fact_types=None):
+    print("=" * 60)
+    print("  FreshQA Benchmark Evaluation (Google Research, 2023-2024)  ")
+    print("  Fast-changing facts, dynamic web knowledge, & false premises")
+    if fact_types:
+        print(f"  Filtering by fact types: {fact_types}")
+    print("=" * 60)
     
-    # We structured load_halueval to return SUPPORTS and REFUTES
+    print("\nLoading FreshQA dataset...")
+    data = load_freshqa(split="all", fact_types=fact_types)
+    
     supported_claims = [item for item in data if item["label"] == "SUPPORTS"]
     refuted_claims = [item for item in data if item["label"] == "REFUTES"]
     
+    print(f"Total pool available: {len(supported_claims)} SUPPORTS, {len(refuted_claims)} REFUTES")
+    
     half = num_samples // 2
-    sample_dataset = random.sample(supported_claims, half) + random.sample(refuted_claims, num_samples - half)
+    selected_supported = random.sample(supported_claims, min(half, len(supported_claims)))
+    selected_refuted = random.sample(refuted_claims, min(num_samples - len(selected_supported), len(refuted_claims)))
+    sample_dataset = selected_supported + selected_refuted
     random.shuffle(sample_dataset)
     
     retriever = WebRetriever()
@@ -35,26 +58,23 @@ def run_halueval_benchmark(num_samples=6):
     y_pred = []
     failures = []
     
-    print(f"\nEvaluating FULL PIPELINE on {len(sample_dataset)} HaluEval QA samples...")
-    print("WARNING: This will make live HTTP requests. Please be patient to avoid API rate limits.\n")
+    print(f"\nEvaluating FULL PIPELINE on {len(sample_dataset)} FreshQA claims...")
+    print("WARNING: This will make live search requests. Rate-limiting throttled.\n")
     
     for idx, item in enumerate(tqdm(sample_dataset)):
         claim = item["claim"]
         true_label = label_map.get(item["label"], "unknown")
         
         try:
-            response = detector.analyze(claim)
-            
+            response = detector.analyze(claim, extract_atomic_facts=False)
             report_dict = response.get("report", {})
             claims_list = report_dict.get("claims", [])
             
-            if not claims_list or len(claims_list) == 0:
+            if not claims_list:
                 prediction = "unknown"
                 evidence = "No report generated."
             else:
-                # Aggregate atomic fact predictions
                 predictions = [c["verification"]["label"] for c in claims_list]
-                
                 if "contradicted" in predictions:
                     prediction = "contradicted"
                 elif "disputed" in predictions:
@@ -64,8 +84,7 @@ def run_halueval_benchmark(num_samples=6):
                 else:
                     prediction = "supported"
                     
-                # Concatenate evidence from all facts
-                evidence = "\n".join([f"Fact {i+1}: {c['evidence']}" for i, c in enumerate(claims_list)])
+                evidence = "\n".join([f"Fact {i+1}: {c.get('evidence', '')}" for i, c in enumerate(claims_list)])
                 
             y_true.append(true_label)
             y_pred.append(prediction)
@@ -73,13 +92,16 @@ def run_halueval_benchmark(num_samples=6):
             if prediction != true_label:
                 failures.append({
                     "claim": claim,
+                    "raw_question": item.get("raw_question", ""),
+                    "fact_type": item.get("fact_type", ""),
+                    "ground_truth": item.get("ground_truth", ""),
                     "true_label": true_label,
                     "prediction": prediction,
                     "evidence_used": evidence
                 })
                 
         except Exception as e:
-            print(f"\nError processing claim '{claim}': {e}")
+            print(f"\n[!] Error processing FreshQA claim '{claim}': {e}")
             y_true.append(true_label)
             y_pred.append("error")
             
@@ -97,7 +119,7 @@ def run_halueval_benchmark(num_samples=6):
     f1 = f1_score(p, r)
     
     print("\n" + "="*50)
-    print("          HALUEVAL END-TO-END RESULTS          ")
+    print("          FRESHQA BENCHMARK RESULTS            ")
     print("="*50)
     print(f"Overall Accuracy: {accuracy:.2%}")
     print("\nHallucination Detection (Contradiction Class):")
@@ -110,9 +132,29 @@ def run_halueval_benchmark(num_samples=6):
         print("\n--- FAILURE LOG ---")
         for fail in failures[:10]:
             print(f"\nClaim: {fail['claim']}")
+            if fail.get('raw_question'):
+                print(f"Original Question: {fail['raw_question']}")
+            if fail.get('fact_type'):
+                print(f"Fact Type: {fail['fact_type']}")
+            if fail.get('ground_truth'):
+                print(f"Ground Truth Ref: {fail['ground_truth']}")
             print(f"True: {fail['true_label'].upper()} | Pred: {fail['prediction'].upper()}")
-            print(f"Evidence Found: {fail['evidence_used']}")
+            print(f"Evidence Found: {fail['evidence_used'][:300]}...")
             print("-" * 30)
 
+    return {
+        "accuracy": accuracy,
+        "precision": p,
+        "recall": r,
+        "f1": f1,
+        "total": len(y_true)
+    }
+
 if __name__ == "__main__":
-    run_halueval_benchmark(num_samples=20)
+    parser = argparse.ArgumentParser(description="Run FreshQA benchmark")
+    parser.add_argument("--samples", type=int, default=20, help="Number of random samples (default: 20)")
+    parser.add_argument("--stable", action="store_true", help="Filter for slow-changing and never-changing claims (avoids 2023 fast-changing temporal drift)")
+    args = parser.parse_args()
+    
+    f_types = ["slow-changing", "never-changing"] if args.stable else None
+    run_freshqa_benchmark(num_samples=args.samples, fact_types=f_types)

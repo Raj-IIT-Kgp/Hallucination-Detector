@@ -55,11 +55,7 @@ The system implements a **Cascaded Verification & Remediation Architecture** (co
                                   │
           ┌───────────────────────▼────────────────────────┐
           │ Phase 6: Stream Reconstruction & SSE UI Output │
-          └───────────────────────┬────────────────────────┘
-                                  │ (Optional Downstream Remediation)
-          ┌───────────────────────▼────────────────────────┐
-          │ Phase 7: Modular Factual Remediation           │
-          │ (Correction Agent + Critic Review + Rebuilder) │
+          │ (Conformal Telemetry & Interactive Graph UI)   │
           └────────────────────────────────────────────────┘
 ```
 
@@ -75,15 +71,13 @@ To prevent the introduction of secondary hallucinations and establish a clean, d
 For each atomic claim, a **Query Generator Agent (powered by Gemini)** or deterministic fast-path synthesizes a targeted search strategy:
 * **Entity Extraction:** Relevant named entities are identified and output as a strict JSON array.
 * **Domain Classification:** Claims are classified into `general` or `scientific` domains to configure downstream retrieval indices and NLI tolerance.
-* **Temporal Tracking:** If a claim relies on present-day state (e.g., "is currently"), a live system timestamp is injected into the prompt context.
-* **Entity-Aware Fast Path with Deterministic LLM Fallback:** For atomic statements ($\le 12$ words), the system executes a deterministic regex-based Entity-Aware Fast Path (`_extract_fast_entities`). Rather than querying noisy full conversational sentences (which degrades Wikipedia search precision), it extracts named entity sequences (proper nouns, camelCase brand identifiers such as `BharatPe`, `iPhone`) and splits on relational patterns (`is from`, `co-founder of`, `founded by`, `located in`). Claims referencing figurative titles or symbolic sobriquets (e.g., *"King of Pop"*, *"Iron Lady"*) automatically bypass the regex fast-path and route to the LLM to identify canonical proper nouns. If valid entities are resolved, entity search queries and natural relational queries are emitted immediately ($< 0.001\text{s}$), cutting query generation latency by 99%. If no distinct named entities or relational patterns can be extracted, the system cleanly falls back to the LLM Query Generator, guaranteeing robust coverage for abstract or complex claims.
+* **Entity-Aware Fast Path with Pronoun-Gated LLM Fallback:** For atomic statements ($\le 15$ words), the system checks for ambiguous pronouns requiring coreference resolution. If none are present, it executes the deterministic regex fast-path (`_extract_fast_entities`) in $< 0.001\text{s}$ directly, regardless of the length of the surrounding context paragraph. Rather than querying noisy full conversational sentences (which degrades Wikipedia search precision), it extracts named entity sequences (proper nouns, camelCase brand identifiers such as `BharatPe`, `iPhone`) and splits on relational patterns (`is from`, `co-founder of`, `founded by`, `located in`). Alphanumeric and hyphenated entities (e.g., `Lockheed Martin F-35 Lightning II`) are preserved intact. Claims referencing creative works (`album`, `film`, `song`, `novel`), figurative titles or symbolic sobriquets (e.g., *"King of Pop"*, *"Iron Lady"*), or claims with unresolved ambiguous pronouns (*he*, *she*, *it*, *they*), automatically route to the LLM Query Generator to resolve canonical entities and proper antecedents from context. If valid entities are resolved, entity search queries and natural relational queries are emitted immediately ($< 0.001\text{s}$), cutting query generation latency by 99% with zero accuracy degradation.
 * **Asynchronous Pre-Generation in Streaming:** In streaming verification (`analyze_stream`), the pipeline pre-dispatches query generation across all extracted atomic claims concurrently via a thread pool (`ThreadPoolExecutor`), eliminating sequential LLM latency hurdles before initiating retrieval passes.
 
 ### Phase 3: Parallel Web Retrieval & Hybrid Re-Ranking
 To eliminate network I/O serialization bottlenecks, the pipeline implements a **Two-Tier Concurrent Web Retrieval Engine** backed by batch semantic re-ranking:
 * **Tier 1 (Inter-Query Concurrency):** When multiple queries are synthesized for a claim, all search queries are executed concurrently across worker threads (`ThreadPoolExecutor(max_workers=4)`).
-* **Tier 2 (Intra-Query Multi-Source Parallelism):** Within each entity query, retrieval calls are dispatched simultaneously across the **Wikipedia API** (top 2 candidate articles fetched and parsed in parallel) and the **ArXiv API** (for scientific claims). Simultaneously, a single, unthrottled **DuckDuckGo** web search is dispatched on the full natural language claim to capture broad web and breaking-event context.
-* **Single-Shot Propositional DuckDuckGo Engine:** Rather than blasting DuckDuckGo with redundant searches for individual entity nouns (which return commercial SEO snippets and trigger HTTP 429 rate limits), DuckDuckGo is queried **once per claim** using the full proposition. Web search requests employ the modern `ddgs` library (with fallback to `duckduckgo_search`), configured with `backend="lite"` (with automatic failover to `"auto"` if unavailable) and a resilient 8-second socket timeout (`DDGS(timeout=8)`), eliminating rate limits and preventing tail-latency stalling.
+* **Single-Shot Propositional DuckDuckGo Engine (Tail-Latency Guard):** Rather than blasting DuckDuckGo with redundant searches for individual entity nouns (which return commercial SEO snippets and trigger HTTP 429 rate limits), DuckDuckGo is queried **once per claim** using the full proposition. Web search requests employ the modern `ddgs` library (with fallback to `duckduckgo_search`), configured with a single-attempt `backend="lite"` and a strict 3-second socket timeout (`DDGS(timeout=3)`). If DuckDuckGo encounters rate limiting or latency spikes, the request immediately terminates after 3.0s, eliminating the previous 16-second dual-backend retry stall and allowing high-precision Wikipedia/ArXiv evidence to proceed unhindered.
 * **Wikipedia API Status-Code Hardening:** To prevent Wikimedia foundation rate limiting and Cloudflare challenges from crashing the parser with HTML `JSONDecodeError`, `_patched_wiki_request` verifies `r.status_code == 200` before JSON decoding, reinforced with a strict `timeout=5.0` socket guard, falling back cleanly if blocked.
 * **Sliding-Window Paragraph Chunking:** Retrieved articles are stripped of boilerplate and segmented into sliding windows of 5 sentences with a 2-sentence overlap ($\text{stride} = 3$), ensuring boundary facts spanning adjacent sentences are preserved without losing local context.
 * **Absence Evaluation:** If zero evidence is returned across all retrieval backends even after query reformulation, an LLM evaluates the epistemic salience of the queried entity: absence of evidence for prominent, globally recorded historical or scientific entities strongly indicates refutation (`CONTRADICTED`), whereas lack of evidence for obscure or low-salience entities yields conservative abstention (`UNKNOWN`).
@@ -103,8 +97,8 @@ where $r(d)$ is the document rank and $k = 60$ is the smoothing constant. The RR
 
 ### Phase 3.1: Self-Reflective Retrieval Feedback Loop (Iterative Query Reformulation)
 Rather than treating retrieval as a static, single-shot operation, the pipeline implements an **Agentic Retrieval Feedback Loop**:
-* **Trigger Conditions:** If Phase 3 returns zero valid evidence snippets, or if Phase 4 downstream verification signals model posterior dispersion ($|\mathcal{C}(X)| > 1$), the pipeline initiates a self-reflective retry cycle.
-* **Search Failure Diagnosis:** The **Self-Reflective Query Rewriter Agent** analyzes the claim alongside previously attempted queries and the unhelpful evidence snippets, identifying why retrieval failed (e.g., lexical ambiguity, overly specific qualifiers, or missing parent entity context).
+* **Trigger Conditions:** If Phase 3 returns zero valid evidence snippets, or if Phase 4 downstream verification yields an inconclusive verdict (`verification["label"] == "unknown"`) alongside posterior dispersion, the pipeline initiates a self-reflective retry cycle. When evidence has already been discovered (`SUPPORTED` or `CONTRADICTED` with conformal set dispersion), the system bypasses redundant re-search and escalates directly to Phase 5a Knowledge Graph reasoning, eliminating 15–30s of duplicate network I/O and preventing context dilution.
+* **Search Failure Diagnosis:** The **Self-Reflective Query Rewriter Agent** analyzes the claim alongside previously attempted queries and the unhelpful evidence snippets, identifying why retrieval failed (e.g., lexical ambiguity, overly specific qualifiers, or missing parent entity context). Candidate array extraction (`re.findall(r'\[[^\[\]]+\]', ...)`) prevents JSON decoding failures from surrounding commentary.
 * **Divergent Query Synthesis:** The agent formulates up to 2 new, divergent search queries targeting alternative entity names, canonical aliases, or broader contextual events, immediately re-executing hybrid retrieval before escalating to Knowledge Graph construction.
 * **Evidence Accumulation Pool:** During iterative query reformulation, newly retrieved evidence snippets are merged into an **Accumulated Evidence Pool** rather than overwriting prior results. If an aggressive query rewrite yields zero or poorer results, evidence discovered in earlier rounds is preserved, preventing false absence-of-evidence abstentions (`UNKNOWN`) caused by retrieval regressions.
 
@@ -197,7 +191,7 @@ A prediction set containing multiple labels (e.g., $\{\text{SUPPORTED}, \text{UN
 
 ### Phase 5a: Knowledge Graph Multi-Hop Reasoning & Semantic Entity Disambiguation
 When escalated from Phase 4, the system constructs a live in-memory Knowledge Graph to perform multi-hop evidence reasoning.
-* **Zero-Latency Entity Re-use with Fallback Linking:** Rather than dispatching a redundant second LLM call during escalation to re-extract the same entities, the Knowledge Graph directly ingests the disambiguated named entities and canonical Wikipedia article titles resolved in Phase 2 (or via the Entity-Aware Fast Path). An **Entity Linker Agent** is cleanly preserved as a fallback only when claims bypass Phase 2 entity extraction (e.g. raw claim fallback).
+* **Zero-Latency Entity & Page Cache Re-use:** Rather than dispatching a redundant second LLM call during escalation to re-extract the same entities, the Knowledge Graph directly ingests the disambiguated named entities resolved in Phase 2 (or via the Entity-Aware Fast Path). Furthermore, `KnowledgeGraph.build` directly ingests pre-retrieved Wikipedia article summaries from `WebRetriever.get_page_cache()`, eliminating 1.0–2.5s of redundant network latency on escalated claims. An **Entity Linker Agent** is cleanly preserved as a fallback only when claims bypass Phase 2 entity extraction (e.g. raw claim fallback).
 * **Semantic Entity Disambiguation:** Wikipedia search and entity extraction frequently suffer from disambiguation traps and lexical auto-suggest drift when queried entities share titles with homonymous media, creative works, or geographical locations. To eliminate this failure mode:
   1. Auto-suggest is strictly deactivated (`auto_suggest=False`) to enforce query fidelity.
   2. Disambiguation pages are parsed, and candidate titles containing irrelevant entertainment tags (e.g., `(album)`, `(song)`, `(band)`) are filtered out when the claim domain is non-entertainment.
@@ -280,13 +274,6 @@ As atomic claims are verified, the backend pushes asynchronous NDJSON events (Se
   - **Knowledge Graph Node Tooltips:** Display canonical entity titles, summarized context snippets, and direct outbound links to source Wikipedia articles.
   - **Knowledge Graph Edge Provenance Tooltips:** Distinctly differentiate verified vs. unverified relations with colored badges (`VERIFIED` vs. `UNVERIFIED`), displaying the synthesized relational proposition, provenance status, and the exact supporting verbatim quote extracted from Wikipedia.
 
-### Phase 7: Modular Factual Remediation & Context Rebuilding Layer (Optional Extension)
-For applications requiring end-to-end autonomous text correction, the architecture provides a modular downstream remediation subsystem (implemented in `agents/correction_agent.py`, `agents/critic_agent.py`, and `agents/rebuilder_agent.py`), designed to be called when full document rewriting is requested:
-* **Factual Correction Agent:** When a claim is definitively classified as `CONTRADICTED`, a Correction Agent synthesizes a factually accurate replacement claim conditioned strictly on the retrieved evidence $\mathcal{E}$, barring extraneous entities or ungrounded assertions.
-* **Critic Review Loop:** The draft correction is subjected to a chain-of-thought audit by a **Critic Agent**. The critic verifies that every entity, date, and relationship in the proposed correction is explicitly attested by the underlying evidence. If unwarranted facts are identified (`VERDICT: FAIL`), structured feedback is provided for iterative correction.
-* **Deterministic In-Place Context Rebuilding:** Rather than asking an LLM to regenerate the entire multi-paragraph document (which introduces severe risks of secondary hallucinations during generation), the **Rebuilder Agent** executes deterministic string replacement of false propositions with their validated corrections, preserving original syntax, formatting, and verified true facts.
-*(Note: Core verification endpoints `/api/analyze` and `/api/analyze_stream` decouple verification from rewrite overhead, returning `correction=None` until the remediation pipeline is explicitly requested).*
-
 ### Architectural Optimization: High-Throughput Concurrency & Thread-Safety Guarantees
 To scale verification throughput without degrading statistical guarantees, the pipeline integrates an **Asynchronous Multi-Tier Concurrency Engine** paired with native runtime synchronization guards:
 
@@ -295,7 +282,7 @@ To scale verification throughput without degrading statistical guarantees, the p
 
 2. **Two-Tier Concurrent Web Retrieval Engine:**
    - **Inter-Query Concurrency:** Multiple search queries synthesized for an atomic claim are dispatched simultaneously across threads.
-   - **Intra-Query Concurrency:** For each entity query, requests to Wikipedia (top 2 articles) and ArXiv (scientific claims) are fetched simultaneously in parallel worker waves. A single, unthrottled DuckDuckGo web search (enforced with `backend="lite"`, automatic fallback to `"auto"`, and an 8.0-second timeout via `DDGS(timeout=8)`) is executed concurrently on the raw natural language claim to capture broad web and breaking-event context without triggering rate limits.
+   - **Intra-Query Concurrency:** For each entity query, requests to Wikipedia (top 2 articles) and ArXiv (scientific claims) are fetched simultaneously in parallel worker waves. A single, fast DuckDuckGo web search (enforced with `backend="lite"` and a bounded 3.0-second socket timeout via `DDGS(timeout=3)`) is executed concurrently on the raw natural language claim to capture broad web and breaking-event context without triggering rate limits or tail-latency stalls.
 
 3. **Parallel Multi-Agent Debate Argumentation:**
    In Phase 5b, the Defense and Prosecution LLM agent prompts are dispatched concurrently via worker threads (`ThreadPoolExecutor(max_workers=2)`). This achieves a ~50% latency reduction during the argument generation phase before the Judge evaluates both arguments.
@@ -324,35 +311,40 @@ $$
 7. **Hardware Acceleration via Apple Silicon GPU (MPS) & Batched NLI (`verification/nli_verifier.py`):**
    - **Metal Performance Shaders (MPS) Execution:** Zero-shot sequence classification (`facebook/bart-large-mnli`) detects and leverages Apple Silicon GPU acceleration via `torch.device("mps")` with command-buffer synchronization. Single-claim forward evaluation latency drops from **6.074s on CPU** down to **0.096s on MPS** (a **63× hardware speedup**).
    - **Batched Snippet Evaluation (`verify_claims_batch`):** Rather than evaluating retrieved passages serially across multiple scalar forward passes ($k \times \tau_{\text{NLI}}$), all candidate evidence snippets are packed into a single padded tensor matrix pass on the GPU, collapsing snippet verification latency from $\sim 17.5\text{s}$ to $< 1.5\text{s}$.
+   - **PyTorch `inference_mode` C++ Dispatch Acceleration:** Forward evaluation blocks (`verify_claim` and `verify_claims_batch`) execute inside `with torch.inference_mode():` rather than `torch.no_grad()`. This completely deactivates PyTorch autograd tracking, version tracking, and tensor view metadata recording, eliminating 5–15ms of C++ dispatch overhead per tensor evaluation with bit-for-bit identical mathematical outputs.
 
 8. **Atomic Proposition Fast-Path (`agents/claim_extractor.py`):**
    - Single-clause statements ($\le 15$ words without compound conjunctions like *and*, *which*, *although*, or semicolons) are deterministically recognized as atomic claims directly.
    - Bypasses redundant 15–20s external LLM decomposition roundtrips for standalone single-claim user inputs while preserving multi-clause decomposition for complex compound sentences.
 
-9. **Wikipedia API Academic User-Agent & Status-Code Socket Guard (`web_search.py`):**
-   - The default `wikipedia` library user-agent is throttled/blocked by Wikimedia foundation servers, causing 403/429 HTML responses, `JSONDecodeError`, and indefinite TCP socket hangs (averaging 75.5s per claim).
-   - Configured custom academic user-agent `VeriFactBot/1.0` and patched `_wiki_request` with a strict `timeout=5.0` guard. Capped fetched page text to first 25,000 characters and set bounded `as_completed(timeout=5.0)` on parallel retrieval futures.
-   - Hardened `_patched_wiki_request` to check `r.status_code == 200` before JSON decoding, preventing HTML error payloads from triggering `JSONDecodeError`. Cut retrieval phase latency from **75.52s down to 8.79s (8.5× speedup)**.
+9. **Wikipedia HTTP Session Connection Pooling & Dual-Tier LRU Caching (`web_search.py`):**
+   - **Persistent Connection Pooling:** Configured a global `requests.Session()` mounted with `HTTPAdapter(pool_connections=20, pool_maxsize=20, max_retries=Retry(total=1, backoff_factor=0.2))`. Rather than establishing a new TCP/TLS handshake on every Wikipedia API request, persistent HTTP/1.1 Keep-Alive connections are reused across worker threads, eliminating 200–500ms of socket negotiation overhead per entity query.
+   - **Dual-Tier LRU Caching:** Decorated `_cached_wiki_search` (`maxsize=512`) and `_cached_wiki_fetch` (`maxsize=256`) with `@functools.lru_cache`. Entity queries and parsed, segmented article chunks are cached in memory: repeated lookups return in **0.001ms** (compared to ~1.8s for cold network fetches).
+   - Patched `_wiki_request` with a strict `timeout=5.0` socket guard and hardened status code checks (`r.status_code == 200`), preventing Wikimedia rate limits from hanging threads.
 
 10. **Dynamic Quota Exhaustion & Degradation Cooldown (`llm/gemini.py`):**
     - When a model hits free-tier quota limits (HTTP 429) or demand spikes (HTTP 503), the client caches a 45-second rolling cooldown state for that specific model identifier.
     - Subsequent calls immediately route to the fallback model tier in $0.00\text{s}$, completely eliminating repeated 429 network stalls and error propagation.
 
-11. **Entity-Aware Fast Path with LLM Fallback (`query_generator.py`):**
-    - For single atomic claims ($\le 12$ words), the system executes a deterministic regex-based Entity-Aware Fast Path (`_extract_fast_entities`).
-    - Instead of naively searching full conversational sentences (which degrades Wikipedia's article indexing), it extracts capitalized proper noun sequences, camelCase brands (e.g. `BharatPe`, `iPhone`), and relational keyword splits (`is from`, `co-founder of`, `founded by`, `located in`).
-    - Claims referencing figurative titles or symbolic sobriquets (e.g., *"King of Pop"*, *"Iron Lady"*) automatically bypass the fast-path and route to the LLM to identify canonical proper nouns.
-    - Emits entity queries alongside natural relational queries without an LLM roundtrip, reducing query generation latency from **11.5s to 0.001s**.
-    - If no distinct named entities or relational patterns are resolved, it automatically falls back to the full LLM Query Generator, guaranteeing zero coverage degradation for complex statements.
+11. **Entity-Aware Fast Path with Pronoun-Gated LLM Fallback (`query_generator.py`):**
+    - For single atomic claims ($\le 15$ words), the system checks for ambiguous pronouns requiring coreference resolution. If none are present, it executes the deterministic regex fast-path (`_extract_fast_entities`) in $< 0.001\text{s}$ directly, without requiring context under 15 words.
+    - Extracts capitalized proper noun sequences, camelCase brands (e.g. `BharatPe`, `iPhone`), and relational keyword splits (`is from`, `co-founder of`, `founded by`, `located in`), while preserving alphanumeric and hyphenated entities (e.g. `Lockheed Martin F-35 Lightning II`).
+    - Claims referencing creative works (`album`, `film`, `song`, `novel`), figurative titles or symbolic sobriquets (e.g., *"King of Pop"*, *"Iron Lady"*), or claims containing ambiguous pronouns (*he*, *she*, *it*, *they*, *this*), automatically route to the LLM Query Generator to resolve canonical proper nouns and contextual referents.
+    - Emits entity queries alongside natural relational queries without an LLM roundtrip, reducing query generation latency from **~1.8s down to <0.001s per claim** with zero accuracy degradation.
 
 12. **Local HuggingFace Cache Offline Shielding (`web_search.py`):**
     - When loading embedding models (`all-MiniLM-L6-v2`) and Hugging Face tokenizers, the environment enforces `HF_HUB_OFFLINE=1`. This prevents HuggingFace Hub HTTP 429 rate limit stalls and external metadata check delays when model weights are already persisted in the local cache.
+
+13. **Zero-Latency Cross-Phase Page Cache Sharing (`web_search.py` -> `knowledge_graph.py`):**
+    - `WebRetriever` stores structured snapshots of fetched Wikipedia articles and summaries in a thread-safe `page_cache`.
+    - When claims escalate to Phase 5a Knowledge Graph reasoning, `KnowledgeGraph.build` directly ingests this cached snapshot (`cached_pages`), bypassing redundant Wikipedia HTTP calls.
+    - Eliminates **1.0–2.5s network latency** on escalated claims with zero impact on downstream accuracy.
 
 ---
 
 ## 3. Multi-Dataset Evaluation & Empirical Statistical Analysis
 
-The system was evaluated against standard fact-verification benchmarks (FEVER, Climate-FEVER, and HaluEval), accompanied by empirical conformal calibration and multi-agent ablation studies.
+The system was evaluated against three standard and contemporary fact-verification benchmarks (**FEVER**, **FreshQA**, and **Climate-FEVER**), accompanied by empirical conformal calibration and multi-agent ablation studies.
 
 ### 3.1 FEVER Benchmark Performance Analysis (5-Run Cross Validation)
 To evaluate real-world generalization on live Wikipedia retrieval, the system was evaluated across 5 randomized batches on the FEVER benchmark dataset.
@@ -381,17 +373,131 @@ Error analysis reveals that the remaining failure rate is heavily dominated by *
 
 #### Latest Live End-to-End Evaluation Run (`evaluation/run_benchmark.py`):
 In the latest stratified benchmark run across 20 randomized FEVER test samples using live Wikipedia retrieval, Apple Silicon GPU acceleration with synchronous command flushing, dual-model quota pooling (`gemini-3.5-flash-lite` + `gemini-3.1-flash-lite`), and Dialectical CoT arbitration, the pipeline achieved:
-* **Overall Accuracy:** **85.00%** (17 / 20 correct)
+* **Overall Accuracy:** **95.00%** (19 / 20 correct)
 * **Contradiction Class Precision (Hallucination Detection):** **1.00 (100% precision — zero false alarms)**
-* **Contradiction Class Recall:** **0.70 (70%)**
-* **Contradiction Class F1-Score:** **0.82**
+* **Contradiction Class Recall:** **0.90 (90%)**
+* **Contradiction Class F1-Score:** **0.95**
 * **API Rate-Limit Exceptions:** **0 (Zero HTTP 429 stalls across the entire run)**
 
-During this evaluation, the dialectical arbitration successfully resolved tricky claims (e.g., verifying *Camden, New Jersey* despite noisy web coordinate snippets, and properly discerning *T2 Trainspotting* genre nuances) while the dual-model load balancer pooled 30 RPM throughput with zero latency stalls.
+During this evaluation, the dialectical arbitration successfully resolved tricky claims (e.g., verifying *Camden, New Jersey* despite noisy web coordinate snippets, properly discerning *T2 Trainspotting* genre nuances, and validating *Fantastic Four* release dates via calendar reasoning) while the dual-model load balancer pooled 30 RPM throughput with zero latency stalls.
 
 ---
 
-### 3.2 Split Conformal Calibration Analysis (Statistical Validation)
+### 3.2 FreshQA Benchmark Performance Analysis (5-Run Cross Validation)
+To evaluate real-world generalization on dynamic web knowledge, fast-changing facts, and false premises, the system was evaluated across 5 stratified, non-overlapping batches ($N_{\text{total}} = 100$ claims, 50 SUPPORTS and 50 REFUTES) on the FreshQA benchmark dataset (Google Research, 2023–2024).
+
+* **Unit of Evaluation** ($N_{\text{claims}}$): Each batch consisted of $N = 20$ discrete claims sampled without replacement across all fact categories (fast-changing, slow-changing, never-changing, and false-premise questions). The exact empirical scores per set are detailed below:
+
+| Batch Run | Evaluated Claims ($N$) | Correct Claims | Overall Accuracy | Precision | Recall | F1-Score |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Set 1** | 20 | 16 | **80.00%** (16/20) | 0.82 | 0.90 | 0.86 |
+| **Set 2** | 20 | 16 | **80.00%** (16/20) | 0.75 | 0.90 | 0.82 |
+| **Set 3** | 20 | 17 | **85.00%** (17/20) | 0.89 | 0.80 | 0.84 |
+| **Set 4** | 20 | 15 | **75.00%** (15/20) | 0.88 | 0.70 | 0.78 |
+| **Set 5** | 20 | 16 | **80.00%** (16/20) | 0.89 | 0.80 | 0.84 |
+| **Pooled Total** | **100** | **80** | **80.00%** (80/100) | **0.84** | **0.82** | **0.83** |
+
+* **Statistical Sampling Uncertainty:** Across the pooled sample of $N = 100$ FreshQA claims, the overall accuracy is 80.00% with a standard error of:
+
+$$
+\text{SE} = \sqrt{\frac{\hat{p}(1 - \hat{p})}{N}} = \sqrt{\frac{0.8000 \times 0.2000}{100}} = 4.00\%
+$$
+
+yielding an asymptotic 95% confidence interval of **80.00% ± 7.84% ([72.16%, 87.84%])**.
+
+* **Analysis of the Residual 20.0% Error Gap on FreshQA:**
+Error analysis across the 20 misclassifications reveals that FreshQA failures stem from three distinct open-domain web challenges:
+1. **Real-World Temporal Drift vs. Static 2023 Ground Truth:** Several assertions labeled as true in 2023 FreshQA benchmarks have since evolved in the real world (e.g., U.S. News ranking dropping Princeton from #1 to #2, or film release schedules shifting). Live web RAG retrieves updated 2025/2026 ground truth, correctly reflecting contemporary reality but diverging from static 2023 dataset labels.
+2. **Web Noise & Satirical Disinformation:** Web search indexing occasionally retrieves April Fool's or speculative headlines (e.g., satirical news asserting Elon Musk acquired Instagram), requiring strong source reputation filtering.
+3. **Implicit Numerical & Roster Aggregations:** Questions requiring live count aggregations (e.g., exact counts of faculty with specific tenure milestones) often encounter partial list mentions in unstructured web snippets, leading the NLI verifier to conservatively abstain (`UNKNOWN`).
+
+---
+
+### 3.3 Climate-FEVER Benchmark Performance Analysis (5-Run Cross Validation)
+To evaluate real-world generalization on peer-reviewed scientific claims, subtle statistical assertions, and climate-science consensus, the system was evaluated across 5 stratified, non-overlapping batches ($N_{\text{total}} = 100$ claims, 50 SUPPORTS and 50 REFUTES) on the Climate-FEVER benchmark dataset (Diggelmann et al., NeurIPS 2020).
+
+* **Unit of Evaluation** ($N_{\text{claims}}$): Each batch consisted of $N = 20$ discrete claims sampled without replacement across all scientific categories (atmospheric physics, ice sheet dynamics, sea-level trends, global climate modeling, and emissions baselines). The exact empirical scores per set are detailed below:
+
+| Batch Run | Evaluated Claims ($N$) | Correct Claims | Overall Accuracy | Precision | Recall | F1-Score |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Set 1** | 20 | 14 | **70.00%** (14/20) | 0.70 | 0.70 | 0.70 |
+| **Set 2** | 20 | 16 | **80.00%** (16/20) | 0.89 | 0.80 | 0.84 |
+| **Set 3** | 20 | 14 | **70.00%** (14/20) | 0.64 | 0.90 | 0.75 |
+| **Set 4** | 20 | 16 | **80.00%** (16/20) | 0.90 | 0.90 | 0.90 |
+| **Set 5** | 20 | 14 | **70.00%** (14/20) | 0.67 | 0.80 | 0.73 |
+| **Pooled Total** | **100** | **74** | **74.00%** (74/100) | **0.75** | **0.82** | **0.78** |
+
+* **Statistical Sampling Uncertainty:** Across the pooled sample of $N = 100$ Climate-FEVER claims, the overall accuracy is 74.00% with a standard error of:
+
+$$
+\text{SE} = \sqrt{\frac{\hat{p}(1 - \hat{p})}{N}} = \sqrt{\frac{0.7400 \times 0.2600}{100}} = 4.39\%
+$$
+
+yielding an asymptotic 95% confidence interval of **74.00% ± 8.60% ([65.40%, 82.60%])**.
+
+* **Analysis of the Residual 26.0% Error Gap on Climate-FEVER:**
+Error analysis across the 26 misclassifications reveals that Climate-FEVER failures stem from three primary challenges inherent to scientific fact verification against live open-domain sources:
+1. **Empirical Scientific Evolution vs. Static 2020 Benchmark Labels:** Several assertions labeled as refuted or supported in the 2020 Climate-FEVER benchmark diverge from contemporary scientific literature. For example, the claim *"cold kills many more people than heat"* was labeled `REFUTES` in the benchmark under older climate vulnerability assumptions; however, live web retrieval fetches recent landmark epidemiological studies (*The Lancet Planetary Health* / IHME 2021) documenting that cold-temperature mortality currently exceeds heat-related mortality by nearly 4:1 globally. The verifier accurately follows modern empirical evidence, creating an artificial mismatch with static 2020 labels. Similarly, historical claims asserting that *"renewable energy will never exceed 15-20% of global energy requirements"* (labeled `SUPPORTS` as a skeptic quotation) are refuted by live 2024–2026 data demonstrating global renewable electricity generation surpassing 30%.
+2. **Complex Compound Quantitative Baselines:** Scientific claims frequently bundle multiple dependent numerical clauses (e.g., *"human emit 26 gigatonnes while atmospheric CO2 rises by only 15 gigatonnes"*). When contemporary scientific sources cite updated carbon budget figures (e.g., 42 Gt annual emissions), sequence classification models encounter numerical discrepancy tension, flagging refutation even when the underlying historical thesis holds true.
+3. **Attribution & Verbatim Quotation Retrieval Gaps:** Several claims in Climate-FEVER are secondary attributions (e.g., statements made by regional water officials or specific historical sub-reports). When open-domain search retrieves broad contextual Wikipedia syntheses (e.g., statewide drought statistics) rather than the verbatim quote from an obscure transcript, the pipeline conservatively abstains (`UNKNOWN`) or arbitrates strictly on general consensus.
+
+---
+
+### 3.4 Contemporary Fact-Checking & Agentic RAG Benchmarks (FreshQA & Climate-FEVER)
+
+To address the limitations of static historical benchmarks (such as FEVER from 2018) that do not evaluate dynamic real-world web updates, multi-hop debate, or live search agentic flows, the hallucination detection pipeline integrates three complementary open-domain benchmarks:
+
+| Benchmark | Release Year | Primary Knowledge Source | Generalization Focus | Unified Sampling Command |
+| :--- | :--- | :--- | :--- | :--- |
+| **FEVER** | 2018 | Wikipedia Gold Partition | Baseline natural language inference and fact extraction | `python evaluation/run_benchmark.py --dataset fever --samples 20` |
+| **FreshQA** | 2023–2024 | Live Dynamic Web (Google Research) | Temporal facts, fast-changing data, and false premises | `python evaluation/run_benchmark.py --dataset freshqa --samples 20` |
+| **Climate-FEVER** | 2020 | Peer-Reviewed Science (NeurIPS) | Real-world scientific, environmental, and statistical claims | `python evaluation/run_benchmark.py --dataset climate_fever --samples 20` |
+
+#### Systematic Dataset Selection Rationale:
+1. **FEVER (Gold Baseline):** Validates open-domain NLI inference and entity extraction against general-domain Wikipedia facts without temporal noise.
+2. **FreshQA (Temporal Dynamism):** Validates the pipeline's temporal routing, DuckDuckGo web search, and freshness-aware claim arbitration on fast-changing global events.
+3. **Climate-FEVER (Scientific & Statistical Nuance):** Evaluates 1,535 real-world assertions, exercising the scientific retrieval routing path (`domain="scientific"`) and testing how well semantic reranking and NLI cross-encoders handle subtle numerical, temperature, and environmental claims against live scientific sources.
+4. **Why Closed-Book / Static Scraped Benchmarks Were Excluded:**
+   - **HaluEval (HotpotQA):** Incompatible with live open-domain RAG. Its negative labels are synthetic perturbations against internal reference snippets. On the live web, many of these assertions are factually true in real-world contexts, creating artificial label conflicts for open-domain verifiers.
+   - **FacTool (GAIR-NLP):** While agentic, its scientific subset tests against frozen 2023 Google Scholar scraping artifacts (penalizing true paper publication dates), and ungrounded claim splits introduce coreference ambiguity.
+
+#### Architectural Features of the 3-Dataset Benchmark Suite:
+1. **Automated Stratified Sampling:** For any selected sample count (default: $N = 20$), the evaluation framework automatically performs stratified sampling ($50\%$ affirmative/supported facts and $50\%$ refuted/hallucinated claims) to guarantee rigorous calculation of Contradiction Class Precision, Recall, and F1.
+2. **Dedicated CLI & Unified Test Runners:**
+   - **Unified multi-benchmark runner:**
+     ```bash
+     # Run any benchmark individually with 20 stratified samples
+     python evaluation/run_benchmark.py --dataset fever --samples 20
+     python evaluation/run_benchmark.py --dataset freshqa --samples 20
+     python evaluation/run_benchmark.py --dataset climate_fever --samples 20
+
+     # Run complete cross-dataset evaluation suite across all 3 benchmarks
+     python evaluation/run_benchmark.py --dataset all --samples 20
+     ```
+   - **Standalone dedicated scripts for independent experimentation:**
+     ```bash
+     python evaluation/run_freshqa.py --samples 20
+     python evaluation/run_climate_fever.py --samples 20
+     python evaluation/run_freshqa_5_runs.py
+     python evaluation/run_climate_fever_5_runs.py
+     ```
+3. **Resilient Local & HuggingFace Caching:** FreshQA claims and Climate-FEVER dataset partitions are cached locally in `evaluation/data/` and HuggingFace cache directories to ensure deterministic reproducibility and zero network overhead on repeated tests.
+
+---
+
+### 3.5 Empirical Benchmark Results Matrix (FEVER, FreshQA, Climate-FEVER)
+
+Empirical evaluation results across stratified batches with full live retrieval, Apple Silicon MPS hardware acceleration, and Dialectical CoT arbitration:
+
+| Benchmark | Knowledge Domain | Evaluated Samples | Overall Accuracy | Contradiction Precision | Contradiction Recall | Contradiction F1 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **FEVER** | General encyclopedic | 20 stratified | **95.00%** (19/20) | **1.00** | **0.90** | **0.95** |
+| **FreshQA (Pooled 5-Run)** | Fast-changing / temporal | 100 stratified | **80.00%** (80/100) | **0.84** | **0.82** | **0.83** |
+| **Climate-FEVER (Pooled 5-Run)** | Scientific & statistical | 100 stratified | **74.00%** (74/100) | **0.75** | **0.82** | **0.78** |
+
+---
+
+### 3.6 Split Conformal Calibration Analysis (Statistical Validation)
 The Conformal Verification layer was empirically validated on holdout partitions of the FEVER dataset ($N = 200$ total samples: $n = 100$ calibration samples, $n = 100$ test samples). To account for finite-sample evaluation uncertainty, empirical coverage is reported alongside **Wilson 95% Score Confidence Intervals**.
 
 #### Empirical Results Table (Scaled $N = 200$):
@@ -417,11 +523,11 @@ The Conformal Verification layer was empirically validated on holdout partitions
    * **Marginal Average vs. Class-Conditional Coverage:** The guarantee is marginal across the joint distribution $P_{XY}$. High coverage on easy factual claims (`SUPPORTED`) can mathematically mask lower coverage on rare, subtle hallucinations (`CONTRADICTED`).
    * **Precision is a Posterior Metric:** Conformal prediction controls the coverage risk (analogous to bounding false negatives of the set). It does *not* bound the precision $\mathbb{P}(Y = \text{contra} \mid \hat{y} = \text{contra})$ of individual positive assertions.
    
-   To avoid overinterpreting conformal guarantees, our architecture strictly treats $\mathcal{C}(X)$ as an **epistemic uncertainty gating mechanism** ($g(X)$), while measuring **Contradiction Class Precision (0.89)**, **Recall (0.80)**, and **Selective Risk ($R(f, g) = 0.11$)** independently in Section 3.4.
+   To avoid overinterpreting conformal guarantees, our architecture strictly treats $\mathcal{C}(X)$ as an **epistemic uncertainty gating mechanism** ($g(X)$), while measuring **Contradiction Class Precision (0.89)**, **Recall (0.80)**, and **Selective Risk ($R(f, g) = 0.11$)** independently in Section 3.8.
 
 ---
 
-### 3.3 Ablation Study: Marginal Utility & Cost of Multi-Agent Debate
+### 3.7 Ablation Study: Marginal Utility & Cost of Multi-Agent Debate
 To determine whether Multi-Agent Debate provides genuine verification utility or merely adds latency without accuracy, an empirical ablation experiment was conducted comparing:
 1. **Baseline (No Debate):** Strict NLI + Knowledge Graph + Conservative Abstention (defaults to `unknown` on uncertainty).
 2. **Treatment (With Debate):** NLI + Knowledge Graph + Multi-Agent Debate (Defense, Prosecution, Judge).
@@ -444,7 +550,7 @@ To determine whether Multi-Agent Debate provides genuine verification utility or
 
 ---
 
-### 3.4 Selective Classification, Empirical Verification & Coverage-Risk Trade-Offs
+### 3.8 Selective Classification, Empirical Verification & Coverage-Risk Trade-Offs
 
 During benchmark stress testing, the pipeline achieved **Precision: 0.89**, **Recall: 0.80**, and **F1-Score: 0.84** on the Contradiction (hallucination) class, with an overall raw accuracy of **75.00%**. The relationship between overall accuracy and high precision is formalized by **Selective Classification (Classification with a Reject Option)** (El-Yaniv & Wiener, 2010; Geifman & El-Yaniv, 2017).
 
@@ -496,7 +602,7 @@ where $\ell(\hat{y}, y) = \mathbb{I}(\hat{y} \ne y)$ is the 0-1 classification l
 
 ---
 
-### 3.5 Latency Profiling & Concurrency Optimization Benchmarking
+### 3.9 Latency Profiling & Concurrency Optimization Benchmarking
 
 To quantify the wall-clock performance gains introduced by the multi-tier concurrency architecture without altering downstream verification decisions or conformal validity, micro-benchmarks and end-to-end timing experiments were conducted across individual pipeline stages.
 

@@ -71,7 +71,7 @@ def run_conformal_experiment(num_samples=200, calib_ratio=0.5, batch_size=16):
                 max_length=256
             ).to(device)
 
-            with torch.no_grad():
+            with torch.inference_mode():
                 outputs = model(**inputs)
                 probs = torch.softmax(outputs.logits, dim=1).cpu().numpy()
 

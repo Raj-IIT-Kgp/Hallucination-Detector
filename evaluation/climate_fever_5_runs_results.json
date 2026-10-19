@@ -1,0 +1,260 @@
+{
+  "set_results": [
+    {
+      "set": "Set 1",
+      "evaluated_claims": 20,
+      "correct_claims": 14,
+      "accuracy": 0.7,
+      "precision": 0.7,
+      "recall": 0.7,
+      "f1": 0.7,
+      "tp": 7,
+      "fp": 3,
+      "fn": 3
+    },
+    {
+      "set": "Set 2",
+      "evaluated_claims": 20,
+      "correct_claims": 16,
+      "accuracy": 0.8,
+      "precision": 0.8888888888888888,
+      "recall": 0.8,
+      "f1": 0.8421052631578948,
+      "tp": 8,
+      "fp": 1,
+      "fn": 2
+    },
+    {
+      "set": "Set 3",
+      "evaluated_claims": 20,
+      "correct_claims": 14,
+      "accuracy": 0.7,
+      "precision": 0.6428571428571429,
+      "recall": 0.9,
+      "f1": 0.75,
+      "tp": 9,
+      "fp": 5,
+      "fn": 1
+    },
+    {
+      "set": "Set 4",
+      "evaluated_claims": 20,
+      "correct_claims": 16,
+      "accuracy": 0.8,
+      "precision": 0.9,
+      "recall": 0.9,
+      "f1": 0.9,
+      "tp": 9,
+      "fp": 1,
+      "fn": 1
+    },
+    {
+      "set": "Set 5",
+      "evaluated_claims": 20,
+      "correct_claims": 14,
+      "accuracy": 0.7,
+      "precision": 0.6666666666666666,
+      "recall": 0.8,
+      "f1": 0.7272727272727272,
+      "tp": 8,
+      "fp": 4,
+      "fn": 2
+    }
+  ],
+  "pooled": {
+    "total_evaluated": 100,
+    "total_correct": 74,
+    "accuracy": 0.74,
+    "precision": 0.7454545454545455,
+    "recall": 0.82,
+    "f1": 0.780952380952381,
+    "standard_error": 0.04386342439892262,
+    "ci_margin_95": 0.08597231182188834,
+    "ci_lower_95": 0.6540276881781116,
+    "ci_upper_95": 0.8259723118218883
+  },
+  "failures": [
+    {
+      "set": 1,
+      "claim": "In fact, human emit 26 gigatonnes of CO2 per year while CO2 in the atmosphere is rising by only 15 gigatonnes per year - much of human CO2 emissions is being absorbed by natural sinks.",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: As of 2024, it is estimated that 2,650 gigatonnes of CO2 have been emitted by human activity since 1850, with annual emissions of 42 gigatonnes per year. About 1,050 gigatonnes remain in the atmosphere following absorption by oceans and land.\n\nEvidence 2: Figures are published monthly by the National Oceanic & Atmospheric Admini"
+    },
+    {
+      "set": 1,
+      "claim": "Global warming' is a myth \u2014 so say 80 graphs from 58 peer-reviewed scientific papers published in 2017.",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: Evidence 1: Jun 8, 2017 \u00b7 These studies of past climate do not challenge the well-researched fact that human activities are responsible for climate change, as many of the scientists behind the studies have confirmed. 'Global warming' is a myth \u2014 so say 80 graphs from 58 peer-reviewed scientific papers published in 2017. Mr Delingpole writes"
+    },
+    {
+      "set": 1,
+      "claim": "There is not a single candidate in the Republican primary that thinks we should do anything about climate change.",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: Evidence 1: Nov 8, 2023 \u00b7 Regardless of the scientific consensus that fossil fuels are the leading cause of climate change, all Republican presidential candidates want to prioritize oil, gas and fossil fuel... Aug 24, 2023 \u00b7 Only one candidate said climate change was real in the short discussion that followed. Former UN ambassador Nikki Hal"
+    },
+    {
+      "set": 1,
+      "claim": "CFCs contribute to global waerming at a small level.",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: Evidence 1: The Greenhouse Gas Effect While CFCs are notorious for their role in ozone layer depletion, they also possess significant greenhouse gas properties that contribute to global warming. The greenhouse gas effect occurs when certain gases in the Earth's atmosphere trap heat, preventing it from escaping back into space.\n\nEvidence 2: "
+    },
+    {
+      "set": 1,
+      "claim": "ever since December temperatures in the Arctic have consistently been lower than minus 20\u2005C",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: Another snowstorm swept Catalonia as well as neighbouring French departments (Languedoc-Roussillon, Midi-Pyren\u00e9es) on March 8, depositing 60 cm of snow in Girona. This kind of snowstorm activity is considered to be highly anomalous, and as extreme as the negative Arctic oscillation value itself. These negative values of the AO d"
+    },
+    {
+      "set": 1,
+      "claim": "Through decades of research, it has become clear that human civilization, roughly 6,000 years old, developed during an unusually stable period for global sea levels.",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: Mar 29, 2026 \u00b7 Human civilization, defined by settled communities with agriculture, social hierarchies, and shared infrastructure, has existed for roughly 5,000 to 6,000 years.\n\nEvidence 2: Recently, it has become widely accepted that late Holocene, 3,000 calendar years ago to present, sea level was nearly stable prior to an acc"
+    },
+    {
+      "set": 2,
+      "claim": "The report [\u2026] found that the United States was one of the most pollution-free nations in the world.\u201d",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: EPISTEMIC CONTRADICTION: Retrieved sources provide conflicting information regarding this claim.\n\nEvidence 1: The report, which analyzed the \"annual median concentration of particulate matter with an aerodynamic diameter of 2.5 \u03bcm or less (PM2.5) for both urban population and rural and urban population\" found that the United States was one "
+    },
+    {
+      "set": 2,
+      "claim": "Previous IPCC reports tended to assume that clouds would have a neutral impact because the warming and cooling feedbacks would cancel each other out.",
+      "true_label": "supported",
+      "prediction": "unknown",
+      "evidence_used": "Fact 1: Evidence 1: During the period of the Sixth Assessment Report, the IPCC released three special reports. The first and most influential was the Special Report on Global Warming of 1.5\u00b0C in 2018. In 2019 the Special Report on Climate Change and Land, and the Special Report on the Ocean and Cryosphere in a Changing Climate came out.\n\nEvidence 2"
+    },
+    {
+      "set": 2,
+      "claim": "cold kills many more people than heat.",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: Evidence 1: Aug 20, 2021 \u00b7 But surprisingly, cold kills more people globally than heat each year. In 2019, cold temperatures killed nearly four times as many people as warm temperatures, according to a new study from the Institute for Health Metrics and Evaluation.\n\nEvidence 2: Jul 1, 2024 \u00b7 But it\u2019s a robust and consistent result within th"
+    },
+    {
+      "set": 2,
+      "claim": "[\u2026]until we develop a practical, cost-competitive alternative to fossil fuels, it is unlikely that renewable energy will ever make up more than 15-20% of global energy requirements.",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: Many countries already have renewables contributing more than 20% of their total energy supply, with some generating over half or even all their electricity from renewable sources. The main motivation to use renewable energy instead of fossil fuels is to reduce greenhouse gas emissions, which cause climate change. In general, re"
+    },
+    {
+      "set": 3,
+      "claim": "\"Of the rise in temperature during the 20th century, the bulk occurred from 1900 to 1940.",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: Evidence 1: The global average and combined land and ocean surface temperature, show a warming of 1.09 \u00b0C (range: 0.95 to 1.20 \u00b0C) from 1850\u20131900 to 2011\u20132020, based on multiple independently produced datasets. The trend is faster since the 1970s than in any other 50-year period over at least the last 2000 years. Most of the observed warmin"
+    },
+    {
+      "set": 3,
+      "claim": "They tell us that we are the primary forces controlling earth temperatures by the burning of fossil fuels and releasing their carbon dioxide.",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: Under the 2015 Paris Agreement, nations collectively agreed to keep warming \"well under 2 \u00b0C\". However, with pledges made under the Agreement, global warming would still reach about 2.8 \u00b0C (5.0 \u00b0F) by the end of the century. There is widespread support for climate action worldwide, and most countries aim to stop emitting carbon "
+    },
+    {
+      "set": 3,
+      "claim": "By that time CO2 emissions had already risen from the expanded use  of coal that had powered the industrial revolution, and emissions only  increased slowly from 3.5gigatonnes in 1910 to under 4gigatonnes by the  end of the Second World War.",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: The Second Industrial Revolution continued into the 20th century with early factory electrification and the production line; it ended at the beginning of World War I. The Information Age is sometimes also called the Third Industrial Revolution. It followed on from the First Industrial Revolution which flourished in Britain in th"
+    },
+    {
+      "set": 3,
+      "claim": "Observations throughout the world make it clear that climate change is occurring, and rigorous scientific research demonstrates that the greenhouse gases emitted by human activities are the primary driver.",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: Greenhouse gas emissions (GHG emissions) from human activities intensify the greenhouse effect which contributes to climate change. Carbon dioxide (CO2) from burning fossil fuels (such as coal, oil, and natural gas) is the main cause of climate change. The largest annual emissions are from China followed by the United States, wh"
+    },
+    {
+      "set": 3,
+      "claim": "Climate change is because of Pacific Decadal Oscillation.",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: The Pacific Decadal Oscillation (PDO) is often described as a long-lived El Ni\u00f1o-like pattern of Pacific climate variability (Zhang et al. 1997). As seen with the better-known El Ni\u00f1o/Southern Oscillation (ENSO), extremes in the PDO pattern are marked by widespread variations in the Pacific Basin and the North American climate. "
+    },
+    {
+      "set": 3,
+      "claim": "as the pathbreaking work by Rosamond Naylor and David Battisti has shown, the tropics are already too hot to efficiently grow grain, and those places where grain is produced today are already at optimal growing temperature \u2014 which means even a small warming will push them down the slope of declining productivity.",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: In addition, crop yields in tropical regions will be negatively affected by the projected moderate increase in temperature (1\u20132 \u00b0C) expected to occur during the first half of the century. During the second half of the century, further warming is projected to decrease crop yields in all regions including Canada and the Northern U"
+    },
+    {
+      "set": 4,
+      "claim": "\u2018The dry periods are drier and the wet periods are wetter,\u2019 said Jeffrey Mount, a water expert and senior fellow at the Public Policy Institute of California.",
+      "true_label": "supported",
+      "prediction": "unknown",
+      "evidence_used": "Fact 1: Evidence 1: In wet years, \"environmental\" water averages 61%, while in dry years it averages 41%, and can be even lower in critically dry years. Water and water rights are among the state's divisive political issues. Due to the lack of reliable dry season rainfall, water is limited in the most populous U.S. state. An ongoing debate is wheth"
+    },
+    {
+      "set": 4,
+      "claim": "Recent record-low water levels in Lake Michigan are evidence that global warming is leading to \"the evaporation of our Great Lakes.\"",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: [SYSTEM TIMESTAMP: 2026-10-19]\nEvidence 1: Recent record-low water levels in Lake Michigan are evidence that global warming is leading to \"the evaporation of our Great Lakes.\"\n\nEvidence 2: Recent lake levels include record low levels in 2013 in Lakes Superior, Erie, and Michigan-Huron, followed by record high levels in 2020 in the same lake"
+    },
+    {
+      "set": 4,
+      "claim": "[climate scientists] say that aspects of the case of Hurricane Harvey suggest global warming is making a bad situation worse.",
+      "true_label": "supported",
+      "prediction": "unknown",
+      "evidence_used": "Fact 1: Evidence 1: Indirect effects of aerosols are the largest uncertainty in radiative forcing. While aerosols typically limit global warming by reflecting sunlight, black carbon in soot that falls on snow or ice can contribute to global warming. The resulting excess heat accelerates the melting of ice sheets and glaciers, which in turn contribu"
+    },
+    {
+      "set": 4,
+      "claim": "Ice Sheet losses are overestimated.",
+      "true_label": "contradicted",
+      "prediction": "unknown",
+      "evidence_used": "Fact 1: No evidence found. LLM Absence Evaluation: unknown"
+    },
+    {
+      "set": 5,
+      "claim": "The sea level was 20 to 30 feet higher than it is today, implying that the ice sheets in both Greenland and Antarctica must have partly disintegrated, a warning of what could occur in the relatively near future if the heating of the planet continues unchecked.\u201d",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: Due to these uncertainties, some scientists \u2013 including the originators of the hypothesis, Robert DeConto and David Pollard \u2013 have suggested that the best way to resolve the question would be to precisely determine sea level rise during the Last Interglacial. MICI can be effectively ruled out if SLR at the time was less than 4 m"
+    },
+    {
+      "set": 5,
+      "claim": "\"Unquestionably, the U.N. Intergovernmental Panel on Climate Change (IPCC) was formed to build the scientific case for humanity being the primary cause of global warming.",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: This was particularly the case with the Special Report on Global Warming of 1.5 \u00b0C in 2018 and Climate Change 2021: The Physical Science Basis, the Working Group I contribution to the Sixth Assessment Report, in 2021. There was also much greater public interest, reflected in the youth and other movements that emerged in 2018. IP"
+    },
+    {
+      "set": 5,
+      "claim": "Because current climate change is so rapid, the way species typically adapt (eg - migration) is, in most cases, simply not be possible.",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: [SYSTEM TIMESTAMP: 2026-10-19]\nEvidence 1: Jul 23, 2019 \u00b7 Biological responses to climate change have been widely documented across taxa and regions, but it remains unclear whether species are maintaining a good match between phenotype and... Feb 13, 2024 \u00b7 There are two key questions. First, how will species adapt to climate change. Second"
+    },
+    {
+      "set": 5,
+      "claim": "Coral bleaching has devastated 93% of the Great Barrier Reef",
+      "true_label": "contradicted",
+      "prediction": "supported",
+      "evidence_used": "Fact 1: Evidence 1: Apr 20, 2016 \u00b7 Extensive aerial surveys and dives have revealed that 93 percent of the world\u2019s largest reef has been devastated by coral bleaching. The culprit has been record-warm water driven by El Ni\u00f1o and...\n\nEvidence 2: Coral mortalities reached up to 93% in areas like the Pacific coast near Mexico. Regions such as Florida "
+    },
+    {
+      "set": 5,
+      "claim": "[CO2] has increased 43 percent above the pre-industrial level so far",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: [SYSTEM TIMESTAMP: 2026-10-19]\nEvidence 1: The increase coincided with record atmospheric CO2 concentrations of about 427 parts-per-million (ppm), roughly 2.4 ppm higher than in 2024 and around 50% above pre-industrial levels.\n\nEvidence 2: Atmospheric O2 levels are decreasing in Earth's atmosphere as it reacts with the carbon in fossil fuel"
+    },
+    {
+      "set": 5,
+      "claim": "\u201c[T]he 1079 emails and 72 documents seem indeed evidence of a scandal  involving most of the most prominent scientists pushing the man-made  warming theory - a scandal that is one of the greatest in modern  science.",
+      "true_label": "supported",
+      "prediction": "contradicted",
+      "evidence_used": "Fact 1: Evidence 1: The Telegraph reported that academics and climate change researchers dismissed the allegations, saying that nothing in the emails proved wrongdoing. Independent reviews by FactCheck and the Associated Press said that the emails did not affect evidence that man-made global warming is a real threat, and said that emails were being"
+    }
+  ]
+}

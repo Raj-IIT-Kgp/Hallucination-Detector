@@ -12,7 +12,14 @@ _ROLES_AND_TITLES = {
 
 _STOPWORDS = {
     'the', 'a', 'an', 'in', 'on', 'at', 'this', 'that', 'he', 'she', 
-    'it', 'they', 'his', 'her', 'their', 'its', 'who', 'which', 'where'
+    'it', 'they', 'his', 'her', 'their', 'its', 'who', 'which', 'where',
+    'off', 'up', 'down', 'no', 'not', 'only', 'all', 'more', 'most', 
+    'such', 'same', 'so', 'than', 'too', 'very', 'can', 'will', 'just', 'should'
+}
+
+_AMBIGUOUS_PRONOUNS = {
+    'he', 'she', 'it', 'they', 'him', 'her', 'them', 
+    'his', 'their', 'its', 'this', 'these', 'those'
 }
 
 _KNOWN_NAMES = {
@@ -52,34 +59,23 @@ def _extract_fast_entities(claim):
     epithet_markers = ["king of", "queen of", "father of", "mother of", "iron lady", "first man", "first woman", "voice of", "bard of"]
     if any(m in lower for m in epithet_markers):
         return None
-    
-    # 1. Capitalized Entity Sequences (if text has proper capitalization)
-    has_mixed_case = any(c.isupper() for c in clean[1:])
-    if has_mixed_case:
-        cap_entities = re.findall(r'\b[A-Z][a-zA-Z]*(?:\s+[A-Z][a-zA-Z]*)*\b', clean)
-        cleaned_caps = []
-        for e in cap_entities:
-            words = e.split()
-            while words and words[0].lower() in _STOPWORDS:
-                words = words[1:]
-            if words:
-                cleaned_caps.append(" ".join(words))
 
-        filtered = [
-            e for e in cleaned_caps 
-            if e.lower() not in _STOPWORDS and e.lower() not in _ROLES_AND_TITLES and len(e.strip()) > 1
-        ]
-        if len(filtered) >= 1:
-            return filtered[:3]
+    # Creative works (albums, films, songs, books) frequently need parenthetical disambiguation
+    # or have lowercase words in their titles (e.g. "Off the Wall"). Route to LLM.
+    creative_markers = {"album", "film", "movie", "song", "single", "novel", "soundtrack", "play", "series", "opera", "track", "record"}
+    words_set = set(re.findall(r'\b\w+\b', lower))
+    if words_set & creative_markers:
+        return None
 
-    # 2. Relational phrase splitting (for lowercase or uncapitalized input)
+    # 1. Relational phrase splitting (captures explicit Subject-Relation-Object pairs)
     connectors = [
         r'\s+(?:is|was|are|were)\s+(?:the\s+|a\s+|an\s+)?(?:co-founder|co founder|founder|ceo|president|director|creator|author|inventor)\s+of\s+',
         r'\s+(?:is|was|are|were)\s+from\s+',
-        r'\s+(?:is|was|are|were)\s+(?:the\s+|a\s+|an\s+)?(?:capital|headquarters|center|member|part)\s+of\s+',
+        r'\s+(?:is|was|are|were)\s+(?:the\s+|a\s+|an\s+)?(?:capital|headquarters|center|member|part|city|state|country)\s+(?:of|in)\s+',
         r'\s+(?:is|was|are|were)\s+(?:born|located|situated|based|headquartered)\s+in\s+',
         r'\s+(?:was|were)\s+(?:founded|created|invented|directed|acquired|bought|written|discovered)\s+by\s+',
-        r'\s+(?:co-founded|co founded|founded|created|invented|directed|acquired|discovered)\s+'
+        r'\s+(?:co-founded|co founded|founded|created|invented|directed|acquired|discovered)\s+',
+        r'\s+(?:is|was|are|were)\s+(?:a|an|the)\s+'
     ]
 
     for pattern in connectors:
@@ -97,7 +93,9 @@ def _extract_fast_entities(claim):
             if obj:
                 # Remove temporal clauses like 'in 2018'
                 obj_clean = re.split(r'\s+(?:in|on|at|during|since)\s+\d{4}', obj, flags=re.IGNORECASE)[0].strip()
-                if obj_clean and obj_clean.lower() not in _STOPWORDS and obj_clean.lower() not in _ROLES_AND_TITLES:
+                orig_obj_match = re.search(r'\b' + re.escape(obj_clean) + r'\b', clean)
+                is_capitalized = orig_obj_match and any(c.isupper() for c in orig_obj_match.group(0))
+                if obj_clean and obj_clean.lower() not in _STOPWORDS and obj_clean.lower() not in _ROLES_AND_TITLES and is_capitalized:
                     entities.append(_preserve_or_title(obj_clean, clean))
             if len(entities) >= 1:
                 return entities[:3]
@@ -110,10 +108,19 @@ def generate_queries(claim, context=None):
     Now includes temporal context tracking.
     """
     # ── FAST-PATH FOR CONCISE / ATOMIC CLAIMS ──
-    # When claim is already a single concise statement (<= 12 words) without complex context
     words = claim.strip().split()
     lower_claim = claim.lower()
-    if len(words) <= 12 and (context is None or context.strip() == claim.strip() or len(context.strip().split()) <= 15):
+
+    # Check if claim contains ambiguous pronouns requiring context coreference resolution
+    claim_tokens = {w.strip(".,!?:;\"'()[]{}") for w in lower_claim.split()}
+    has_pronouns = bool(claim_tokens & _AMBIGUOUS_PRONOUNS)
+
+    # Fast-path eligible when concise (<= 15 words) and:
+    # 1. Claim has no ambiguous pronouns (self-contained entities), OR
+    # 2. Context is absent / identical to claim (no coreference context exists to resolve against)
+    is_context_independent = (not has_pronouns) or (context is None) or (context.strip() == claim.strip())
+
+    if len(words) <= 15 and is_context_independent:
         clean_claim = claim.strip().rstrip(".").strip()
         if clean_claim:
             entities = _extract_fast_entities(clean_claim)
@@ -225,22 +232,40 @@ Output:
         print(f"[QueryGenerator] LLM rewrite failed: {e}")
         return []
     try:
+        # 1. Clean markdown code blocks if present
         cleaned = response.strip()
-        match = re.search(r'\[.*\]', cleaned, re.DOTALL)
-        if match:
-            cleaned = match.group(0)
-        elif cleaned.startswith("```json"):
-            cleaned = cleaned[7:]
-            if cleaned.endswith("```"):
-                cleaned = cleaned[:-3]
-        elif cleaned.startswith("```"):
-            cleaned = cleaned[3:]
-            if cleaned.endswith("```"):
-                cleaned = cleaned[:-3]
-            
-        queries = json.loads(cleaned.strip())
-        if isinstance(queries, list) and len(queries) > 0:
-            return queries
+        if "```" in cleaned:
+            match = re.search(r'```(?:json)?\s*(\[.*?\])\s*```', cleaned, re.DOTALL)
+            if match:
+                try:
+                    parsed = json.loads(match.group(1).strip())
+                    if isinstance(parsed, list) and len(parsed) > 0:
+                        return [str(x).strip() for x in parsed if str(x).strip()]
+                except Exception:
+                    pass
+
+        # 2. Extract any JSON array containing quoted strings
+        candidates = re.findall(r'\[\s*(?:"[^"]*"(?:\s*,\s*"[^"]*")*|\'[^\']*\'(?:\s*,\s*\'[^\']*\')*)\s*\]', response, re.DOTALL)
+        for cand in reversed(candidates):
+            try:
+                cand_clean = cand.strip()
+                if cand_clean.startswith("['"):
+                    cand_clean = cand_clean.replace("'", '"')
+                parsed = json.loads(cand_clean)
+                if isinstance(parsed, list) and all(isinstance(x, str) for x in parsed) and len(parsed) > 0:
+                    return [str(x).strip() for x in parsed if str(x).strip()]
+            except Exception:
+                continue
+
+        # 3. Fallback: search any bracketed segment
+        bracket_candidates = re.findall(r'\[([^\[\]]+)\]', response, re.DOTALL)
+        for cand in reversed(bracket_candidates):
+            try:
+                parsed = json.loads(f"[{cand}]")
+                if isinstance(parsed, list) and all(isinstance(x, str) for x in parsed) and len(parsed) > 0:
+                    return [str(x).strip() for x in parsed if str(x).strip()]
+            except Exception:
+                continue
     except Exception as e:
         print(f"[QueryGenerator] Failed to parse rewrite JSON. Error: {e}")
         

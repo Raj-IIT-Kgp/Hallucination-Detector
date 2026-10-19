@@ -1,0 +1,4802 @@
+[
+  {
+    "claim": "An animal has landed on the moon.",
+    "label": "REFUTES",
+    "raw_question": "What is the name of the first animal to land on the moon?",
+    "fact_type": "slow-changing",
+    "ground_truth": "No animal has ever landed on the moon yet.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Leonardo DiCaprio has a third child.",
+    "label": "REFUTES",
+    "raw_question": "What is the name of Leonardo DiCaprio's third child?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Leonardo DiCaprio does not have any children.",
+    "split": "TEST"
+  },
+  {
+    "claim": "A human has landed on Mars.",
+    "label": "REFUTES",
+    "raw_question": "What year did the first human land on Mars?",
+    "fact_type": "slow-changing",
+    "ground_truth": "No humans have been to Mars yet.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Zodiac Killer has been identified.",
+    "label": "REFUTES",
+    "raw_question": "What was the name of the Zodiac killer?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The Zodiac Killer has not been identified.",
+    "split": "TEST"
+  },
+  {
+    "claim": "All quickly verifiable problems are also quickly solvable.",
+    "label": "REFUTES",
+    "raw_question": "Why are all quickly verifiable problems also quickly solvable?",
+    "fact_type": "slow-changing",
+    "ground_truth": "This is the P versus NP problem and it remains open.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Bodybuilding is an Olympic sport.",
+    "label": "REFUTES",
+    "raw_question": "In what year did bodybuilding become an Olympic sport?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Bodybuilding is not an Olympic sport.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Meta moved its headquarters to Austin.",
+    "label": "REFUTES",
+    "raw_question": "When did Meta move its headquarters to Austin?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Meta has never had its headquarters in Austin. Its headquarters are located in Menlo Park, California.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The alpha Kappa Delta Phi sorority has a chapter at American University.",
+    "label": "REFUTES",
+    "raw_question": "When was the chapter of alpha Kappa Delta Phi established at American University?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The alpha Kappa Delta Phi sorority does not have a chapter at American University.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Frontier purchased Spirit Airlines.",
+    "label": "REFUTES",
+    "raw_question": "When did Frontier purchase Spirit Airlines?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Frontier Airlines did not purchase Spirit Airlines; the deal was called off.",
+    "split": "TEST"
+  },
+  {
+    "claim": "A permanent cure for cancer has been developed.",
+    "label": "REFUTES",
+    "raw_question": "When was the permanent cure for cancer developed?",
+    "fact_type": "slow-changing",
+    "ground_truth": "There is currently no permanent cure for cancer.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Dartmouth Law School was founded.",
+    "label": "REFUTES",
+    "raw_question": "When was Dartmouth Law School founded?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Dartmouth College does not have a graduate school for law.",
+    "split": "TEST"
+  },
+  {
+    "claim": "League of Legends 2 was released.",
+    "label": "REFUTES",
+    "raw_question": "When was League of Legends 2 released?",
+    "fact_type": "slow-changing",
+    "ground_truth": "There has not been a sequel to League of Legends.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Hikaru Nakamura became the World Chess Champion.",
+    "label": "REFUTES",
+    "raw_question": "In what year did Hikaru Nakamura become the World Chess Champion?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Hikaru Nakamura has not won the World Chess Championship. He only won the US Chess Championship.",
+    "split": "TEST"
+  },
+  {
+    "claim": "American Express opened its 25th Centurion Lounge.",
+    "label": "REFUTES",
+    "raw_question": "When did American Express open its 25th Centurion Lounge?",
+    "fact_type": "slow-changing",
+    "ground_truth": "To date, American Express hasn't opened its 25th Centurion Lounges.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Element 120 was first synthesized.",
+    "label": "REFUTES",
+    "raw_question": "In what year was the Element 120 first synthesized?",
+    "fact_type": "slow-changing",
+    "ground_truth": "To date, the highest atomic number element to be discovered or synthesized is with atomic number 118 (oganesson).",
+    "split": "TEST"
+  },
+  {
+    "claim": "Jamie Oliver earned his first Michelin Star.",
+    "label": "REFUTES",
+    "raw_question": "When did Jamie Oliver earn his first Michelin Star?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Jamie Oliver's restaurants have never earned a Michelin Star.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The UK adopted the Euro.",
+    "label": "REFUTES",
+    "raw_question": "When did the UK adopt the Euro?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The United Kingdom has never adopted the Euro.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Joe Biden visited Vietnam a second time during his presidency.",
+    "label": "REFUTES",
+    "raw_question": "When was the second time that Joe Biden visited Vietnam during his presidency?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Joe Biden visited Vietnam only once during his presidency.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Elon Musk bought Activision Blizzard.",
+    "label": "REFUTES",
+    "raw_question": "How much did Elon Musk buy Activision Blizzard for?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Elon Musk has not purchased Activision Blizzard. Microsoft announced its intent to acquire Activision Blizzard for $68.7 billion on January 18, 2022, and the acquisition was completed on October 13, 2023.",
+    "split": "TEST"
+  },
+  {
+    "claim": "COVID-19 was declared endemic by the World Health Organization.",
+    "label": "REFUTES",
+    "raw_question": "When was COVID-19 declared endemic by the World Health Organization?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The World Health Organization has not declared COVID-19 as endemic.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Drake topped Spotify's list of most-streamed artists for three consecutive years.",
+    "label": "REFUTES",
+    "raw_question": "In what three consecutive years did Drake top Spotify's list of most-streamed artists?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Drake has never topped Spotify's list of most-streamed artists for three consecutive years. Bad Bunny is the only artist to have accomplished this feat.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Tesla Model Z came out.",
+    "label": "REFUTES",
+    "raw_question": "When did Tesla Model Z come out?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Tesla has never released a Tesla Model Z.",
+    "split": "TEST"
+  },
+  {
+    "claim": "A vaccine completely eradicated COVID-19 worldwide.",
+    "label": "REFUTES",
+    "raw_question": "Which vaccine completely eradicated COVID-19 worldwide?",
+    "fact_type": "slow-changing",
+    "ground_truth": "No vaccine has eradicated COVID-19 worldwide.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Elon Musk acquired Instagram.",
+    "label": "REFUTES",
+    "raw_question": "How much did Elon Musk acquire Instagram for?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Elon Musk hasn't bought Instagram.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Mark Zuckerberg acquired Twitter.",
+    "label": "REFUTES",
+    "raw_question": "How much did Mark Zuckerberg acquire Twitter for?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Mark Zuckerberg has not acquired Twitter. Twitter rejected Mark Zuckerberg's offer in the past.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Clint Eastwood has won a Best Actor Academy Award.",
+    "label": "REFUTES",
+    "raw_question": "What movie did Clint Eastwood win a Best Actor Academy Award for?",
+    "fact_type": "slow-changing",
+    "ground_truth": "He has not won any Oscars for acting.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Willie Nelson has passed away.",
+    "label": "REFUTES",
+    "raw_question": "When did Willie Nelson pass away?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Willie Nelson is still alive.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Jeremy Corbyn has served as Prime Minister of the UK.",
+    "label": "REFUTES",
+    "raw_question": "How many times has Jeremy Corbyn served as Prime Minister of the UK?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Corbyn has never served as Prime Minister of the UK.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Chris Paul won his second NBA championship.",
+    "label": "REFUTES",
+    "raw_question": "What year did Chris Paul win his second NBA championship?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Chris Paul has never won an NBA championship.",
+    "split": "TEST"
+  },
+  {
+    "claim": "King Charles stripped Prince Harry's title as the Duke of Sussex.",
+    "label": "REFUTES",
+    "raw_question": "When did King Charles strip Prince Harry's title as the Duke of Sussex?",
+    "fact_type": "slow-changing",
+    "ground_truth": "It has not been legally stripped.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Yann LeCun joined Google.",
+    "label": "REFUTES",
+    "raw_question": "When did Yann LeCun join Google?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Yann has never ever joined Google.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The eighth book of the Percy Jackson & the Olympians series has been released.",
+    "label": "REFUTES",
+    "raw_question": "When was the eighth book of the Percy Jackson & the Olympians series released?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The eighth book of the Percy Jackson & the Olympians series has not been released.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The PlayStation 6 (PS6) was released worldwide in 2023.",
+    "label": "REFUTES",
+    "raw_question": "In what month of 2023 was the PlayStation 6 (PS6) released worldwide?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The PlayStation 6 (PS6) has not yet been released.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The population of the United States reached 8 billion.",
+    "label": "REFUTES",
+    "raw_question": "When did the population of United States reach 8 billion?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The population of United States has not yet reached 8 billion.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Harry Maguire won the Ballon d'Or.",
+    "label": "REFUTES",
+    "raw_question": "What was the first year in which Harry Maguire won the Ballon d'Or?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Harry Maguire has never won the Ballon d'Or.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Papa John's went out of business.",
+    "label": "REFUTES",
+    "raw_question": "In what year did Papa John's go out of business?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Papa John's is currently still an active business.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The film Metropolis entered the public domain in Germany.",
+    "label": "REFUTES",
+    "raw_question": "What year did the film Metropolis enter the public domain in Germany?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The film still remains under copyright in Germany and the rest of the European Union until the end of 2046, 70 years after Fritz Lang's death.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Hillary Clinton has enacted executive orders as President of the United States.",
+    "label": "REFUTES",
+    "raw_question": "How many executive orders has Hillary Clinton enacted?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Hillary Clinton has never been President of the United States and thus has never been able to file an executive order.",
+    "split": "TEST"
+  },
+  {
+    "claim": "There has been a female president of the United States.",
+    "label": "REFUTES",
+    "raw_question": "Who was the first female president of the United States?",
+    "fact_type": "slow-changing",
+    "ground_truth": "There has never been a female president of the United States.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Argentina has won their fifth FIFA World Cup title.",
+    "label": "REFUTES",
+    "raw_question": "In what year did Argentina win their fifth FIFA World Cup title?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Argentina has not won their fifth FIFA World Cup title.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The United States has won the Miss World crown nine times.",
+    "label": "REFUTES",
+    "raw_question": "Who is the 9th American to win the Miss World crown?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The United States hasn't won the Miss World crown for the 9th time.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Lionel Messi won his second FIFA World Cup.",
+    "label": "REFUTES",
+    "raw_question": "When did Lionel Messi win his second FIFA World Cup?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Messi has not won his second FIFA World Cup.",
+    "split": "TEST"
+  },
+  {
+    "claim": "A FIFA World Cup will be hosted next year.",
+    "label": "REFUTES",
+    "raw_question": "Where will the FIFA World Cup be hosted next year?",
+    "fact_type": "slow-changing",
+    "ground_truth": "There won't be a FIFA World Cup next year.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Democrats currently control the United States Senate.",
+    "label": "REFUTES",
+    "raw_question": "By how many seats do Democrats currently control the United States Senate?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Democrats currently do not control the US Senate.",
+    "split": "TEST"
+  },
+  {
+    "claim": "X Corp. has a CEO.",
+    "label": "REFUTES",
+    "raw_question": "Who is the X Corp.'s CEO?",
+    "fact_type": "slow-changing",
+    "ground_truth": "X Corp. currently has no CEO following Linda Yaccarino's resignation.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Elon Musk is currently X Corp.'s CEO.",
+    "label": "REFUTES",
+    "raw_question": "How long has Elon Musk been X Corp.'s CEO?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Elon Musk is no longer X Corp.'s CEO.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Edward Snowden has been living in Cuba.",
+    "label": "REFUTES",
+    "raw_question": "How many years has Edward Snowden been living in Cuba?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Edward Snowden has not been living in Cuba.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Kenya uses a two-party system of government.",
+    "label": "REFUTES",
+    "raw_question": "How long has Kenya used a two-party system of government?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Kenya currently does not use a two-party political system.",
+    "split": "TEST"
+  },
+  {
+    "claim": "A cryptocurrency has a higher market cap than Bitcoin.",
+    "label": "REFUTES",
+    "raw_question": "Which cryptocurrency has a higher market cap than Bitcoin?",
+    "fact_type": "slow-changing",
+    "ground_truth": "No cryptocurrencies currently have a higher market cap than Bitcoin.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Taylor Swift has been a UNICEF Goodwill Ambassador.",
+    "label": "REFUTES",
+    "raw_question": "How long has Taylor Swift been a UNICEF Goodwill Ambassador?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Taylor Swift has never been appointed as a UNICEF Goodwill Ambassador.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Covid-19 has broken 1 billion infections.",
+    "label": "REFUTES",
+    "raw_question": "How long ago did Covid-19 first break 1 billion infections?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Covid-19 has never broken 1 billion infections.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Elon Musk is currently married to his spouse.",
+    "label": "REFUTES",
+    "raw_question": "How long has Elon Musk been married to his current spouse?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Elon Musk is not currently married. He was married to his last spouse from 2013 to 2016.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Puerto Rico is an independent country.",
+    "label": "REFUTES",
+    "raw_question": "How long has Puerto Rico been an independent country?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Puerto Rico has been a U.S. territory.",
+    "split": "TEST"
+  },
+  {
+    "claim": "New York City has hosted the Olympic Games.",
+    "label": "REFUTES",
+    "raw_question": "When did the biggest city in the United States host the Olympics Games?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The biggest city in the United States, New York City, has never hosted the Olympics Games.",
+    "split": "TEST"
+  },
+  {
+    "claim": "A Brazilian president has been elected to a fourth term.",
+    "label": "REFUTES",
+    "raw_question": "What is the current age of the first Brazilian president to be elected to a fourth term?",
+    "fact_type": "slow-changing",
+    "ground_truth": "No Brazilian president has been elected to a fourth term yet.",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are six living former New Zealand prime ministers.",
+    "label": "REFUTES",
+    "raw_question": "Who are the six living former New Zealand prime ministers?",
+    "fact_type": "slow-changing",
+    "ground_truth": "There are seven living former New Zealand prime ministers (Sir Geoffrey Palmer, Dame Jenny Shipley, Helen Clark, Sir John Key, Bill English, Jacinda Ardern, and Chris Hipkins).",
+    "split": "TEST"
+  },
+  {
+    "claim": "The most recent former President of the United States has been convicted of two federal crimes.",
+    "label": "REFUTES",
+    "raw_question": "What two federal crimes has the most recent former President of the United States been convicted of?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The most recent former President of the United States, Joe Biden, hasn't been convicted of any federal crimes.",
+    "split": "TEST"
+  },
+  {
+    "claim": "There is a current Protestant majority in Northern Ireland.",
+    "label": "REFUTES",
+    "raw_question": "How many years has the current Protestant majority in Northern Ireland lasted?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Catholics now outnumber Protestants in Northern Ireland.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The incumbent President defeated his challenger in the latest Brazilian election.",
+    "label": "REFUTES",
+    "raw_question": "By how many votes did the incumbent President defeat his challenger in the latest Brazilian election?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The challenger, Lula da Silva, actually won.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Joe Biden announced his second presidential campaign in 2023.",
+    "label": "REFUTES",
+    "raw_question": "When did Joe Biden announce his second presidential campaign in 2023?",
+    "fact_type": "never-changing",
+    "ground_truth": "He made his second presidential campaign during the 2008 Democratic Party presidential primaries already.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The FIFA Ballon d'Or was awarded last year.",
+    "label": "REFUTES",
+    "raw_question": "Who won the FIFA Ballon d'Or last year?",
+    "fact_type": "never-changing",
+    "ground_truth": "There was no FIFA Ballon d'Or award last year. The final FIFA Ballon d'Or was presented to Messi in 2015.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The year 2500 is a leap year with 29 days in February.",
+    "label": "REFUTES",
+    "raw_question": "Will there be 29 days in February in the leap year of 2500?",
+    "fact_type": "never-changing",
+    "ground_truth": "2500 is not a leap year.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Benjamin Ruth is a baseball player in the MLB who hit home runs.",
+    "label": "REFUTES",
+    "raw_question": "How many home runs did Benjamin Ruth hit in the MLB?",
+    "fact_type": "never-changing",
+    "ground_truth": "Benjamin Ruth is not a baseball player in the MLB.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Lance Armstrong landed on the moon.",
+    "label": "REFUTES",
+    "raw_question": "When did Lance Armstrong land on the moon?",
+    "fact_type": "never-changing",
+    "ground_truth": "Lance Armstrong is not an astronaut.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The 1944 German spelling reform went into effect in schools across the country.",
+    "label": "REFUTES",
+    "raw_question": "On what date did the 1944 German spelling reform go into effect in schools across the country?",
+    "fact_type": "never-changing",
+    "ground_truth": "The reform was never introduced.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The New York Jets have lost games to the Chicago Bulls.",
+    "label": "REFUTES",
+    "raw_question": "How many times have the New York Jets lost to the Chicago Bulls?",
+    "fact_type": "never-changing",
+    "ground_truth": "The two teams have never played because the Jets are a football team and the Bulls are a basketball team.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Yugoslavia currently has members of parliament.",
+    "label": "REFUTES",
+    "raw_question": "How many members of parliament in Yugoslavia are women?",
+    "fact_type": "never-changing",
+    "ground_truth": "The country of Yugoslavia no longer exists since it broke up into separate countries in 1992.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Apple released an iPhone 9.",
+    "label": "REFUTES",
+    "raw_question": "When was the iPhone 9 released?",
+    "fact_type": "never-changing",
+    "ground_truth": "Apple has never released an iPhone 9 nor does it plan to.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Cannabis is legal throughout the entire United States.",
+    "label": "REFUTES",
+    "raw_question": "When did cannabis become legal in the United States?",
+    "fact_type": "never-changing",
+    "ground_truth": "The use and possession of cannabis is not uniformly legal throughout the entire United States.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Real Madrid has scored home runs.",
+    "label": "REFUTES",
+    "raw_question": "How many home runs has Real Madrid scored?",
+    "fact_type": "never-changing",
+    "ground_truth": "Real Madrid is a professional soccer club and thus cannot score home runs. In soccer, players score goals, not home runs, which are made in baseball.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Rick Riordan released the Harry Potter series.",
+    "label": "REFUTES",
+    "raw_question": "When did Rick Riordan first release the Harry Potter series?",
+    "fact_type": "never-changing",
+    "ground_truth": "The Harry Potter book series was created by J. K. Rowling instead of Rick Riordan.",
+    "split": "TEST"
+  },
+  {
+    "claim": "California has seceded from the United States.",
+    "label": "REFUTES",
+    "raw_question": "When did California secede from the United States?",
+    "fact_type": "never-changing",
+    "ground_truth": "California has never seceded from the United States.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Epic Gaming released Minecraft.",
+    "label": "REFUTES",
+    "raw_question": "When did Epic Gaming first release Minecraft?",
+    "fact_type": "never-changing",
+    "ground_truth": "Minecraft was not developed by Epic Gaming. It was developed by Mojang Studios, which is now owned by Microsoft.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Antibiotics are effective against the flu.",
+    "label": "REFUTES",
+    "raw_question": "Which antibiotics are most effective against the flu?",
+    "fact_type": "never-changing",
+    "ground_truth": "Antibiotics are only effective against bacteria while the flu is a virus.",
+    "split": "TEST"
+  },
+  {
+    "claim": "IKEA has not yet celebrated its fiftieth anniversary.",
+    "label": "REFUTES",
+    "raw_question": "When will IKEA celebrate its fiftieth anniversary?",
+    "fact_type": "never-changing",
+    "ground_truth": "IKEA celebrated its fiftieth anniversary in 1993 already.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Andrew Johnson was elected as President of the United States.",
+    "label": "REFUTES",
+    "raw_question": "In what year was Andrew Johnson elected as President of the United States?",
+    "fact_type": "never-changing",
+    "ground_truth": "Andrew Johnson was not elected to the Presidency but instead assumed the position following the assassination of Abraham Lincoln.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Meta bought YouTube.",
+    "label": "REFUTES",
+    "raw_question": "When did Meta buy YouTube?",
+    "fact_type": "never-changing",
+    "ground_truth": "Meta has never bought YouTube.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Jeff Bezos sold Amazon.",
+    "label": "REFUTES",
+    "raw_question": "When did Jeff Bezos sell Amazon?",
+    "fact_type": "never-changing",
+    "ground_truth": "Jeff Bezos is still the current owner of Amazon.",
+    "split": "TEST"
+  },
+  {
+    "claim": "New York joined the Confederacy.",
+    "label": "REFUTES",
+    "raw_question": "In which year did New York join the Confederacy?",
+    "fact_type": "never-changing",
+    "ground_truth": "New York did not join the Confederate States of America.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Megalodon is expected to go extinct in the future.",
+    "label": "REFUTES",
+    "raw_question": "When is the Megalodon expected to go extinct?",
+    "fact_type": "never-changing",
+    "ground_truth": "The Megalodon went extinct about 3.6 million years ago.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Great Wall of China collapsed.",
+    "label": "REFUTES",
+    "raw_question": "When did the Great Wall of China collapse?",
+    "fact_type": "never-changing",
+    "ground_truth": "The Great Wall of China is still standing.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Tenth Crusade took place.",
+    "label": "REFUTES",
+    "raw_question": "In what year did the Tenth Crusade begin?",
+    "fact_type": "never-changing",
+    "ground_truth": "The Tenth Crusade didn't exist. There were only nine major crusades (including Lord Edward's crusade).",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Fields Medal was awarded to five mathematicians in the same year.",
+    "label": "REFUTES",
+    "raw_question": "When was the last time the Fields Medal was awarded to five mathematicians in the same year?",
+    "fact_type": "never-changing",
+    "ground_truth": "The Fields Medal has never been awarded to more than four mathematicians.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Walt Disney Animation Studios' 60th animated film is being released this year.",
+    "label": "REFUTES",
+    "raw_question": "What date this year will Walt Disney Animation Studios' 60th animated film be released?",
+    "fact_type": "never-changing",
+    "ground_truth": "The Walt Disney Animation Studios's 60th animated film, Encanto, was released in 2021 already.",
+    "split": "TEST"
+  },
+  {
+    "claim": "A natural wonder in the United States is part of the New 7 Wonders of Nature.",
+    "label": "REFUTES",
+    "raw_question": "Which natural wonder in the United States is part of the New 7 Wonders of Nature?",
+    "fact_type": "never-changing",
+    "ground_truth": "None of the natural wonders in the United States won the New 7 Wonders of Nature.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The 2022 Winter Olympics were held in a Russian city.",
+    "label": "REFUTES",
+    "raw_question": "In which Russian city were the 2022 Winter Olympics held?",
+    "fact_type": "never-changing",
+    "ground_truth": "The 2022 Winter Olympics were held in Beijing, China, not in Russia.",
+    "split": "TEST"
+  },
+  {
+    "claim": "A FIFA Women's World Cup will take place in 2026.",
+    "label": "REFUTES",
+    "raw_question": "In what three North American countries will the 2026 FIFA's Women World Cup take place?",
+    "fact_type": "never-changing",
+    "ground_truth": "There won't be a FIFA's Women World Cup in 2026.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Da Vinci's Salvator Mundi was sold at a 2017 Sotheby's auction.",
+    "label": "REFUTES",
+    "raw_question": "How much did Da Vinci's Salvator Mundi sell for at the 2017 Sotheby's auction?",
+    "fact_type": "never-changing",
+    "ground_truth": "It was sold at Christie's instead of Sotheby's. Sotheby's was the broker for an older, private deal.",
+    "split": "TEST"
+  },
+  {
+    "claim": "LeBron James played college basketball and averaged rebounds per game.",
+    "label": "REFUTES",
+    "raw_question": "How many rebounds per game did Lebron James average in college?",
+    "fact_type": "never-changing",
+    "ground_truth": "LeBron James never attended college.",
+    "split": "TEST"
+  },
+  {
+    "claim": "A chemical reaction between lead and another element produces gold as a byproduct.",
+    "label": "REFUTES",
+    "raw_question": "A chemical reaction between lead and what other element produces gold as a byproduct?",
+    "fact_type": "never-changing",
+    "ground_truth": "No chemical element can convert lead into gold.",
+    "split": "TEST"
+  },
+  {
+    "claim": "A political party won the 2022 elections in Afghanistan.",
+    "label": "REFUTES",
+    "raw_question": "Which party won the 2022 elections held in Afghanistan?",
+    "fact_type": "never-changing",
+    "ground_truth": "There have been no elections held since the Taliban took power.",
+    "split": "TEST"
+  },
+  {
+    "claim": "3 is bigger than 4.",
+    "label": "REFUTES",
+    "raw_question": "By how much is 3 bigger than 4?",
+    "fact_type": "never-changing",
+    "ground_truth": "3 is smaller than 4 by 1.",
+    "split": "TEST"
+  },
+  {
+    "claim": "BTS released its 11th studio album in 2026.",
+    "label": "REFUTES",
+    "raw_question": "What date in 2026 did BTS release its 11th studio album?",
+    "fact_type": "never-changing",
+    "ground_truth": "As of April 2026, BTS has only released ten studio albums.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Alphabet's market capitalization reached its highest-ever recorded value during a month in 2025.",
+    "label": "REFUTES",
+    "raw_question": "Alphabet's market capitalization reached its highest-ever recorded value during what month in 2025?",
+    "fact_type": "never-changing",
+    "ground_truth": "The all-time highest value of Alphabet was in February 2026, not in 2025.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Bills vs. Bengals game on January 2, 2023, resumed play after Damar Hamlin suffered cardiac arrest on the field.",
+    "label": "REFUTES",
+    "raw_question": "How many minutes after Damar Hamlin suffered cardiac arrest on the field did the Bills vs. Bengals game on January 2, 2023 resume play?",
+    "fact_type": "never-changing",
+    "ground_truth": "The game was suspended after this event.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Pakistani government pushed back the mandated closing time of shopping malls from 9:30pm due to falling electricity prices in January 2023.",
+    "label": "REFUTES",
+    "raw_question": "Due to falling electricity prices in January 2023, the Pakistani government pushed back the mandated closing time of shopping malls from 9:30pm to what time of day?",
+    "fact_type": "never-changing",
+    "ground_truth": "Due to increasing electricity prices, the Pakistani government mandated that all malls close at 8:30pm.",
+    "split": "TEST"
+  },
+  {
+    "claim": "A Republican was elected Speaker of the House in January 2023 on the ninth ballot.",
+    "label": "REFUTES",
+    "raw_question": "Which Republican was elected Speaker of the House in January 2023 on the ninth ballot?",
+    "fact_type": "never-changing",
+    "ground_truth": "No one received a majority of the votes on the ninth ballot.",
+    "split": "TEST"
+  },
+  {
+    "claim": "In January 2023, the NHC revised the fatality data of Hurricane Katrina and increased the reported death toll.",
+    "label": "REFUTES",
+    "raw_question": "In January 2023, the NHC revised the fatality data of Hurricane Katrina, increasing the reported death toll from 1,800 to what number?",
+    "fact_type": "never-changing",
+    "ground_truth": "The reported death toll decreased to 1,392",
+    "split": "TEST"
+  },
+  {
+    "claim": "Microsoft has scheduled a date in the future for the release of security updates for Windows 7.",
+    "label": "REFUTES",
+    "raw_question": "On what date has Microsoft scheduled the release of the next security updates to address multiple vulnerabilities in Windows 7?",
+    "fact_type": "never-changing",
+    "ground_truth": "Microsoft ended Windows 7 security updates on January 10, 2023.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Avatar: The Way of Water won the most awards of the night at the 80th Golden Globe Awards.",
+    "label": "REFUTES",
+    "raw_question": "What movie, along with Avatar: The Way of Water, won the most awards of the night with three wins at the 80th Golden Globe Awards?",
+    "fact_type": "never-changing",
+    "ground_truth": "Avatar: The Way of Water did not win the most awards of the night at the 80th Golden Globe Awards.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Ellen DeGeneres Show is scheduled to kick off Season 21.",
+    "label": "REFUTES",
+    "raw_question": "When will The Ellen DeGeneres Show kick off Season 21?",
+    "fact_type": "never-changing",
+    "ground_truth": "The Ellen DeGeneres Show ended in 2022 (after 19 seasons) already.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Russia participated in the FIFA World Cup 2022.",
+    "label": "REFUTES",
+    "raw_question": "How far did Russia go in the FIFA World Cup 2022?",
+    "fact_type": "never-changing",
+    "ground_truth": "Russia was excluded from the 2022 FIFA World Cup.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The 2021 Children's & Family Emmy Awards took place.",
+    "label": "REFUTES",
+    "raw_question": "When did the 2021 Children's & Family Emmy Awards take place?",
+    "fact_type": "never-changing",
+    "ground_truth": "There were no Children's & Family Emmy Awards in 2021. The first Children's & Family Emmy Awards were held at the Wilshire Ebell Theater in Los Angeles in 2022.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Joe Biden visited Russia as president of the United States.",
+    "label": "REFUTES",
+    "raw_question": "When did Joe Biden visit Russia as president of the United States?",
+    "fact_type": "never-changing",
+    "ground_truth": "Joe Biden did not visit Russia during his presidency as he is permanently banned from entering the country.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Pele is currently staying in a hospital to receive cancer treatment.",
+    "label": "REFUTES",
+    "raw_question": "What hospital is Pele currently staying in to receive cancer treatment?",
+    "fact_type": "never-changing",
+    "ground_truth": "Pele passed away in 2022 already.",
+    "split": "TEST"
+  },
+  {
+    "claim": "People were injured in Indonesia as a result of Hurricane Ian.",
+    "label": "REFUTES",
+    "raw_question": "How many people were injured in Indonesia as a result of Hurricane Ian?",
+    "fact_type": "never-changing",
+    "ground_truth": "Hurricane Ian didn't affect Indonesia.",
+    "split": "TEST"
+  },
+  {
+    "claim": "ChatGPT was launched in 2021.",
+    "label": "REFUTES",
+    "raw_question": "In what month of 2021 was ChatGPT launched?",
+    "fact_type": "never-changing",
+    "ground_truth": "ChatGPT was released in 2022 not 2021.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Keegan-Michael Key directed a movie in 2022.",
+    "label": "REFUTES",
+    "raw_question": "What is the name of the movie that Keegan-Michael Key directed in 2022?",
+    "fact_type": "never-changing",
+    "ground_truth": "Key did not direct any movies in 2022.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Google released ChatGPT.",
+    "label": "REFUTES",
+    "raw_question": "When did Google release ChatGPT?",
+    "fact_type": "never-changing",
+    "ground_truth": "It is not Google but OpenAI released GPT-3.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Sri Lanka's deposed former president Gotabaya Rajapaksa is currently residing at a Bangkok hotel during his self-imposed exile.",
+    "label": "REFUTES",
+    "raw_question": "Which Bangkok hotel is Sri Lanka's deposed former president Gotabaya Rajapaksa currently residing at during his self-imposed exile from his home country?",
+    "fact_type": "never-changing",
+    "ground_truth": "He returned to Sri Lanka from Bangkok after 7 weeks, ended his exile on September 2, 2022.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Apple's stock price cratered the day after reporting earnings results in the fourth quarter of 2022.",
+    "label": "REFUTES",
+    "raw_question": "What percentage did Apple's stock price crater the day after reporting disappointing earnings results in the fourth quarter of 2022?",
+    "fact_type": "never-changing",
+    "ground_truth": "Apple gained value on strong earnings in the fourth quarter of 2022.",
+    "split": "TEST"
+  },
+  {
+    "claim": "A shoe company signed Kanye West to a new multibillion dollar celebrity endorsement deal in October 2022.",
+    "label": "REFUTES",
+    "raw_question": "What shoe company signed Kanye West to a new multibillion dollar celebrity endorsement deal in October 2022?",
+    "fact_type": "never-changing",
+    "ground_truth": "He was actually dropped by many companies for offensive comments.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Novak Djokovic lost in a specific round at the 2022 Australian Open.",
+    "label": "REFUTES",
+    "raw_question": "In which round did Novak Djokovic lose at the 2022 Australian Open?",
+    "fact_type": "never-changing",
+    "ground_truth": "He was not allowed to play at the tournament due to his vaccination status.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Novak Djokovic was banned from entering Australia for three years and was not the betting favorite to win the 2023 Australian Open.",
+    "label": "REFUTES",
+    "raw_question": "Since Novak Djokovic has been banned from entering Australia for three years, who was the betting favorite to win the men's side of the 2023 Australian Open before the tournament started?",
+    "fact_type": "never-changing",
+    "ground_truth": "Djokovic's ban was lifted and he was the betting favorite to win the 2023 Australian Open before the tournament started.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Tom Cruise holds the current world record for holding one's breath underwater while filming Mission Impossible: Rogue Nation.",
+    "label": "REFUTES",
+    "raw_question": "For how many minutes did Tom Cruise hold his breath underwater on the set of Mission Impossible: Rogue Nation to set the current world record for holding one's breath underwater while filming?",
+    "fact_type": "never-changing",
+    "ground_truth": "Kate Winslet broke Tom Cruise's record in Avatar 2 by holding her breath underwater for over 7 minutes.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Peruvian President Pedro Castillo is scheduled to visit Chile this year.",
+    "label": "REFUTES",
+    "raw_question": "When is Peruvian President Pedro Castillo scheduled to visit Chile this year?",
+    "fact_type": "never-changing",
+    "ground_truth": "Pedro Castillo is no longer the President of Peru.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Harry Styles is currently a member of the active band One Direction.",
+    "label": "REFUTES",
+    "raw_question": "How long has Harry Styles been a member of One Direction?",
+    "fact_type": "never-changing",
+    "ground_truth": "One Direction is no longer active.",
+    "split": "TEST"
+  },
+  {
+    "claim": "There exists a smallest cube number which can be expressed as the sum of two different positive cube numbers in two different ways.",
+    "label": "REFUTES",
+    "raw_question": "What is the smallest cube number which can be expressed as the sum of two different positive cube numbers in two different ways?",
+    "fact_type": "never-changing",
+    "ground_truth": "According to the Fermat's Last Theorem, it is impossible for a cube number to be a sum of two positive cube numbers.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Donald Trump tweeted in 2022 after his unbanning from Twitter by Elon Musk.",
+    "label": "REFUTES",
+    "raw_question": "What was the text of Donald Trump's first Tweet in 2022, made after his unbanning from Twitter by Elon Musk?",
+    "fact_type": "never-changing",
+    "ground_truth": "He did not tweet/post in 2022. His first tweet/post was made in 2023.",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are days left until the next season of Atlanta airs.",
+    "label": "REFUTES",
+    "raw_question": "How many days are left until the next season of Atlanta airs?",
+    "fact_type": "never-changing",
+    "ground_truth": "The final season already finished airing in 2022.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Brittney Griner is currently serving time in a Russian prison.",
+    "label": "REFUTES",
+    "raw_question": "How much longer will Brittney Griner spend in the Russian prison?",
+    "fact_type": "never-changing",
+    "ground_truth": "She was released in December 2022 as part of a prisoner swap.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Federal Reserve cut interest rates from August to December 2022.",
+    "label": "REFUTES",
+    "raw_question": "By how many basis points did the Federal Reserve cut interest rates from August to December 2022?",
+    "fact_type": "never-changing",
+    "ground_truth": "The Federal Reserve increased rates in 2022 to combat inflation.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Luke Humphries beat an opponent to win the current year's PDC World Darts Championship.",
+    "label": "REFUTES",
+    "raw_question": "Who did Luke Humphries beat to win this year's PDC World Darts Championship?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Luke Humphries didn't win this year's PDC World Darts Championship. The winner was Luke Littler.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Elon Musk uses his Twitter/X bio to refer to his position as X Corp.'s chairman and CTO.",
+    "label": "REFUTES",
+    "raw_question": "What does Elon Musk use to refer to his position as X Corp.'s chairman and CTO in his current Twitter/X bio?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Elon Musk's current Twitter/X bio does not mention anything about his position as X Corp.'s chairman and CTO.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Leonardo DiCaprio does not have any children.",
+    "label": "SUPPORTS",
+    "raw_question": "How many children does Leonardo DiCaprio have?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Leonardo DiCaprio does not have any children.",
+    "split": "TEST"
+  },
+  {
+    "claim": "No humans have landed on Mars yet.",
+    "label": "SUPPORTS",
+    "raw_question": "How many humans have landed on Mars?",
+    "fact_type": "slow-changing",
+    "ground_truth": "No humans have been to Mars yet.",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are 10 University of California schools in the United States.",
+    "label": "SUPPORTS",
+    "raw_question": "How many UC schools are there in the United States?",
+    "fact_type": "slow-changing",
+    "ground_truth": "10",
+    "split": "TEST"
+  },
+  {
+    "claim": "Ariana Grande is the highest-paid coach per season ever on the American television series The Voice.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the highest-paid coach per season ever on the American television series The Voice?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Ariana Grande",
+    "split": "TEST"
+  },
+  {
+    "claim": "Sundar Pichai is the CEO of Google.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the CEO of Google?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Sundar Pichai",
+    "split": "TEST"
+  },
+  {
+    "claim": "Parking at the Big E costs $10.",
+    "label": "SUPPORTS",
+    "raw_question": "How much does parking cost at the Big E?",
+    "fact_type": "slow-changing",
+    "ground_truth": "$10",
+    "split": "TEST"
+  },
+  {
+    "claim": "Princeton University is the top-ranked university in the US according to the US News Ranking.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the top-ranked university in the US according to the US News Ranking?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Princeton University",
+    "split": "TEST"
+  },
+  {
+    "claim": "The world record time for running a mile is 3:43.13.",
+    "label": "SUPPORTS",
+    "raw_question": "What's the world record time for running a mile?",
+    "fact_type": "slow-changing",
+    "ground_truth": "3:43.13",
+    "split": "TEST"
+  },
+  {
+    "claim": "Rafael Nadal has 22 grand slam titles.",
+    "label": "SUPPORTS",
+    "raw_question": "How many grand slams does Rafael Nadal have?",
+    "fact_type": "slow-changing",
+    "ground_truth": "22",
+    "split": "TEST"
+  },
+  {
+    "claim": "Friedrich Merz is the current German chancellor.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the current German chancellor?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Friedrich Merz",
+    "split": "TEST"
+  },
+  {
+    "claim": "Mario is the best-selling video game franchise of all time.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the best-selling video game franchise of all time?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Mario",
+    "split": "TEST"
+  },
+  {
+    "claim": "California is the U.S. state with the highest gross domestic product.",
+    "label": "SUPPORTS",
+    "raw_question": "What U.S. state has the highest gross domestic product?",
+    "fact_type": "slow-changing",
+    "ground_truth": "California",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are 8 English translations of Les Mis\u00e9rables.",
+    "label": "SUPPORTS",
+    "raw_question": "How many English translations of Les Miserables are there?",
+    "fact_type": "slow-changing",
+    "ground_truth": "8",
+    "split": "TEST"
+  },
+  {
+    "claim": "Shoshana Zuboff has published 3 books.",
+    "label": "SUPPORTS",
+    "raw_question": "How many books has Shoshana Zuboff published?",
+    "fact_type": "slow-changing",
+    "ground_truth": "3",
+    "split": "TEST"
+  },
+  {
+    "claim": "Eminem holds the world record for the fastest rap in a number one single.",
+    "label": "SUPPORTS",
+    "raw_question": "Who holds the world's record for fastest rap in a number one single?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Eminem",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are 193 member nations in the United Nations.",
+    "label": "SUPPORTS",
+    "raw_question": "How many member nations exist in the United Nations?",
+    "fact_type": "slow-changing",
+    "ground_truth": "193",
+    "split": "TEST"
+  },
+  {
+    "claim": "The University of Bologna is the oldest still-running university in the world.",
+    "label": "SUPPORTS",
+    "raw_question": "Which is the oldest still-running university in the world?",
+    "fact_type": "slow-changing",
+    "ground_truth": "University of Bologna",
+    "split": "TEST"
+  },
+  {
+    "claim": "Kind of Blue is the best-selling jazz album of all time.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the best-selling jazz album of all time?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Kind of Blue",
+    "split": "TEST"
+  },
+  {
+    "claim": "Mokhtar Dahari holds the record for the highest number of goals scored in international football for Malaysia.",
+    "label": "SUPPORTS",
+    "raw_question": "Who holds record for highest goals scored in international football for Malaysia?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Mokhtar Dahari",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are 6 games in the Ace Attorney main series.",
+    "label": "SUPPORTS",
+    "raw_question": "How many games are there in the Ace Attorney main series?",
+    "fact_type": "slow-changing",
+    "ground_truth": "6",
+    "split": "TEST"
+  },
+  {
+    "claim": "Tesla's headquarters is in Austin, Texas.",
+    "label": "SUPPORTS",
+    "raw_question": "Where is Tesla's headquarters?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Austin, TX",
+    "split": "TEST"
+  },
+  {
+    "claim": "The longest unbeaten streak of all time in the Premier League is 49 matches.",
+    "label": "SUPPORTS",
+    "raw_question": "The longest unbeaten streak of all time in the Premier League is how many matches?",
+    "fact_type": "slow-changing",
+    "ground_truth": "49",
+    "split": "TEST"
+  },
+  {
+    "claim": "Hindi is the language with the third-largest population by total number of speakers.",
+    "label": "SUPPORTS",
+    "raw_question": "Which language has the third largest population by total number of speakers?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Hindi",
+    "split": "TEST"
+  },
+  {
+    "claim": "Dangal is the highest-grossing Bollywood movie worldwide.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the name of the worldwide highest grossing Bollywood movie?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Dangal",
+    "split": "TEST"
+  },
+  {
+    "claim": "Cebuano is the second-largest language edition of Wikipedia according to article count.",
+    "label": "SUPPORTS",
+    "raw_question": "Which is the second largest language edition of Wikipedia according to article count?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Cebuano",
+    "split": "TEST"
+  },
+  {
+    "claim": "Lisa from BLACKPINK is the K-Pop artist with the most followers on Instagram.",
+    "label": "SUPPORTS",
+    "raw_question": "Which K-Pop artist has the most followers on Instagram?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Lisa (BLACKPINK)",
+    "split": "TEST"
+  },
+  {
+    "claim": "Women cannot attend universities in Afghanistan.",
+    "label": "SUPPORTS",
+    "raw_question": "Can women attend universities in Afghanistan?",
+    "fact_type": "slow-changing",
+    "ground_truth": "No",
+    "split": "TEST"
+  },
+  {
+    "claim": "Santiago is the most populous city in Chile.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the most populous city in Chile?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Santiago",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Anglo-Zanzibar War was the shortest war in history.",
+    "label": "SUPPORTS",
+    "raw_question": "What was the shortest war in history?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Anglo-Zanzibar War",
+    "split": "TEST"
+  },
+  {
+    "claim": "Pandora is the most recently launched NASA space telescope that observes in the visible and near-infrared.",
+    "label": "SUPPORTS",
+    "raw_question": "Which is the most recently launched NASA space telescope that observes in the visible and near-infrared?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Pandora",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are 21 member states in the Eurozone.",
+    "label": "SUPPORTS",
+    "raw_question": "How many member states are there in the Eurozone?",
+    "fact_type": "slow-changing",
+    "ground_truth": "21",
+    "split": "TEST"
+  },
+  {
+    "claim": "Bulgaria is the latest country to adopt the Euro.",
+    "label": "SUPPORTS",
+    "raw_question": "What country became the latest country to adopt the Euro?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Bulgaria",
+    "split": "TEST"
+  },
+  {
+    "claim": "Tesla offers 5 vehicle models.",
+    "label": "SUPPORTS",
+    "raw_question": "How many vehicle models does Tesla offer?",
+    "fact_type": "slow-changing",
+    "ground_truth": "5",
+    "split": "TEST"
+  },
+  {
+    "claim": "Colleen Hoover has published 27 books.",
+    "label": "SUPPORTS",
+    "raw_question": "How many books has Colleen Hoover published?",
+    "fact_type": "slow-changing",
+    "ground_truth": "27 books",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Weeknd's last studio album is titled Hurry Up Tomorrow.",
+    "label": "SUPPORTS",
+    "raw_question": "What was the Weeknd's last studio album titled?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Hurry Up Tomorrow",
+    "split": "TEST"
+  },
+  {
+    "claim": "Elon Musk has 14 children, including his deceased child.",
+    "label": "SUPPORTS",
+    "raw_question": "How many children does Elon Musk have, including his deceased child?",
+    "fact_type": "slow-changing",
+    "ground_truth": "14",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are 630 seats in the German Bundestag.",
+    "label": "SUPPORTS",
+    "raw_question": "How many seats are there in the German Bundestag?",
+    "fact_type": "slow-changing",
+    "ground_truth": "630",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are 2 core UMass NLP faculty currently primarily affiliated with the lab who have been there for more than five years.",
+    "label": "SUPPORTS",
+    "raw_question": "How many core UMass NLP faculty are currently primarily affiliated with the lab and have been there for more than five years?",
+    "fact_type": "slow-changing",
+    "ground_truth": "2",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are 107 LA metro rail stations.",
+    "label": "SUPPORTS",
+    "raw_question": "How many LA metro rail stations are there?",
+    "fact_type": "slow-changing",
+    "ground_truth": "107",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are 53 properties in the latest list of World Heritage in danger.",
+    "label": "SUPPORTS",
+    "raw_question": "How many properties are there in the latest list of World Heritage in danger?",
+    "fact_type": "slow-changing",
+    "ground_truth": "53",
+    "split": "TEST"
+  },
+  {
+    "claim": "Jannik Sinner won the biggest single-tournament payday in tennis history.",
+    "label": "SUPPORTS",
+    "raw_question": "Who won the biggest single-tournament payday in tennis history?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Jannik Sinner",
+    "split": "TEST"
+  },
+  {
+    "claim": "Narendra Modi Stadium is the largest stadium by capacity in the world.",
+    "label": "SUPPORTS",
+    "raw_question": "What's the largest stadium by capacity in the world?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Narendra Modi Stadium",
+    "split": "TEST"
+  },
+  {
+    "claim": "The title of Taylor Swift's most recent studio album is The Life of a Showgirl.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the title of Taylor Swift's most recent studio album?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The Life of a Showgirl",
+    "split": "TEST"
+  },
+  {
+    "claim": "Sanae Takaichi is the current Prime Minister of Japan.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the current Prime Minister of Japan?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Sanae Takaichi",
+    "split": "TEST"
+  },
+  {
+    "claim": "Kantara: Chapter 1 is the second highest-grossing Kannada movie of all time.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the second highest-grossing Kannada movie of all time?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Kantara: Chapter 1",
+    "split": "TEST"
+  },
+  {
+    "claim": "Luke Littler is the most recent player to win both the PDC World Youth Championship and the PDC World Darts Championship.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the most recent player to win both the PDC World Youth Championship and the PDC World Darts Championship?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Luke Littler",
+    "split": "TEST"
+  },
+  {
+    "claim": "Yann LeCun, Geoffrey Hinton, and Yoshua Bengio most recently received the Queen Elizabeth Prize for Engineering in 2025 together.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the most recent award that Yann LeCun, Geoffrey Hinton, and Yoshua Bengio received together?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Queen Elizabeth Prize for Engineering (2025)",
+    "split": "TEST"
+  },
+  {
+    "claim": "Bitcoin reached its peak value in October 2025.",
+    "label": "SUPPORTS",
+    "raw_question": "What month and year did Bitcoin reach its peak value?",
+    "fact_type": "slow-changing",
+    "ground_truth": "October 2025",
+    "split": "TEST"
+  },
+  {
+    "claim": "There is no total solar eclipse in the continental US this year.",
+    "label": "SUPPORTS",
+    "raw_question": "Is there a total solar eclipse in the continental US this year?",
+    "fact_type": "slow-changing",
+    "ground_truth": "No",
+    "split": "TEST"
+  },
+  {
+    "claim": "Donald Trump is the President of the United States.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the President of the United States?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Donald Trump",
+    "split": "TEST"
+  },
+  {
+    "claim": ".NET 10 is the latest major version of .NET.",
+    "label": "SUPPORTS",
+    "raw_question": "What's the latest major version of the .NET?",
+    "fact_type": "slow-changing",
+    "ground_truth": ".NET 10",
+    "split": "TEST"
+  },
+  {
+    "claim": "Eleven asteroids have been discovered before impacting Earth.",
+    "label": "SUPPORTS",
+    "raw_question": "How many asteroids have been discovered before impacting Earth?",
+    "fact_type": "slow-changing",
+    "ground_truth": "11",
+    "split": "TEST"
+  },
+  {
+    "claim": "Bulgaria and Romania are the most recent member states of the Schengen Area.",
+    "label": "SUPPORTS",
+    "raw_question": "Which country is the most recent member state of the Schengen Area?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Bulgaria and Romania",
+    "split": "TEST"
+  },
+  {
+    "claim": "Morphotrophic is Greg Egan's latest novel.",
+    "label": "SUPPORTS",
+    "raw_question": "What is Greg Egan's latest novel?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Morphotrophic",
+    "split": "TEST"
+  },
+  {
+    "claim": "Keir Starmer is the current Prime Minister of the United Kingdom.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the current Prime Minister of the United Kingdom?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Keir Starmer",
+    "split": "TEST"
+  },
+  {
+    "claim": "Rishi Sunak is the most recent former Prime Minister of the United Kingdom.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the most recent former Prime Minister of the United Kingdom?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Rishi Sunak",
+    "split": "TEST"
+  },
+  {
+    "claim": "Cristiano Ronaldo is the highest-paid athlete in the world.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the highest-paid athlete in the world?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Cristiano Ronaldo",
+    "split": "TEST"
+  },
+  {
+    "claim": "Clade I mpox is the most recent outbreak declared as a public health emergency of international concern by the WHO.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the most recent outbreak declared as a public health emergency of international concern by WHO?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Clade I mpox",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Costco Executive membership costs $130 annually.",
+    "label": "SUPPORTS",
+    "raw_question": "How much does Costco Executive membership cost annually?",
+    "fact_type": "slow-changing",
+    "ground_truth": "$130",
+    "split": "TEST"
+  },
+  {
+    "claim": "El Capitan is the name of the world's fastest supercomputer.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the name of the world's fastest supercomputer?",
+    "fact_type": "slow-changing",
+    "ground_truth": "El Capitan",
+    "split": "TEST"
+  },
+  {
+    "claim": "Kendrick Lamar released his most recent studio album on November 22, 2024.",
+    "label": "SUPPORTS",
+    "raw_question": "On what date did Kendrick Lamar release his most recent studio album?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Nov 22, 2024",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Summer Olympics were most recently held in Paris, France.",
+    "label": "SUPPORTS",
+    "raw_question": "Where were the Summer Olympics held most recently?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Paris, France",
+    "split": "TEST"
+  },
+  {
+    "claim": "The last UEFA European Championship was held in 2024.",
+    "label": "SUPPORTS",
+    "raw_question": "In which year was the last UEFA European Championship was held?",
+    "fact_type": "slow-changing",
+    "ground_truth": "2024",
+    "split": "TEST"
+  },
+  {
+    "claim": "The next leap year is 2028.",
+    "label": "SUPPORTS",
+    "raw_question": "When is the next leap year?",
+    "fact_type": "slow-changing",
+    "ground_truth": "2028",
+    "split": "TEST"
+  },
+  {
+    "claim": "On December 27, 2023, the NBA approved the sale of a majority stake in the Dallas Mavericks from Mark Cuban to Miriam Adelson and her family for approximately $3.5 billion.",
+    "label": "SUPPORTS",
+    "raw_question": "When did Mark Cuban sell the Mavericks?",
+    "fact_type": "slow-changing",
+    "ground_truth": "On December 27, 2023, the NBA approved a major sale of the Dallas Mavericks from Mark Cuban to Miriam Adelson, giving Adelson and her family the majority stake in the franchise, in a deal estimated at roughly $3.5 billion.",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are nine food allergens that require mandatory labeling in the United States.",
+    "label": "SUPPORTS",
+    "raw_question": "How many food allergens with mandatory labeling are there in the United States?",
+    "fact_type": "slow-changing",
+    "ground_truth": "9",
+    "split": "TEST"
+  },
+  {
+    "claim": "Elon Musk has the most followers on Twitter.",
+    "label": "SUPPORTS",
+    "raw_question": "Who has the most followers on Twitter?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Elon Musk",
+    "split": "TEST"
+  },
+  {
+    "claim": "Three seasons of The Mandalorian have been released.",
+    "label": "SUPPORTS",
+    "raw_question": "How many seasons of the Mandalorian have been released?",
+    "fact_type": "slow-changing",
+    "ground_truth": "3",
+    "split": "TEST"
+  },
+  {
+    "claim": "Javier Reyes is the chancellor of UMass Amherst.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the chancellor of UMass Amherst?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Javier Reyes",
+    "split": "TEST"
+  },
+  {
+    "claim": "Jerry Nadler is the U.S. representative for New York's 12th congressional district.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the U.S. representative for New York's 12th congressional district?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Jerry Nadler",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Boy and the Heron is the most recently released Studio Ghibli film.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the most recently released Studio Ghibli film?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The Boy and the Heron",
+    "split": "TEST"
+  },
+  {
+    "claim": "Cristiano Ronaldo's current club is Al Nassr.",
+    "label": "SUPPORTS",
+    "raw_question": "What is Cristiano Ronaldo's current club?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Al Nassr",
+    "split": "TEST"
+  },
+  {
+    "claim": "The United States is currently at the top rank of the FIBA Men's World Ranking.",
+    "label": "SUPPORTS",
+    "raw_question": "Which country is currently at the top rank at the FIBA Men's World Ranking?",
+    "fact_type": "slow-changing",
+    "ground_truth": "United States",
+    "split": "TEST"
+  },
+  {
+    "claim": "The euro is Croatia's current national currency.",
+    "label": "SUPPORTS",
+    "raw_question": "What is Croatia's current national currency?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Euro",
+    "split": "TEST"
+  },
+  {
+    "claim": "Saif al-Adel is the current leader of al-Qaeda.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the current leader of al-Qaeda?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Saif al-Adel",
+    "split": "TEST"
+  },
+  {
+    "claim": "Tom Brady holds the NFL's single-season record for completions with 490 completed passes.",
+    "label": "SUPPORTS",
+    "raw_question": "Tom Brady holds the NFL's single-season record for completions by successfully throwing how many passes?",
+    "fact_type": "slow-changing",
+    "ground_truth": "490",
+    "split": "TEST"
+  },
+  {
+    "claim": "Japan won the latest World Pastry Cup.",
+    "label": "SUPPORTS",
+    "raw_question": "Which country won the latest World Pastry Cup?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Japan",
+    "split": "TEST"
+  },
+  {
+    "claim": "The largest lottery jackpot for a single ticket in history is the $2.04 billion Powerball jackpot.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the largest lottery jackpot for a single ticket in history?",
+    "fact_type": "slow-changing",
+    "ground_truth": "$2.04 billion Powerball jackpot",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Houston Astros have won two World Series titles.",
+    "label": "SUPPORTS",
+    "raw_question": "How many World Series titles have the Houston Astros won?",
+    "fact_type": "slow-changing",
+    "ground_truth": "two",
+    "split": "TEST"
+  },
+  {
+    "claim": "Dina Boluarte is the most recent woman to become President of Peru.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the most recent woman to become President of Peru?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Dina Boluarte",
+    "split": "TEST"
+  },
+  {
+    "claim": "Russia has been invading Ukraine.",
+    "label": "SUPPORTS",
+    "raw_question": "Which country has been invading Ukraine?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Russia",
+    "split": "TEST"
+  },
+  {
+    "claim": "King Charles III is the English monarch.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the English monarch?",
+    "fact_type": "slow-changing",
+    "ground_truth": "King Charles III",
+    "split": "TEST"
+  },
+  {
+    "claim": "Lewandowski plays for Barcelona.",
+    "label": "SUPPORTS",
+    "raw_question": "What club does Lewandowski play for?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Barcelona",
+    "split": "TEST"
+  },
+  {
+    "claim": "Elon Musk was the last person to buy Twitter.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the last person to buy Twitter?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Elon Musk",
+    "split": "TEST"
+  },
+  {
+    "claim": "Robert Luna is the LA County Sheriff.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the LA county sheriff?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Robert Luna",
+    "split": "TEST"
+  },
+  {
+    "claim": "New Zealand has won six Women's Rugby World Cup titles.",
+    "label": "SUPPORTS",
+    "raw_question": "How many Women's Rugby World Cup titles has New Zealand won?",
+    "fact_type": "slow-changing",
+    "ground_truth": "six",
+    "split": "TEST"
+  },
+  {
+    "claim": "358 total Nazca geoglyphs have been discovered so far.",
+    "label": "SUPPORTS",
+    "raw_question": "How many total Nazca geoglyphs have been discovered so far?",
+    "fact_type": "slow-changing",
+    "ground_truth": "358",
+    "split": "TEST"
+  },
+  {
+    "claim": "The most expensive page of a comic book ever sold at auction is the original artwork of Spider-Man in a black suit by Mike Zeck.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the most expensive page of a comic book ever sold at auction?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Original artwork of Spider-Man in a black suit, by Mike Zeck",
+    "split": "TEST"
+  },
+  {
+    "claim": "The world's oldest DNA was found in Greenland.",
+    "label": "SUPPORTS",
+    "raw_question": "Where was the world's oldest DNA found?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Greenland",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Minnesota Vikings hold the record for the largest deficit overcome to win an NFL game.",
+    "label": "SUPPORTS",
+    "raw_question": "Which team holds the record for largest deficit overcome to win an NFL game?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Minnesota Vikings",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Lord of the Rings: The Rings of Power is Amazon Prime Video's most watched premiere ever.",
+    "label": "SUPPORTS",
+    "raw_question": "What is Amazon Prime Video's most watched premiere ever?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The Lord of the Rings: The Rings of Power",
+    "split": "TEST"
+  },
+  {
+    "claim": "Nusantara is the name of Indonesia's future capital city.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the name of Indonesia's future capital city?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Nusantara",
+    "split": "TEST"
+  },
+  {
+    "claim": "The next common year starting on a Saturday is 2033.",
+    "label": "SUPPORTS",
+    "raw_question": "When will be the next common year starting on Saturday?",
+    "fact_type": "slow-changing",
+    "ground_truth": "2033",
+    "split": "TEST"
+  },
+  {
+    "claim": "Luiz In\u00e1cio Lula da Silva is the oldest Brazilian president at the time of inauguration.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the oldest Brazilian president at the time of inauguration?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Luiz In\u00e1cio Lula da Silva",
+    "split": "TEST"
+  },
+  {
+    "claim": "Maryna Viazovska is the most recent female recipient of the Fields Medal.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the most recent female recipient of the Fields Medal?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Maryna Viazovska",
+    "split": "TEST"
+  },
+  {
+    "claim": "Argentina has won three FIFA World Cups.",
+    "label": "SUPPORTS",
+    "raw_question": "How many FIFA World Cups has Argentina won?",
+    "fact_type": "slow-changing",
+    "ground_truth": "3",
+    "split": "TEST"
+  },
+  {
+    "claim": "France is the most recent team to advance to consecutive FIFA World Cup finals.",
+    "label": "SUPPORTS",
+    "raw_question": "Which is the most recent team to advance to consecutive FIFA World Cup finals?",
+    "fact_type": "slow-changing",
+    "ground_truth": "France",
+    "split": "TEST"
+  },
+  {
+    "claim": "The total height of the tallest building in the world is 829.8 meters.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the total height of the tallest building in the world?",
+    "fact_type": "slow-changing",
+    "ground_truth": "829.8 m",
+    "split": "TEST"
+  },
+  {
+    "claim": "The UN Secretary General is from Portugal.",
+    "label": "SUPPORTS",
+    "raw_question": "The UN Secretary general is from which country?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Portugal",
+    "split": "TEST"
+  },
+  {
+    "claim": "Blake Lively is the actress whose husband is a partial owner of Mint Mobile.",
+    "label": "SUPPORTS",
+    "raw_question": "Which actress' husband is a partial owner of Mint Mobile?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Blake Lively",
+    "split": "TEST"
+  },
+  {
+    "claim": "The United Kingdom is the country President Joe Biden has visited the most during his presidency so far.",
+    "label": "SUPPORTS",
+    "raw_question": "Which country has President Joe Biden visited the most during his presidency so far?",
+    "fact_type": "slow-changing",
+    "ground_truth": "United Kingdom",
+    "split": "TEST"
+  },
+  {
+    "claim": "The largest stadium in the world by capacity has a seating capacity of 132,000.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the seating capacity of the largest stadium by capacity in the world?",
+    "fact_type": "slow-changing",
+    "ground_truth": "132,000",
+    "split": "TEST"
+  },
+  {
+    "claim": "Ten presidents of the United States have lost their reelection bids.",
+    "label": "SUPPORTS",
+    "raw_question": "How many presidents of the United States have lost reelection?",
+    "fact_type": "slow-changing",
+    "ground_truth": "10",
+    "split": "TEST"
+  },
+  {
+    "claim": "Four publicly traded American companies have, at some point, reached a market capitalization in excess of $4 trillion.",
+    "label": "SUPPORTS",
+    "raw_question": "How many publicly traded American companies have, at any point, had a market capitalization in excess of $4 trillion?",
+    "fact_type": "slow-changing",
+    "ground_truth": "4",
+    "split": "TEST"
+  },
+  {
+    "claim": "Peru has had four presidents in the last five years.",
+    "label": "SUPPORTS",
+    "raw_question": "How many presidents has Peru had in the last 5 years?",
+    "fact_type": "slow-changing",
+    "ground_truth": "4",
+    "split": "TEST"
+  },
+  {
+    "claim": "Two flights of the Space Launch System have been successfully launched.",
+    "label": "SUPPORTS",
+    "raw_question": "How many flights of the Space Launch System have been successfully launched?",
+    "fact_type": "slow-changing",
+    "ground_truth": "2",
+    "split": "TEST"
+  },
+  {
+    "claim": "The World Health Organization has made two Public Health Emergency of International Concern declarations in the last five years.",
+    "label": "SUPPORTS",
+    "raw_question": "How many public health emergency of international concern declarations have been made by WHO in the last 5 years?",
+    "fact_type": "slow-changing",
+    "ground_truth": "2",
+    "split": "TEST"
+  },
+  {
+    "claim": "The current World's Strongest Man was born in South Africa.",
+    "label": "SUPPORTS",
+    "raw_question": "In what country was the current World's Strongest Man born?",
+    "fact_type": "slow-changing",
+    "ground_truth": "South Africa",
+    "split": "TEST"
+  },
+  {
+    "claim": "Joe Biden, the most recent former president of the United States, has not been convicted of any federal crimes.",
+    "label": "SUPPORTS",
+    "raw_question": "How many federal crimes has the most recent former president of the United States been convicted of?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Joe Biden, the most recent former president of the United States, hasn't been convicted of any federal crimes.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Melania Trump is the spouse of the current President of the United States.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the spouse of the President of the United States?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Melania Trump",
+    "split": "TEST"
+  },
+  {
+    "claim": "Uma Kanjilal is the vice-chancellor of the largest university by enrollment in the world.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the vice-chancellor of the largest university by enrollment in the world?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Uma Kanjilal",
+    "split": "TEST"
+  },
+  {
+    "claim": "Tesla and X Corp. do not have the same CEO.",
+    "label": "SUPPORTS",
+    "raw_question": "Do Tesla and X Corp. have the same CEO?",
+    "fact_type": "slow-changing",
+    "ground_truth": "No",
+    "split": "TEST"
+  },
+  {
+    "claim": "The person currently acting as the U.S. Speaker of the House was born in Shreveport, Louisiana.",
+    "label": "SUPPORTS",
+    "raw_question": "In what city was the person currently acting as the U.S. speaker of house born?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Shreveport, Louisiana",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Democratic Republic of the Congo was the first country to detect a case of mpox in the most recent outbreak.",
+    "label": "SUPPORTS",
+    "raw_question": "Which was the first country to detect a case of mpox in the most recent outbreak?",
+    "fact_type": "slow-changing",
+    "ground_truth": "DR Congo",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Pok\u00e9mon World Championships have been held in Asia exactly one time.",
+    "label": "SUPPORTS",
+    "raw_question": "How many times has The Pok\u00e9mon World Championships been held in Asia?",
+    "fact_type": "slow-changing",
+    "ground_truth": "one",
+    "split": "TEST"
+  },
+  {
+    "claim": "Lionel Messi has the most liked post on Instagram.",
+    "label": "SUPPORTS",
+    "raw_question": "Who has the most liked post on Instagram?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Lionel Messi",
+    "split": "TEST"
+  },
+  {
+    "claim": "The most recent eruption of the world's largest active volcano occurred from November 27, 2022, to December 13, 2022.",
+    "label": "SUPPORTS",
+    "raw_question": "When was the most recent eruption of the world's largest active volcano?",
+    "fact_type": "slow-changing",
+    "ground_truth": "November 27, 2022 - December 13, 2022",
+    "split": "TEST"
+  },
+  {
+    "claim": "One active player has won at least five ATP Finals singles titles.",
+    "label": "SUPPORTS",
+    "raw_question": "How many active players have won at least five ATP Finals singles titles?",
+    "fact_type": "slow-changing",
+    "ground_truth": "1",
+    "split": "TEST"
+  },
+  {
+    "claim": "James Cameron directed the most films in the top 15 highest-grossing films of all time.",
+    "label": "SUPPORTS",
+    "raw_question": "Who directed the most films in the top 15 highest-grossing films of all time?",
+    "fact_type": "slow-changing",
+    "ground_truth": "James Cameron",
+    "split": "TEST"
+  },
+  {
+    "claim": "Larry Gagosian bought the most expensive 20th-century artwork sold in a public sale.",
+    "label": "SUPPORTS",
+    "raw_question": "Who bought the most expensive 20th century artwork sold in a public sale?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Larry Gagosian",
+    "split": "TEST"
+  },
+  {
+    "claim": "The best ever result by an African team at a FIFA World Cup is a fourth-place finish.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the best ever result by an African team at a FIFA World Cup?",
+    "fact_type": "slow-changing",
+    "ground_truth": "fourth-place",
+    "split": "TEST"
+  },
+  {
+    "claim": "Laika was the first animal to orbit the Earth.",
+    "label": "SUPPORTS",
+    "raw_question": "What was the first animal to orbit the Earth?",
+    "fact_type": "never-changing",
+    "ground_truth": "Laika",
+    "split": "TEST"
+  },
+  {
+    "claim": "The largest model size of GPT-3 is 175 billion parameters.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the largest model size of GPT-3?",
+    "fact_type": "never-changing",
+    "ground_truth": "175 billion parameters",
+    "split": "TEST"
+  },
+  {
+    "claim": "Vietnam is the country that has a red flag with one yellow star.",
+    "label": "SUPPORTS",
+    "raw_question": "Which country has a red flag with one yellow star?",
+    "fact_type": "never-changing",
+    "ground_truth": "Vietnam",
+    "split": "TEST"
+  },
+  {
+    "claim": "Wuhan is the city connected with the earliest cases of COVID-19.",
+    "label": "SUPPORTS",
+    "raw_question": "What city was connected with the earliest cases of COVID-19?",
+    "fact_type": "never-changing",
+    "ground_truth": "Wuhan",
+    "split": "TEST"
+  },
+  {
+    "claim": "Chad has the country flag most similar to that of Romania.",
+    "label": "SUPPORTS",
+    "raw_question": "What country has the most similar flag to that of Romania?",
+    "fact_type": "never-changing",
+    "ground_truth": "Chad",
+    "split": "TEST"
+  },
+  {
+    "claim": "Hawaii is known as the Aloha State.",
+    "label": "SUPPORTS",
+    "raw_question": "What state is known as the Aloha State?",
+    "fact_type": "never-changing",
+    "ground_truth": "Hawaii",
+    "split": "TEST"
+  },
+  {
+    "claim": "Google will celebrate its 30th birthday in 2028.",
+    "label": "SUPPORTS",
+    "raw_question": "In what year will Google celebrate its 30th birthday?",
+    "fact_type": "never-changing",
+    "ground_truth": "2028",
+    "split": "TEST"
+  },
+  {
+    "claim": "Jeff Dean received his Ph.D. from the University of Washington.",
+    "label": "SUPPORTS",
+    "raw_question": "Where did Jeff Dean get his Ph.D. from?",
+    "fact_type": "never-changing",
+    "ground_truth": "University of Washington",
+    "split": "TEST"
+  },
+  {
+    "claim": "The blue whale is the largest mammal in the world.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the largest mammal in the world?",
+    "fact_type": "never-changing",
+    "ground_truth": "blue whale",
+    "split": "TEST"
+  },
+  {
+    "claim": "Mount Denali is the tallest mountain in Alaska.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the tallest mountain in Alaska?",
+    "fact_type": "never-changing",
+    "ground_truth": "Mount Denali",
+    "split": "TEST"
+  },
+  {
+    "claim": "Queen Elizabeth II of England was famous for keeping corgis.",
+    "label": "SUPPORTS",
+    "raw_question": "What breed of dog was Queen Elizabeth II of England famous for keeping?",
+    "fact_type": "never-changing",
+    "ground_truth": "Corgi",
+    "split": "TEST"
+  },
+  {
+    "claim": "Ales are a class of top-fermenting beer.",
+    "label": "SUPPORTS",
+    "raw_question": "What class of beer is top-fermenting?",
+    "fact_type": "never-changing",
+    "ground_truth": "ales",
+    "split": "TEST"
+  },
+  {
+    "claim": "Portugal won the 2017 Eurovision Song Contest.",
+    "label": "SUPPORTS",
+    "raw_question": "Which country won the 2017 Eurovision Song Contest?",
+    "fact_type": "never-changing",
+    "ground_truth": "Portugal",
+    "split": "TEST"
+  },
+  {
+    "claim": "Intel went public in 1971.",
+    "label": "SUPPORTS",
+    "raw_question": "What year did Intel go public?",
+    "fact_type": "never-changing",
+    "ground_truth": "1971",
+    "split": "TEST"
+  },
+  {
+    "claim": "Edward W. Sa\u00efd wrote the book titled Orientalism.",
+    "label": "SUPPORTS",
+    "raw_question": "Who wrote the book titled Orientalism?",
+    "fact_type": "never-changing",
+    "ground_truth": "Edward W. Sa\u00efd",
+    "split": "TEST"
+  },
+  {
+    "claim": "Sandstones are categorized as clastic sedimentary rocks.",
+    "label": "SUPPORTS",
+    "raw_question": "Sandstones are categorized into what type of sedimentary rocks?",
+    "fact_type": "never-changing",
+    "ground_truth": "clastic",
+    "split": "TEST"
+  },
+  {
+    "claim": "Queen Elizabeth II visited Rhode Island, USA.",
+    "label": "SUPPORTS",
+    "raw_question": "Did Queen Elizabeth II visit Rhode Island, USA?",
+    "fact_type": "never-changing",
+    "ground_truth": "Yes",
+    "split": "TEST"
+  },
+  {
+    "claim": "Helen of Troy is the name of Menelaus' wife in Greek mythology.",
+    "label": "SUPPORTS",
+    "raw_question": "In Greek mythology, what is the name of Menelaus' wife?",
+    "fact_type": "never-changing",
+    "ground_truth": "Helen of Troy",
+    "split": "TEST"
+  },
+  {
+    "claim": "Lewis Hamilton won the 2020 Formula 1 World Drivers' Championship.",
+    "label": "SUPPORTS",
+    "raw_question": "Who won the 2020 Formula 1 world driver's championship?",
+    "fact_type": "never-changing",
+    "ground_truth": "Lewis Hamilton",
+    "split": "TEST"
+  },
+  {
+    "claim": "The real name of the Unabomber was Ted Kaczynski.",
+    "label": "SUPPORTS",
+    "raw_question": "What was the real name of the Unabomber?",
+    "fact_type": "never-changing",
+    "ground_truth": "Ted Kacsynzki",
+    "split": "TEST"
+  },
+  {
+    "claim": "Turtwig, Chimchar, and Piplup are the starter Pok\u00e9mon available in Pok\u00e9mon Diamond.",
+    "label": "SUPPORTS",
+    "raw_question": "What are the starter pokemon available in Pokemon Diamond?",
+    "fact_type": "never-changing",
+    "ground_truth": "Turtwig, Chimchar, and Piplup",
+    "split": "TEST"
+  },
+  {
+    "claim": "The first atomic bomb test in the United States took place in the Jornada del Muerto Desert, New Mexico.",
+    "label": "SUPPORTS",
+    "raw_question": "Where did the first atomic bomb test take place in the United States?",
+    "fact_type": "never-changing",
+    "ground_truth": "Jornada del Muerto Desert, New Mexico",
+    "split": "TEST"
+  },
+  {
+    "claim": "Slugs have one lung.",
+    "label": "SUPPORTS",
+    "raw_question": "How many lungs do slugs have?",
+    "fact_type": "never-changing",
+    "ground_truth": "1",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Berlin Wall fell on November 9, 1989.",
+    "label": "SUPPORTS",
+    "raw_question": "On what date did the Berlin Wall fall?",
+    "fact_type": "never-changing",
+    "ground_truth": "Nov 9, 1989",
+    "split": "TEST"
+  },
+  {
+    "claim": "Elvis Presley died on August 16, 1977.",
+    "label": "SUPPORTS",
+    "raw_question": "On what date did Elvis Presley die?",
+    "fact_type": "never-changing",
+    "ground_truth": "Aug 16, 1977",
+    "split": "TEST"
+  },
+  {
+    "claim": "Polish president Lech Kaczy\u0144ski died in a plane crash near Smolensk.",
+    "label": "SUPPORTS",
+    "raw_question": "Which Polish president died in a plane crash near Smolensk?",
+    "fact_type": "never-changing",
+    "ground_truth": "Lech Kaczy\u0144ski",
+    "split": "TEST"
+  },
+  {
+    "claim": "Japan bombed Pearl Harbor in 1941.",
+    "label": "SUPPORTS",
+    "raw_question": "What year did Japan bomb Pearl Harbor?",
+    "fact_type": "never-changing",
+    "ground_truth": "1941",
+    "split": "TEST"
+  },
+  {
+    "claim": "David Bowie died in 2016.",
+    "label": "SUPPORTS",
+    "raw_question": "When did David Bowie die?",
+    "fact_type": "never-changing",
+    "ground_truth": "2016",
+    "split": "TEST"
+  },
+  {
+    "claim": "Masahiro Sakurai is the creator of Super Smash Bros.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the creator of Super Smash Bros.?",
+    "fact_type": "never-changing",
+    "ground_truth": "Masahiro Sakurai",
+    "split": "TEST"
+  },
+  {
+    "claim": "Lunar New Year 2023 occurred on January 22, 2023.",
+    "label": "SUPPORTS",
+    "raw_question": "On what date was Lunar New Year 2023?",
+    "fact_type": "never-changing",
+    "ground_truth": "Jan 22, 2023",
+    "split": "TEST"
+  },
+  {
+    "claim": "Sunderland, Massachusetts is located to the north of Amherst, Massachusetts.",
+    "label": "SUPPORTS",
+    "raw_question": "Is Sunderland, MA to the north or south of Amherst, MA?",
+    "fact_type": "never-changing",
+    "ground_truth": "north",
+    "split": "TEST"
+  },
+  {
+    "claim": "Emily Dickinson was born in Amherst, Massachusetts.",
+    "label": "SUPPORTS",
+    "raw_question": "What city was Emily Dickinson born in?",
+    "fact_type": "never-changing",
+    "ground_truth": "Amherst, Massachusetts",
+    "split": "TEST"
+  },
+  {
+    "claim": "Ta-Nehisi Coates wrote Between the World and Me.",
+    "label": "SUPPORTS",
+    "raw_question": "Who wrote Between the World and Me?",
+    "fact_type": "never-changing",
+    "ground_truth": "Ta-Nehisi Coates",
+    "split": "TEST"
+  },
+  {
+    "claim": "Jeff Bezos founded Amazon.",
+    "label": "SUPPORTS",
+    "raw_question": "Who founded Amazon?",
+    "fact_type": "never-changing",
+    "ground_truth": "Jeff Bezos",
+    "split": "TEST"
+  },
+  {
+    "claim": "Boston is the capital of the commonwealth of Massachusetts.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the capital of the commonwealth of Massachusetts?",
+    "fact_type": "never-changing",
+    "ground_truth": "Boston",
+    "split": "TEST"
+  },
+  {
+    "claim": "Chelsea won the 2021 FIFA Club World Cup.",
+    "label": "SUPPORTS",
+    "raw_question": "Which team won the 2021 FIFA Club World Cup?",
+    "fact_type": "never-changing",
+    "ground_truth": "Chelsea",
+    "split": "TEST"
+  },
+  {
+    "claim": "Ringo Starr temporarily quit the Beatles during the recording of the White Album.",
+    "label": "SUPPORTS",
+    "raw_question": "During the recording of which Beatles album did Ringo Starr temporarily quit the band?",
+    "fact_type": "never-changing",
+    "ground_truth": "White Album",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Louvre Museum is in Paris, France.",
+    "label": "SUPPORTS",
+    "raw_question": "In what city is the Louvre Museum?",
+    "fact_type": "never-changing",
+    "ground_truth": "Paris, France",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Tulip mania bubble collapsed in February 1637.",
+    "label": "SUPPORTS",
+    "raw_question": "In what month and year did the Tulip mania bubble collapse?",
+    "fact_type": "never-changing",
+    "ground_truth": "February 1637",
+    "split": "TEST"
+  },
+  {
+    "claim": "Socrates arrives late to the titular banquet in Plato's Symposium.",
+    "label": "SUPPORTS",
+    "raw_question": "Which character arrives late to the titular banquet in Plato's Symposium?",
+    "fact_type": "never-changing",
+    "ground_truth": "Socrates",
+    "split": "TEST"
+  },
+  {
+    "claim": "The kanji of the year in 2021 was gold.",
+    "label": "SUPPORTS",
+    "raw_question": "What was the kanji of the year in 2021?",
+    "fact_type": "never-changing",
+    "ground_truth": "gold",
+    "split": "TEST"
+  },
+  {
+    "claim": "The 1939 German invasion of Poland began soon after Germany signed a non-aggression pact with the Soviet Union.",
+    "label": "SUPPORTS",
+    "raw_question": "The 1939 German invasion of Poland began soon after Germany signed a non-aggression pact with what other nation?",
+    "fact_type": "never-changing",
+    "ground_truth": "Soviet Union",
+    "split": "TEST"
+  },
+  {
+    "claim": "The real name of the author George Eliot was Mary Ann Evans.",
+    "label": "SUPPORTS",
+    "raw_question": "What was the real name of the author George Eliot?",
+    "fact_type": "never-changing",
+    "ground_truth": "Mary Ann Evans",
+    "split": "TEST"
+  },
+  {
+    "claim": "Gil Evans is from Toronto, Canada.",
+    "label": "SUPPORTS",
+    "raw_question": "Where is Gil Evans from?",
+    "fact_type": "never-changing",
+    "ground_truth": "Toronto, Canada",
+    "split": "TEST"
+  },
+  {
+    "claim": "Tommy Wiseau is the director of the movie The Room.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the director of the movie The Room?",
+    "fact_type": "never-changing",
+    "ground_truth": "Tommy Wiseau",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Hundred Years' War lasted 116 years.",
+    "label": "SUPPORTS",
+    "raw_question": "How many years did the Hundred Years' War last?",
+    "fact_type": "never-changing",
+    "ground_truth": "116 years",
+    "split": "TEST"
+  },
+  {
+    "claim": "People stand on the left side of the escalator in Tokyo.",
+    "label": "SUPPORTS",
+    "raw_question": "On which side do people stand on the escalator in Tokyo?",
+    "fact_type": "never-changing",
+    "ground_truth": "left",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Japanese school year starts in April.",
+    "label": "SUPPORTS",
+    "raw_question": "In which month does the Japanese school year start?",
+    "fact_type": "never-changing",
+    "ground_truth": "April",
+    "split": "TEST"
+  },
+  {
+    "claim": "Ali Daei was the first football player to score one hundred international goals.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the first football player to score one hundred international goals?",
+    "fact_type": "never-changing",
+    "ground_truth": "Ali Daei",
+    "split": "TEST"
+  },
+  {
+    "claim": "Typhoon Haiyan made its first eye landfall in the municipality of Guiuan, Eastern Samar.",
+    "label": "SUPPORTS",
+    "raw_question": "In which municipality did Typhoon Haiyan make its first eye landfall?",
+    "fact_type": "never-changing",
+    "ground_truth": "Guiuan, Eastern Samar",
+    "split": "TEST"
+  },
+  {
+    "claim": "India became an independent nation at 12:02 am on August 15, 1947.",
+    "label": "SUPPORTS",
+    "raw_question": "What time of day on August 15, 1947 did India become an independent nation?",
+    "fact_type": "never-changing",
+    "ground_truth": "12:02 am",
+    "split": "TEST"
+  },
+  {
+    "claim": "Emily Joanna Carey was born in Barnet.",
+    "label": "SUPPORTS",
+    "raw_question": "Where was Emily Joanna Carey born?",
+    "fact_type": "never-changing",
+    "ground_truth": "Barnet",
+    "split": "TEST"
+  },
+  {
+    "claim": "Lactobacillus bulgaricus is the other bacteria used along with streptococcus thermophilus to make Bulgarian yogurt.",
+    "label": "SUPPORTS",
+    "raw_question": "Along with streptococcus thermophilus, what other bacteria is used to make Bulgarian yogurt?",
+    "fact_type": "never-changing",
+    "ground_truth": "Lactobacillus bulgaricus",
+    "split": "TEST"
+  },
+  {
+    "claim": "Blackpink made their debut in 2016.",
+    "label": "SUPPORTS",
+    "raw_question": "When did Blackpink make their debut?",
+    "fact_type": "never-changing",
+    "ground_truth": "2016",
+    "split": "TEST"
+  },
+  {
+    "claim": "Blizzard Entertainment developed Overwatch.",
+    "label": "SUPPORTS",
+    "raw_question": "Which company developed Overwatch?",
+    "fact_type": "never-changing",
+    "ground_truth": "Blizzard Entertainment",
+    "split": "TEST"
+  },
+  {
+    "claim": "The saltwater crocodile is the heaviest reptile in the world.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the heaviest reptile in the world?",
+    "fact_type": "never-changing",
+    "ground_truth": "saltwater crocodile",
+    "split": "TEST"
+  },
+  {
+    "claim": "Louis de Broglie first proposed the idea that all matter exhibits wave-particle duality.",
+    "label": "SUPPORTS",
+    "raw_question": "Who first proposed the idea that all matter exhibits wave-particle duality?",
+    "fact_type": "never-changing",
+    "ground_truth": "Louis de Broglie",
+    "split": "TEST"
+  },
+  {
+    "claim": "The University of Konstanz is located in the German state of Baden-W\u00fcrttemberg.",
+    "label": "SUPPORTS",
+    "raw_question": "What state of Germany is the University of Konstanz located in?",
+    "fact_type": "never-changing",
+    "ground_truth": "Baden-W\u00fcrttemberg",
+    "split": "TEST"
+  },
+  {
+    "claim": "Brad Pitt's first leading role was in the film The Dark Side of the Sun.",
+    "label": "SUPPORTS",
+    "raw_question": "What film starred Brad Pitt's first leading role?",
+    "fact_type": "never-changing",
+    "ground_truth": "The Dark Side of the Sun",
+    "split": "TEST"
+  },
+  {
+    "claim": "Led Zeppelin's last UK concert took place on August 11, 1979.",
+    "label": "SUPPORTS",
+    "raw_question": "What was the date of Led Zeppelin's last UK concert?",
+    "fact_type": "never-changing",
+    "ground_truth": "Aug 11, 1979",
+    "split": "TEST"
+  },
+  {
+    "claim": "The USA, Canada, and Mexico are the host countries for the 2026 FIFA World Cup.",
+    "label": "SUPPORTS",
+    "raw_question": "Which countries will host FIFA World Cup 2026?",
+    "fact_type": "never-changing",
+    "ground_truth": "USA, Canada, and Mexico",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Monopoly Deal dark blue property set contains two cards.",
+    "label": "SUPPORTS",
+    "raw_question": "How many property cards are in Monopoly Deal's dark blue set?",
+    "fact_type": "never-changing",
+    "ground_truth": "2",
+    "split": "TEST"
+  },
+  {
+    "claim": "The UMass Outing Club was founded in 1922.",
+    "label": "SUPPORTS",
+    "raw_question": "In what year was the UMass Outing Club founded?",
+    "fact_type": "never-changing",
+    "ground_truth": "1922",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are ten players on a basketball court at once, including both teams.",
+    "label": "SUPPORTS",
+    "raw_question": "How many players are on a basketball court at once including both teams?",
+    "fact_type": "never-changing",
+    "ground_truth": "10",
+    "split": "TEST"
+  },
+  {
+    "claim": "Kiwifruit is native to China.",
+    "label": "SUPPORTS",
+    "raw_question": "What country is Kiwifruit native to?",
+    "fact_type": "never-changing",
+    "ground_truth": "China",
+    "split": "TEST"
+  },
+  {
+    "claim": "Benjamin Franklin claimed that death and taxes are the two certainties in this world.",
+    "label": "SUPPORTS",
+    "raw_question": "What two things did Benjamin Franklin claim to be certain in this world?",
+    "fact_type": "never-changing",
+    "ground_truth": "Death and Taxes",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Chinese Tang Dynasty ended in 907 AD.",
+    "label": "SUPPORTS",
+    "raw_question": "When did the Chinese Tang Dynasty end?",
+    "fact_type": "never-changing",
+    "ground_truth": "907 AD",
+    "split": "TEST"
+  },
+  {
+    "claim": "Mount Katahdin is located at the north end of the Appalachian Trail.",
+    "label": "SUPPORTS",
+    "raw_question": "Which mountain is at the north end of the Appalachian Trail?",
+    "fact_type": "never-changing",
+    "ground_truth": "Mount Katahdin",
+    "split": "TEST"
+  },
+  {
+    "claim": "The video game Disco Elysium takes place in the city of Revachol.",
+    "label": "SUPPORTS",
+    "raw_question": "Which city does Disco Elysium take place in?",
+    "fact_type": "never-changing",
+    "ground_truth": "Revachol",
+    "split": "TEST"
+  },
+  {
+    "claim": "Kazakhstan, Turkmenistan, Iran, Azerbaijan, and Russia border the largest lake on Earth.",
+    "label": "SUPPORTS",
+    "raw_question": "Which countries border the largest lake on Earth?",
+    "fact_type": "never-changing",
+    "ground_truth": "Kazakhstan, Turkmenistan, Iran, Azerbaijan, and Russia",
+    "split": "TEST"
+  },
+  {
+    "claim": "E\u00e4rendil is the father of Elrond in J. R. R. Tolkien's Middle-earth stories.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is Elrond's father in J. R. R. Tolkien's Middle Earth stories?",
+    "fact_type": "never-changing",
+    "ground_truth": "E\u00e4rendil",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Declaration of Independence was signed on August 2, 1776.",
+    "label": "SUPPORTS",
+    "raw_question": "On what month, day, and year was the Declaration of Independence signed?",
+    "fact_type": "never-changing",
+    "ground_truth": "August 2, 1776. It is not July 4, 1776, which is when it was published.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Thomas Jefferson was the first American president to defeat an incumbent president in a presidential election.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the first American president to defeat an incumbent president in a presidential election?",
+    "fact_type": "never-changing",
+    "ground_truth": "Thomas Jefferson",
+    "split": "TEST"
+  },
+  {
+    "claim": "The short-story collection The Case-Book of Sherlock Holmes entered the public domain in the United States on January 1, 2023.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is currently holding the copyright to the short-story collection \"The Case-Book of Sherlock Holmes\" in the United States?",
+    "fact_type": "never-changing",
+    "ground_truth": "No one as all books, films, and other works published in 1927 entered the public domain on 1 January 2023.",
+    "split": "TEST"
+  },
+  {
+    "claim": "The famous Brazilian soccer player Pel\u00e9 passed away in 2022.",
+    "label": "SUPPORTS",
+    "raw_question": "Which famous soccer player of Brazil passed away in 2022?",
+    "fact_type": "never-changing",
+    "ground_truth": "Pel\u00e9",
+    "split": "TEST"
+  },
+  {
+    "claim": "Magnus Carlsen accused Hans Niemann of cheating in chess in 2022.",
+    "label": "SUPPORTS",
+    "raw_question": "Whom did Magnus Carlsen accuse of cheating in chess in 2022?",
+    "fact_type": "never-changing",
+    "ground_truth": "Hans Niemann",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are no official public payphones left in New York City as the city removed the last one in 2022.",
+    "label": "SUPPORTS",
+    "raw_question": "How many public payphones are left in New York City?",
+    "fact_type": "never-changing",
+    "ground_truth": "No official public payphones are left in New York City. The city removed its last public payphone in 2022.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Elon Musk officially became the owner of Twitter on October 27, 2022.",
+    "label": "SUPPORTS",
+    "raw_question": "When did Elon Musk officially become Twitter's owner?",
+    "fact_type": "never-changing",
+    "ground_truth": "Oct 27, 2022",
+    "split": "TEST"
+  },
+  {
+    "claim": "Tetsuya Yamagami killed former Japanese Prime Minister Shinzo Abe.",
+    "label": "SUPPORTS",
+    "raw_question": "Who killed the former Japanese Prime Minister Shinzo Abe?",
+    "fact_type": "never-changing",
+    "ground_truth": "Tetsuya Yamagami",
+    "split": "TEST"
+  },
+  {
+    "claim": "Webb's First Deep Field was the first operational image taken by the James Webb Space Telescope.",
+    "label": "SUPPORTS",
+    "raw_question": "What was the first operational image taken by the James Webb Space Telescope?",
+    "fact_type": "never-changing",
+    "ground_truth": "Webb's First Deep Field",
+    "split": "TEST"
+  },
+  {
+    "claim": "Joe Biden revealed the first operational image taken by NASA's James Webb Space Telescope to the public at the White House.",
+    "label": "SUPPORTS",
+    "raw_question": "Who revealed to the public the first operational image taken by NASA's James Webb Space Telescope at the White House?",
+    "fact_type": "never-changing",
+    "ground_truth": "Joe Biden",
+    "split": "TEST"
+  },
+  {
+    "claim": "Maura Healey was the first elected female Governor of Massachusetts.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the first elected female Governor of Massachusetts?",
+    "fact_type": "never-changing",
+    "ground_truth": "Maura Healey",
+    "split": "TEST"
+  },
+  {
+    "claim": "Queen Elizabeth II of England died on September 8, 2022.",
+    "label": "SUPPORTS",
+    "raw_question": "On what date did Queen Elizabeth II of England die?",
+    "fact_type": "never-changing",
+    "ground_truth": "Sep 8, 2022",
+    "split": "TEST"
+  },
+  {
+    "claim": "Morten Meldal from the University of Copenhagen, Denmark, won the 2022 Nobel Prize in Chemistry.",
+    "label": "SUPPORTS",
+    "raw_question": "Who won the 2022 Nobel Prize in Chemistry from University of Copenhagen, Denmark?",
+    "fact_type": "never-changing",
+    "ground_truth": "Morten Meldal",
+    "split": "TEST"
+  },
+  {
+    "claim": "Suzanne Palmer wrote the best novelette of the 2022 Hugo Awards.",
+    "label": "SUPPORTS",
+    "raw_question": "Who wrote the best novelette of the 2022 Hugo Awards?",
+    "fact_type": "never-changing",
+    "ground_truth": "Suzanne Palmer",
+    "split": "TEST"
+  },
+  {
+    "claim": "Lionel Messi was the first player to win more than one FIFA World Cup Golden Ball.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the first player to win more than one FIFA World Cup Golden Ball?",
+    "fact_type": "never-changing",
+    "ground_truth": "Lionel Messi",
+    "split": "TEST"
+  },
+  {
+    "claim": "Cristiano Ronaldo was the first player to score a goal at five FIFA Men's World Cup tournaments.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the first player to score a goal at five FIFA Men's World Cup tournaments?",
+    "fact_type": "never-changing",
+    "ground_truth": "Cristiano Ronaldo",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Day of Eight Billion occurred on November 15, 2022.",
+    "label": "SUPPORTS",
+    "raw_question": "When was the Day of Eight Billion?",
+    "fact_type": "never-changing",
+    "ground_truth": "Nov 15, 2022",
+    "split": "TEST"
+  },
+  {
+    "claim": "Nata\u0161a Pirc Musar was the first female president of Slovenia.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the first female president of Slovenia?",
+    "fact_type": "never-changing",
+    "ground_truth": "Nata\u0161a Pirc Musar",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are zero Chinese paddlefish left in the wild.",
+    "label": "SUPPORTS",
+    "raw_question": "How many Chinese paddlefish are left in the wild?",
+    "fact_type": "never-changing",
+    "ground_truth": "zero",
+    "split": "TEST"
+  },
+  {
+    "claim": "Taylor Swift received her honorary Doctor of Fine Arts degree from New York University.",
+    "label": "SUPPORTS",
+    "raw_question": "Which university did Taylor Swift receive her honorary Doctor of Fine Arts degree from?",
+    "fact_type": "never-changing",
+    "ground_truth": "New York University",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Simpsons episode titled \"You Won't Believe What This Episode Is About \u2013 Act Three Will Shock You!\" was the first to have all female creative leads.",
+    "label": "SUPPORTS",
+    "raw_question": "What was the first episode of The Simpsons to have all female creative leads?",
+    "fact_type": "never-changing",
+    "ground_truth": "You Won't Believe What This Episode Is About \u2013 Act Three Will Shock You!",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Simpsons episode \"The Sound of Bleeding Gums\" marked the first time a deaf actor was cast on the show.",
+    "label": "SUPPORTS",
+    "raw_question": "What episode of The Simpsons marked the first time a deaf actor was cast on the show?",
+    "fact_type": "never-changing",
+    "ground_truth": "The Sound of Bleeding Gums",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Marvel Cinematic Universe was the first film franchise to gross $28 billion.",
+    "label": "SUPPORTS",
+    "raw_question": "What was the first film franchise to gross $28 billion?",
+    "fact_type": "never-changing",
+    "ground_truth": "Marvel Cinematic Universe",
+    "split": "TEST"
+  },
+  {
+    "claim": "Maya Angelou was the first African American woman to appear on a quarter in the United States.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the first African American woman to appear on a quarter in the United States?",
+    "fact_type": "never-changing",
+    "ground_truth": "Maya Angelou",
+    "split": "TEST"
+  },
+  {
+    "claim": "The youngest passenger on board the Titanic was two months old.",
+    "label": "SUPPORTS",
+    "raw_question": "How old was the youngest passenger on board the Titanic?",
+    "fact_type": "never-changing",
+    "ground_truth": "two months old",
+    "split": "TEST"
+  },
+  {
+    "claim": "The USA will host the most matches at the FIFA World Cup 2026.",
+    "label": "SUPPORTS",
+    "raw_question": "Which country will host the most matches at the FIFA World Cup 2026?",
+    "fact_type": "never-changing",
+    "ground_truth": "the USA",
+    "split": "TEST"
+  },
+  {
+    "claim": "Kaka was the last player to win the Ballon d'Or before the Messi\u2013Ronaldo dominance of the award.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the last player to win the Ballon D'or before the Messi\u2013Ronaldo dominance of the award?",
+    "fact_type": "never-changing",
+    "ground_truth": "Kaka",
+    "split": "TEST"
+  },
+  {
+    "claim": "Sepp Hochreiter was the only student author of the paper that introduced the LSTM neural network architecture.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the only student author of the paper that introduced the LSTM neural network architecture?",
+    "fact_type": "never-changing",
+    "ground_truth": "Sepp Hochreiter",
+    "split": "TEST"
+  },
+  {
+    "claim": "Juneau is the capital of the largest state in America.",
+    "label": "SUPPORTS",
+    "raw_question": "What's the capital of the largest state in America?",
+    "fact_type": "never-changing",
+    "ground_truth": "Juneau",
+    "split": "TEST"
+  },
+  {
+    "claim": "San Jose was the capital of California the year it became a state.",
+    "label": "SUPPORTS",
+    "raw_question": "Which city was the capital of California the year it became a state?",
+    "fact_type": "never-changing",
+    "ground_truth": "San Jose",
+    "split": "TEST"
+  },
+  {
+    "claim": "The 8th president of the United States is buried in Kinderhook, New York.",
+    "label": "SUPPORTS",
+    "raw_question": "Where is the 8th president of the United States buried?",
+    "fact_type": "never-changing",
+    "ground_truth": "Kinderhook, NY",
+    "split": "TEST"
+  },
+  {
+    "claim": "The author of the book \"A Game of Thrones\" was born in Bayonne, New Jersey.",
+    "label": "SUPPORTS",
+    "raw_question": "Where was the author of the book \"A Game of Thrones\" born?",
+    "fact_type": "never-changing",
+    "ground_truth": "Bayonne, NJ",
+    "split": "TEST"
+  },
+  {
+    "claim": "Qianlong was the emperor of China when the American Revolutionary War ended.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the emperor of China when the American Revolutionary War ended?",
+    "fact_type": "never-changing",
+    "ground_truth": "Qianlong",
+    "split": "TEST"
+  },
+  {
+    "claim": "Naughty Dog released its first game on the PS1 in 1996.",
+    "label": "SUPPORTS",
+    "raw_question": "When did Naughty Dog release its first game on the PS1?",
+    "fact_type": "never-changing",
+    "ground_truth": "1996",
+    "split": "TEST"
+  },
+  {
+    "claim": "Sigmund Freud was born in the town now called P\u0159\u00edbor.",
+    "label": "SUPPORTS",
+    "raw_question": "The town that Sigmund Freud was born in is currently called by what name?",
+    "fact_type": "never-changing",
+    "ground_truth": "P\u0159\u00edbor",
+    "split": "TEST"
+  },
+  {
+    "claim": "Yeti crabs were first discovered along the Pacific-Antarctic Ridge tectonic plate boundary.",
+    "label": "SUPPORTS",
+    "raw_question": "Along what tectonic plate boundary were yeti crabs first discovered?",
+    "fact_type": "never-changing",
+    "ground_truth": "Pacific-Antarctic Ridge",
+    "split": "TEST"
+  },
+  {
+    "claim": "The province that borders Shanghai to the north is Jiangsu.",
+    "label": "SUPPORTS",
+    "raw_question": "Which province borders Shanghai to the north?",
+    "fact_type": "never-changing",
+    "ground_truth": "Jiangsu",
+    "split": "TEST"
+  },
+  {
+    "claim": "Geoffrey Hinton, the primary designer of AlexNet, was born in the United Kingdom.",
+    "label": "SUPPORTS",
+    "raw_question": "Where was the primary designer of AlexNet born?",
+    "fact_type": "never-changing",
+    "ground_truth": "Ukraine",
+    "split": "TEST"
+  },
+  {
+    "claim": "The main character in Emma, the last novel Jane Austen published during her lifetime, is named Emma Woodhouse.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the main character's name in the last novel Jane Austen published while alive?",
+    "fact_type": "never-changing",
+    "ground_truth": "Emma",
+    "split": "TEST"
+  },
+  {
+    "claim": "Marie Curie named the first element she discovered after Poland.",
+    "label": "SUPPORTS",
+    "raw_question": "After which country did Marie Curie name the first element that she discovered?",
+    "fact_type": "never-changing",
+    "ground_truth": "Poland",
+    "split": "TEST"
+  },
+  {
+    "claim": "Paul Chambers, the bass player of Miles Davis's first quintet, was born in 1935.",
+    "label": "SUPPORTS",
+    "raw_question": "When was the bass player of Miles Davis's first quintet born?",
+    "fact_type": "never-changing",
+    "ground_truth": "1935",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Association for Computing Machinery (ACM) handles the Turing Award, which is the equivalent of the Nobel Prize for computer science.",
+    "label": "SUPPORTS",
+    "raw_question": "What organization handles the equivalent of the Nobel prize for computer science?",
+    "fact_type": "never-changing",
+    "ground_truth": "Association for Computing Machinery (ACM)",
+    "split": "TEST"
+  },
+  {
+    "claim": "Ariana Grande was the highest-earning woman in music on the 2020 Forbes Celebrity 100 list.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the highest-earning woman in music on the Forbes' Celebrity 100 list in 2020?",
+    "fact_type": "never-changing",
+    "ground_truth": "Ariana Grande",
+    "split": "TEST"
+  },
+  {
+    "claim": "There were 5 athletes in the top 10 of the 2020 Forbes Celebrity 100 list.",
+    "label": "SUPPORTS",
+    "raw_question": "How many athletes are there in the top 10 of the Forbes' Celebrity 100 list in 2020?",
+    "fact_type": "never-changing",
+    "ground_truth": "5",
+    "split": "TEST"
+  },
+  {
+    "claim": "Virginia Woolf's novel To the Lighthouse, which features the Ramsay family, has entered the public domain in the United States.",
+    "label": "SUPPORTS",
+    "raw_question": "Has Virginia Woolf's novel about the Ramsay family entered the public domain in the United States?",
+    "fact_type": "never-changing",
+    "ground_truth": "Yes",
+    "split": "TEST"
+  },
+  {
+    "claim": "Roger Federer was 41 years old when he retired from professional tennis.",
+    "label": "SUPPORTS",
+    "raw_question": "How old was Roger Federer when he retired from tennis?",
+    "fact_type": "never-changing",
+    "ground_truth": "41",
+    "split": "TEST"
+  },
+  {
+    "claim": "Hurricane Fiona was the first major hurricane of the 2022 Atlantic hurricane season.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the name of the 2022 Atlantic hurricane season's first major hurricane?",
+    "fact_type": "never-changing",
+    "ground_truth": "Hurricane Fiona",
+    "split": "TEST"
+  },
+  {
+    "claim": "The first successful heart transplant from a pig to a human patient took place in Baltimore.",
+    "label": "SUPPORTS",
+    "raw_question": "In what city did the first successful heart transplant from a pig to a human patient take place?",
+    "fact_type": "never-changing",
+    "ground_truth": "Baltimore",
+    "split": "TEST"
+  },
+  {
+    "claim": "Cristiano Ronaldo has a personal logo with the initials CR, which are the same initials as those in King Charles III\u2019s Royal cypher.",
+    "label": "SUPPORTS",
+    "raw_question": "Which football player has a personal logo with the same initials as those in King Charles III\u2019s Royal cypher?",
+    "fact_type": "never-changing",
+    "ground_truth": "Cristiano Ronaldo",
+    "split": "TEST"
+  },
+  {
+    "claim": "Queen Elizabeth II was 96 years old when she died.",
+    "label": "SUPPORTS",
+    "raw_question": "How old was Queen Elizabeth II when she died?",
+    "fact_type": "never-changing",
+    "ground_truth": "96 years old",
+    "split": "TEST"
+  },
+  {
+    "claim": "Pel\u00e9, known as the King of Soccer, died due to multiple organ failure as a complication of colon cancer.",
+    "label": "SUPPORTS",
+    "raw_question": "What killed the King of Soccer?",
+    "fact_type": "never-changing",
+    "ground_truth": "multiple organ failure, a complication of colon cancer",
+    "split": "TEST"
+  },
+  {
+    "claim": "It took 12 years for the world population to reach 8 billion from 7 billion.",
+    "label": "SUPPORTS",
+    "raw_question": "How many years did it take for the population of the world to reach 8 billion from 7 billion?",
+    "fact_type": "never-changing",
+    "ground_truth": "10 years",
+    "split": "TEST"
+  },
+  {
+    "claim": "The first rail line entirely run by hydrogen-powered trains debuted in Bremerv\u00f6rde.",
+    "label": "SUPPORTS",
+    "raw_question": "In what city did the first rail line entirely run by hydrogen-powered trains debut?",
+    "fact_type": "never-changing",
+    "ground_truth": "Bremerv\u00f6rde",
+    "split": "TEST"
+  },
+  {
+    "claim": "Pope Emeritus Benedict XVI and Queen Elizabeth II both died in 2022.",
+    "label": "SUPPORTS",
+    "raw_question": "Did Emeritus Benedict XVI and Queen Elizabeth II die in the same year?",
+    "fact_type": "never-changing",
+    "ground_truth": "Yes",
+    "split": "TEST"
+  },
+  {
+    "claim": "The BTS music video for 'Butter' achieved the record for the most views in the first 24 hours on YouTube.",
+    "label": "SUPPORTS",
+    "raw_question": "What was the most-viewed music video in the first 24 hours on YouTube?",
+    "fact_type": "fast-changing",
+    "ground_truth": "BTS (\ubc29\ud0c4\uc18c\ub144\ub2e8) 'Butter' Official MV",
+    "split": "TEST"
+  },
+  {
+    "claim": "Lithuania had the second-highest number of COVID-19 cases per 100,000 population according to the WHO\u2019s specific reporting period.",
+    "label": "SUPPORTS",
+    "raw_question": "According to the WHO\u2019s latest reported 28-day figures, which country had the second-highest number of COVID-19 cases per 100,000 population?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Lithuania",
+    "split": "TEST"
+  },
+  {
+    "claim": "Greece had the second-highest number of COVID-19 cases according to the WHO\u2019s specific reporting period.",
+    "label": "SUPPORTS",
+    "raw_question": "According to the WHO\u2019s latest reported 28-day figures, which country had the second-highest number of COVID-19 cases?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Greece",
+    "split": "TEST"
+  },
+  {
+    "claim": "Max Verstappen is the latest winner of the Formula 1 world championship.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the latest winner of the Formula 1 world championship?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Lando Norris",
+    "split": "TEST"
+  },
+  {
+    "claim": "Asher HaVon was the winner of the most recent season of The Voice US.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the winner of The Voice US this year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Alexia Jayy",
+    "split": "TEST"
+  },
+  {
+    "claim": "There are 6,160 confirmed exoplanets discovered.",
+    "label": "SUPPORTS",
+    "raw_question": "How many exoplanets have been discovered?",
+    "fact_type": "fast-changing",
+    "ground_truth": "6,160 confirmed exoplanets",
+    "split": "TEST"
+  },
+  {
+    "claim": "Erling Haaland has scored 57 goals in the UEFA Champions League.",
+    "label": "SUPPORTS",
+    "raw_question": "How many goals has Erling Haaland scored in the UEFA Champion League?",
+    "fact_type": "fast-changing",
+    "ground_truth": "57 goals",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Super Mario Galaxy Movie is the latest highest-grossing movie of the week at the box office.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the latest highest-grossing movie of the week at the Box office?",
+    "fact_type": "fast-changing",
+    "ground_truth": "The Super Mario Galaxy Movie",
+    "split": "TEST"
+  },
+  {
+    "claim": "A total of 1,429 tornadoes have been confirmed by the Enhanced Fujita rating in the United States so far this year.",
+    "label": "SUPPORTS",
+    "raw_question": "How many tornadoes have been confirmed by Enhanced Fujita rating in the United States so far this year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "1,429",
+    "split": "TEST"
+  },
+  {
+    "claim": "Geoffrey Hinton has 1,029,825 citations according to Google Scholar.",
+    "label": "SUPPORTS",
+    "raw_question": "How many citations does Geoffrey Hinton have according to Google Scholar?",
+    "fact_type": "fast-changing",
+    "ground_truth": "1029825",
+    "split": "TEST"
+  },
+  {
+    "claim": "The last time it rained in New York City was April 17, 2026.",
+    "label": "SUPPORTS",
+    "raw_question": "What date was the last time it rained in New York City?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Apr 17, 2026",
+    "split": "TEST"
+  },
+  {
+    "claim": "Harry Potter and the Half-Blood Prince is the current best-selling children's book on Amazon.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the current best-selling children's book on Amazon?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Harry Potter and the Half-Blood Prince",
+    "split": "TEST"
+  },
+  {
+    "claim": "Artemis II is the current most popular Wikipedia article of the week.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the current most popular Wikipedia article of the Week?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Artemis II",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Netflix standard plan without ads costs $19.99 in the United States.",
+    "label": "SUPPORTS",
+    "raw_question": "How much does the Netflix standard plan without ads cost in the US?",
+    "fact_type": "fast-changing",
+    "ground_truth": "$19.99",
+    "split": "TEST"
+  },
+  {
+    "claim": "BTS is the current number one on the Billboard Artist 100.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the current No. 1 on the Billboard Artist 100?",
+    "fact_type": "fast-changing",
+    "ground_truth": "BTS",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Drama is the most popular film on Letterboxd this week.",
+    "label": "SUPPORTS",
+    "raw_question": "What's the most popular film on Letterboxd this week?",
+    "fact_type": "fast-changing",
+    "ground_truth": "The Drama",
+    "split": "TEST"
+  },
+  {
+    "claim": "Geoff Hinton\u2019s h-index is 190.",
+    "label": "SUPPORTS",
+    "raw_question": "What is Geoff Hinton\u2019s h-index?",
+    "fact_type": "fast-changing",
+    "ground_truth": "190",
+    "split": "TEST"
+  },
+  {
+    "claim": "Luka Don\u010di\u0107 is the most recent NBA player to score 60 or more points in a single game.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the most recent NBA player to score 60 or more points in a single game?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Luka Don\u010di\u0107",
+    "split": "TEST"
+  },
+  {
+    "claim": "Alexia Jayy is the latest winner of The Voice US.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the latest winner of The Voice US?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Alexia Jayy",
+    "split": "TEST"
+  },
+  {
+    "claim": "Coldplay's last concert was on April 17, 2026.",
+    "label": "SUPPORTS",
+    "raw_question": "When was Coldplay's last concert?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Apr 17, 2026",
+    "split": "TEST"
+  },
+  {
+    "claim": "Jannik Sinner is the current ATP top-ranked men's singles tennis player.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the current ATP top-ranked men's singles tennis player?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Jannik Sinner",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Patriots last played the Miami Dolphins on January 4, 2026.",
+    "label": "SUPPORTS",
+    "raw_question": "On what date did the Patriots last play the Miami Dolphins?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Jan 4, 2026",
+    "split": "TEST"
+  },
+  {
+    "claim": "Switzerland is the most recent country that President Donald Trump visited during his second presidency.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the most recent country that President Donald Trump visited during his second presidency?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Switzerland",
+    "split": "TEST"
+  },
+  {
+    "claim": "Chick Corea, Christian McBride, and Brian Blade won the latest Grammy Award for Best Jazz Performance.",
+    "label": "SUPPORTS",
+    "raw_question": "Who won the latest Grammy Award for Best Jazz Performance?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Chick Corea, Christian McBride & Brian Blade",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Seattle Seahawks won the most recent Super Bowl.",
+    "label": "SUPPORTS",
+    "raw_question": "Who won the most recent Super Bowl?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Seattle Seahawks",
+    "split": "TEST"
+  },
+  {
+    "claim": "NeurIPS will be located in Sydney this year.",
+    "label": "SUPPORTS",
+    "raw_question": "Where will NeurIPS be located this year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Sydney",
+    "split": "TEST"
+  },
+  {
+    "claim": "This year's Coachella festival dates are April 10\u201312 and April 17\u201319.",
+    "label": "SUPPORTS",
+    "raw_question": "What were this year's Coachella festival dates?",
+    "fact_type": "fast-changing",
+    "ground_truth": "April 10\u201312 and April 17-19",
+    "split": "TEST"
+  },
+  {
+    "claim": "This year's Black Friday is on November 27.",
+    "label": "SUPPORTS",
+    "raw_question": "When is this year's Black Friday?",
+    "fact_type": "fast-changing",
+    "ground_truth": "November 27",
+    "split": "TEST"
+  },
+  {
+    "claim": "This year's Passover started on April 1.",
+    "label": "SUPPORTS",
+    "raw_question": "When did this year's Passover start?",
+    "fact_type": "fast-changing",
+    "ground_truth": "April 1",
+    "split": "TEST"
+  },
+  {
+    "claim": "Aryna Sabalenka and Amanda Anisimova were the finalists in the US Open women's singles last year.",
+    "label": "SUPPORTS",
+    "raw_question": "Who were the finalists in the US Open women's singles last year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Aryna Sabalenka and Amanda Anisimova",
+    "split": "TEST"
+  },
+  {
+    "claim": "1,699 papers were accepted into the main conference of ACL last year.",
+    "label": "SUPPORTS",
+    "raw_question": "How many papers (including both long and short papers) were accepted into the main conference of ACL last year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "1,699 papers were accepted into the Main Conference.",
+    "split": "TEST"
+  },
+  {
+    "claim": "Mother's day in the United States this year is on Sunday, May 10.",
+    "label": "SUPPORTS",
+    "raw_question": "What date is mother's day in the United States this year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Sunday, May 10",
+    "split": "TEST"
+  },
+  {
+    "claim": "Father's day in the United States this year is on Sunday, June 21.",
+    "label": "SUPPORTS",
+    "raw_question": "What date is father's day in the United States this year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Sunday, June 21",
+    "split": "TEST"
+  },
+  {
+    "claim": "EMNLP is in Budapest, Hungary this year.",
+    "label": "SUPPORTS",
+    "raw_question": "Where is EMNLP this year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Budapest, Hungary",
+    "split": "TEST"
+  },
+  {
+    "claim": "The broadcaster for this year's Super Bowl was NBC and Peacock.",
+    "label": "SUPPORTS",
+    "raw_question": "Which broadcast network was this year's Super Bowl broadcaster?",
+    "fact_type": "fast-changing",
+    "ground_truth": "NBC and Peacock",
+    "split": "TEST"
+  },
+  {
+    "claim": "The highest-grossing film in the United States last year was Zootopia 2.",
+    "label": "SUPPORTS",
+    "raw_question": "What was the highest-grossing film in the United States last year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Zootopia 2",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Berber year that corresponds to the present year is 2976.",
+    "label": "SUPPORTS",
+    "raw_question": "What Berber year corresponds to the present year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "2976",
+    "split": "TEST"
+  },
+  {
+    "claim": "This year's Ramadan was from Feb 18, 2026 to Mar 19, 2026.",
+    "label": "SUPPORTS",
+    "raw_question": "When was this year's Ramadan?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Feb 18, 2026 \u2013 Mar 19, 2026",
+    "split": "TEST"
+  },
+  {
+    "claim": "Thanksgiving this year is on November 26.",
+    "label": "SUPPORTS",
+    "raw_question": "What date is Thanksgiving this year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "November 26",
+    "split": "TEST"
+  },
+  {
+    "claim": "This year's Labor day is on September 7.",
+    "label": "SUPPORTS",
+    "raw_question": "What date is this year's Labor day?",
+    "fact_type": "fast-changing",
+    "ground_truth": "September 7",
+    "split": "TEST"
+  },
+  {
+    "claim": "The host stadium of this year's Super Bowl was Levi's Stadium.",
+    "label": "SUPPORTS",
+    "raw_question": "What was the host stadium of this year's Super Bowl?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Levi's Stadium",
+    "split": "TEST"
+  },
+  {
+    "claim": "The State of the Union Address was delivered on Mar 4, 2025 in the previous calendar year.",
+    "label": "SUPPORTS",
+    "raw_question": "What date was the State of the Union Address delivered in the previous calendar year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Mar 4, 2025",
+    "split": "TEST"
+  },
+  {
+    "claim": "The latest Academy Award for Best Animated Feature was won by KPop Demon Hunters.",
+    "label": "SUPPORTS",
+    "raw_question": "What won the latest Academy Award for Best Animated Feature?",
+    "fact_type": "fast-changing",
+    "ground_truth": "KPop Demon Hunters",
+    "split": "TEST"
+  },
+  {
+    "claim": "The latest Academy Award for Best Picture was won by One Battle After Another.",
+    "label": "SUPPORTS",
+    "raw_question": "Which movie won the latest Academy Award for Best Picture?",
+    "fact_type": "fast-changing",
+    "ground_truth": "One Battle After Another",
+    "split": "TEST"
+  },
+  {
+    "claim": "Stephen King has published 68 novels.",
+    "label": "SUPPORTS",
+    "raw_question": "How many novels has Stephen King published?",
+    "fact_type": "fast-changing",
+    "ground_truth": "68 novels",
+    "split": "TEST"
+  },
+  {
+    "claim": "The title of Stephen King's most recent novel is The End Times.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the title of Stephen King's most recent novel?",
+    "fact_type": "fast-changing",
+    "ground_truth": "The End Times",
+    "split": "TEST"
+  },
+  {
+    "claim": "The season in the northern hemisphere is spring.",
+    "label": "SUPPORTS",
+    "raw_question": "What season is it in the northern hemisphere?",
+    "fact_type": "fast-changing",
+    "ground_truth": "spring",
+    "split": "TEST"
+  },
+  {
+    "claim": "The next U.S. federal holiday is Memorial Day.",
+    "label": "SUPPORTS",
+    "raw_question": "When is the next U.S. federal holiday?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Memorial Day",
+    "split": "TEST"
+  },
+  {
+    "claim": "The most recent Microsoft's Patch Tuesday came out in North America on Apr 14, 2026.",
+    "label": "SUPPORTS",
+    "raw_question": "On what date in North America did the most recent Microsoft's Patch Tuesday come out?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Apr 14, 2026",
+    "split": "TEST"
+  },
+  {
+    "claim": "The upcoming Microsoft's Patch Tuesday will come out in North America on May 12, 2026.",
+    "label": "SUPPORTS",
+    "raw_question": "The upcoming Microsoft's Patch Tuesday will come out on what date in North America?",
+    "fact_type": "fast-changing",
+    "ground_truth": "May 12, 2026",
+    "split": "TEST"
+  },
+  {
+    "claim": "American Idol is still airing this year, so the winner has not been determined.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the winner of American Idol this year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "This year's American Idol is still airing",
+    "split": "TEST"
+  },
+  {
+    "claim": "38 countries have recognized same-sex marriage.",
+    "label": "SUPPORTS",
+    "raw_question": "How many countries have recognized same-sex marriage?",
+    "fact_type": "fast-changing",
+    "ground_truth": "38 countries",
+    "split": "TEST"
+  },
+  {
+    "claim": "Christian McCaffrey is the starting running back for the San Francisco 49ers.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the starting running back for the San Francisco 49ers?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Christian McCaffrey",
+    "split": "TEST"
+  },
+  {
+    "claim": "The base price of the new Tesla Model Y Premium All-Wheel Drive is $48,990.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the base price of the new Tesla Model Y Premium All-Wheel Drive?",
+    "fact_type": "fast-changing",
+    "ground_truth": "$48,990",
+    "split": "TEST"
+  },
+  {
+    "claim": "The latest version of Android is Android 16.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the latest version of Android?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Android 16",
+    "split": "TEST"
+  },
+  {
+    "claim": "Elon Musk is the richest man on earth.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the richest man on earth?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Elon Musk",
+    "split": "TEST"
+  },
+  {
+    "claim": "Arsenal is at the top of the latest Premier League season.",
+    "label": "SUPPORTS",
+    "raw_question": "Which team is at the top of the latest Premier League season?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Arsenal",
+    "split": "TEST"
+  },
+  {
+    "claim": "Arsenal is at the top of the latest Premier League standings.",
+    "label": "SUPPORTS",
+    "raw_question": "Is Arsenal on the top of the latest Premier League standings?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Yes",
+    "split": "TEST"
+  },
+  {
+    "claim": "Lazarus Chakwera is the most recent incumbent president worldwide who ran for re-election but was not reelected.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the most recent incumbent president worldwide who ran for re-election but was not reelected?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Lazarus Chakwera",
+    "split": "TEST"
+  },
+  {
+    "claim": "Tahoe is the release name of the latest version of the macOS operating system.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the release name of the latest version of the macOS operating system?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Tahoe",
+    "split": "TEST"
+  },
+  {
+    "claim": "Marc M\u00e1rquez is the latest MotoGP World Riders' Champion.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the latest MotoGP World Riders' Champion?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Marc M\u00e1rquez",
+    "split": "TEST"
+  },
+  {
+    "claim": "L\u00e1szl\u00f3 Krasznahorkai won the latest Nobel Prize in Literature.",
+    "label": "SUPPORTS",
+    "raw_question": "Who won the latest Nobel Prize in Literature?",
+    "fact_type": "fast-changing",
+    "ground_truth": "L\u00e1szl\u00f3 Krasznahorkai",
+    "split": "TEST"
+  },
+  {
+    "claim": "A'ja Wilson won the most recent Time Magazine's Athlete of the Year.",
+    "label": "SUPPORTS",
+    "raw_question": "Who won the most recent Time Magazine's Athlete of the Year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "A'ja Wilson",
+    "split": "TEST"
+  },
+  {
+    "claim": "Hexed is the next Walt Disney Animation Studios film.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the next Walt Disney Animation Studios film?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Hexed",
+    "split": "TEST"
+  },
+  {
+    "claim": "Zootopia 2 is the most recent Walt Disney Animation Studios's animated film.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the most recent Walt Disney Animation Studios's animated film?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Zootopia 2",
+    "split": "TEST"
+  },
+  {
+    "claim": "Clair Obscur: Expedition 33 won the most recent Game Award for Game of the Year.",
+    "label": "SUPPORTS",
+    "raw_question": "What video game won the most recent Game Award for Game of the Year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Clair Obscur: Expedition 33",
+    "split": "TEST"
+  },
+  {
+    "claim": "The latest NFL season began on September 4, 2025.",
+    "label": "SUPPORTS",
+    "raw_question": "When did the latest NFL season begin?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Sep 4, 2025",
+    "split": "TEST"
+  },
+  {
+    "claim": "1267 undergraduate students enrolled in Reed College in the most recent fall semester.",
+    "label": "SUPPORTS",
+    "raw_question": "How many undergraduate students enrolled in Reed College in the most recent fall semester?",
+    "fact_type": "fast-changing",
+    "ground_truth": "1267",
+    "split": "TEST"
+  },
+  {
+    "claim": "Demb\u00e9l\u00e9 won the latest Ballon D'or.",
+    "label": "SUPPORTS",
+    "raw_question": "Who won the latest Ballon D'or?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Demb\u00e9l\u00e9",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Pitt won the most recent Primetime Emmy Award for Outstanding Drama Series.",
+    "label": "SUPPORTS",
+    "raw_question": "Which drama series won the most recent Primetime Emmy Award for Outstanding Drama Series?",
+    "fact_type": "fast-changing",
+    "ground_truth": "The Pitt",
+    "split": "TEST"
+  },
+  {
+    "claim": "The most recent IJCAI conference was held in Montreal.",
+    "label": "SUPPORTS",
+    "raw_question": "Where was the most recent IJCAI conference held?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Montreal",
+    "split": "TEST"
+  },
+  {
+    "claim": "The upcoming International Mathematical Olympiad (IMO) will be hosted in Shanghai.",
+    "label": "SUPPORTS",
+    "raw_question": "Where will the upcoming International Mathematical Olympiad (IMO) be hosted?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Shanghai",
+    "split": "TEST"
+  },
+  {
+    "claim": "Bomb Busters is the most recent winner of the Spiel des Jahres award.",
+    "label": "SUPPORTS",
+    "raw_question": "Which game won the Spiel des Jahres award most recently?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Bomb Busters",
+    "split": "TEST"
+  },
+  {
+    "claim": "President Donald Trump is 79 years old.",
+    "label": "SUPPORTS",
+    "raw_question": "How old is President Donald Trump?",
+    "fact_type": "fast-changing",
+    "ground_truth": "79",
+    "split": "TEST"
+  },
+  {
+    "claim": "Someone You Can Build a Nest In won the latest Nebula award for Best Novel.",
+    "label": "SUPPORTS",
+    "raw_question": "What book won the latest Nebula award for Best Novel?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Someone You Can Build a Nest In",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Oklahoma City Thunder won the latest NBA championship.",
+    "label": "SUPPORTS",
+    "raw_question": "Who won the latest NBA championship?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Oklahoma City Thunder",
+    "split": "TEST"
+  },
+  {
+    "claim": "Kylian Mbapp\u00e9 scored 7 goals in the UEFA Champions League last season.",
+    "label": "SUPPORTS",
+    "raw_question": "How many goals did Kylian Mbapp\u00e9 score in the UEFA Champion League last season?",
+    "fact_type": "fast-changing",
+    "ground_truth": "7 goals",
+    "split": "TEST"
+  },
+  {
+    "claim": "The longest winning streak in the last season of the Premier League consisted of 6 matches.",
+    "label": "SUPPORTS",
+    "raw_question": "The longest winning streak in the last season of the Premier League consisted of how many matches?",
+    "fact_type": "fast-changing",
+    "ground_truth": "6",
+    "split": "TEST"
+  },
+  {
+    "claim": "Jamal Roberts is the latest winner of American Idol.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the latest winner of American Idol?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Jamal Roberts",
+    "split": "TEST"
+  },
+  {
+    "claim": "Mohammed bin Salman was the guest of honor at the most recent state dinner hosted by the President of the United States.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the guest of honor at the most recent state dinner hosted by the President of the United States?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Mohammed bin Salman",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Tortured Poets Department holds the record for the most Spotify streams reached in a single day.",
+    "label": "SUPPORTS",
+    "raw_question": "What album holds the record for the most Spotify streams reached in a single day?",
+    "fact_type": "fast-changing",
+    "ground_truth": "The Tortured Poets Department",
+    "split": "TEST"
+  },
+  {
+    "claim": "Aryna Sabalenka is the number 1 ranked female tennis player in the world.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the number 1 ranked female tennis player in the world?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Aryna Sabalenka",
+    "split": "TEST"
+  },
+  {
+    "claim": "Apple's stock price is above $170 per share.",
+    "label": "SUPPORTS",
+    "raw_question": "Is Apple's stock price above $170 per share?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Yes",
+    "split": "TEST"
+  },
+  {
+    "claim": "The most recent episode of The Lord of the Rings: The Rings of Power is named Shadow and Flame.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the name of the most recent episode of The Lord of the Rings: The Rings of Power?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Shadow and Flame",
+    "split": "TEST"
+  },
+  {
+    "claim": "The new Apple HomePod costs $299.",
+    "label": "SUPPORTS",
+    "raw_question": "How much does the new Apple HomePod cost?",
+    "fact_type": "fast-changing",
+    "ground_truth": "$299",
+    "split": "TEST"
+  },
+  {
+    "claim": "Ohio is the latest United States jurisdiction to legalize the recreational use of cannabis.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the latest United States jurisdiction to legalize the recreational use of cannabis?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Ohio",
+    "split": "TEST"
+  },
+  {
+    "claim": "The youngest age eligible for COVID-19 vaccination in the United States is 6 months.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the youngest age eligible for COVID-19 vaccination in the United States?",
+    "fact_type": "fast-changing",
+    "ground_truth": "6 months",
+    "split": "TEST"
+  },
+  {
+    "claim": "Stay out of the House is the latest game released by Puppet Combo on Steam.",
+    "label": "SUPPORTS",
+    "raw_question": "What's the latest game released by Puppet Combo on Steam?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Stay out of the House",
+    "split": "TEST"
+  },
+  {
+    "claim": "President Donald Trump has visited 14 countries during his current presidency.",
+    "label": "SUPPORTS",
+    "raw_question": "How many countries has President Donald Trump visited during his current presidency?",
+    "fact_type": "fast-changing",
+    "ground_truth": "14",
+    "split": "TEST"
+  },
+  {
+    "claim": "Bukayo Saka scored 0 goals in the most recent match between Arsenal and Liverpool.",
+    "label": "SUPPORTS",
+    "raw_question": "How many goals did Bukayo Saka score in the most recent match between Arsenal and Liverpool?",
+    "fact_type": "fast-changing",
+    "ground_truth": "0",
+    "split": "TEST"
+  },
+  {
+    "claim": "A player has scored 60 or more points in a single game 93 times in NBA history.",
+    "label": "SUPPORTS",
+    "raw_question": "How many times has a player scored 60 or more points in a single game in NBA history?",
+    "fact_type": "fast-changing",
+    "ground_truth": "93",
+    "split": "TEST"
+  },
+  {
+    "claim": "The current Tomatometer score of the most recent season of The Lord of the Rings: The Rings of Power on Rotten Tomatoes is 85%.",
+    "label": "SUPPORTS",
+    "raw_question": "What's the current Tomatometer score of the most recent season of The Lord of the Rings: The Rings of Power on Rotten Tomatoes?",
+    "fact_type": "fast-changing",
+    "ground_truth": "85%",
+    "split": "TEST"
+  },
+  {
+    "claim": "The current audience score of the most recent season of The Lord of the Rings: The Rings of Power on Rotten Tomatoes is 58%.",
+    "label": "SUPPORTS",
+    "raw_question": "What's the current audience score of the most recent season of The Lord of the Rings: The Rings of Power on Rotten Tomatoes?",
+    "fact_type": "fast-changing",
+    "ground_truth": "58%",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Toronto Raptors have a winning record in the latest NBA season.",
+    "label": "SUPPORTS",
+    "raw_question": "Do the Toronto Raptors have a winning record in the latest NBA season?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Yes",
+    "split": "TEST"
+  },
+  {
+    "claim": "The average regular gasoline price in Massachusetts is not under $3.70 a gallon.",
+    "label": "SUPPORTS",
+    "raw_question": "Is the average regular gasoline price in Massachusetts under $3.70 a gallon?",
+    "fact_type": "fast-changing",
+    "ground_truth": "No",
+    "split": "TEST"
+  },
+  {
+    "claim": "John Paul II died 21 years ago.",
+    "label": "SUPPORTS",
+    "raw_question": "How many years ago did John Paul II die?",
+    "fact_type": "fast-changing",
+    "ground_truth": "21",
+    "split": "TEST"
+  },
+  {
+    "claim": "It has been 137 years since the Eiffel Tower's inauguration.",
+    "label": "SUPPORTS",
+    "raw_question": "How long has it been since the Eiffel Tower's inauguration?",
+    "fact_type": "fast-changing",
+    "ground_truth": "137",
+    "split": "TEST"
+  },
+  {
+    "claim": "The most-followed user on TikTok is 26 years old.",
+    "label": "SUPPORTS",
+    "raw_question": "How old is the most-followed user on TikTok?",
+    "fact_type": "fast-changing",
+    "ground_truth": "26 years old",
+    "split": "TEST"
+  },
+  {
+    "claim": "David Beckham's oldest son is 27 years old.",
+    "label": "SUPPORTS",
+    "raw_question": "How old is David Beckham's oldest son?",
+    "fact_type": "fast-changing",
+    "ground_truth": "27 years old",
+    "split": "TEST"
+  },
+  {
+    "claim": "The largest marathon in the world starts on Nov 1, 2026 this year.",
+    "label": "SUPPORTS",
+    "raw_question": "When will the largest marathon in the world start this year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Nov 1, 2026",
+    "split": "TEST"
+  },
+  {
+    "claim": "Dav Pilkey and Rebecca Yarros had the most bestselling novels in the United States last year according to Publishers Weekly.",
+    "label": "SUPPORTS",
+    "raw_question": "Which author had the most bestselling novels in the United States last year according to Publishers Weekly?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Dav Pilkey and Rebecca Yarros",
+    "split": "TEST"
+  },
+  {
+    "claim": "Lionel Messi posted the most-liked Instagram post last year.",
+    "label": "SUPPORTS",
+    "raw_question": "Who posted the most-liked Instagram post last year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Lionel Messi",
+    "split": "TEST"
+  },
+  {
+    "claim": "The price of Bitcoin was last above $40,000 in April 2026.",
+    "label": "SUPPORTS",
+    "raw_question": "In what month and year was the price of Bitcoin last above $40,000?",
+    "fact_type": "fast-changing",
+    "ground_truth": "April 2026",
+    "split": "TEST"
+  },
+  {
+    "claim": "Stephen King has published 61 novels under his real name.",
+    "label": "SUPPORTS",
+    "raw_question": "How many novels has Stephen King published under his real name?",
+    "fact_type": "fast-changing",
+    "ground_truth": "61 novels",
+    "split": "TEST"
+  },
+  {
+    "claim": "F1 is Brad Pitt's most recent movie as an actor.",
+    "label": "SUPPORTS",
+    "raw_question": "What is Brad Pitt's most recent movie as an actor?",
+    "fact_type": "fast-changing",
+    "ground_truth": "F1",
+    "split": "TEST"
+  },
+  {
+    "claim": "Mauna Loa has been a dormant volcano for more than 3 years since its most recent eruption.",
+    "label": "SUPPORTS",
+    "raw_question": "How long has Mauna Loa been a dormant volcano since its most recent eruption?",
+    "fact_type": "fast-changing",
+    "ground_truth": "more than 3 years",
+    "split": "TEST"
+  },
+  {
+    "claim": "President Donald Trump visited 1 Southeast Asian country during his presidency.",
+    "label": "SUPPORTS",
+    "raw_question": "How many Southeast Asian countries has President Donald Trump visited during his current presidency?",
+    "fact_type": "fast-changing",
+    "ground_truth": "1",
+    "split": "TEST"
+  },
+  {
+    "claim": "Tesla's stock price is above $250 a share.",
+    "label": "SUPPORTS",
+    "raw_question": "Is Tesla's stock price above $250 a share?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Yes",
+    "split": "TEST"
+  },
+  {
+    "claim": "The world's oldest verified living person is 116 years old.",
+    "label": "SUPPORTS",
+    "raw_question": "How old is the world's oldest verified living person?",
+    "fact_type": "fast-changing",
+    "ground_truth": "116 years old",
+    "split": "TEST"
+  },
+  {
+    "claim": "The current Miss World was born in Thailand.",
+    "label": "SUPPORTS",
+    "raw_question": "In what country was the current Miss World born?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Thailand",
+    "split": "TEST"
+  },
+  {
+    "claim": "It has been more than 2 years since the last Major League Baseball perfect game.",
+    "label": "SUPPORTS",
+    "raw_question": "How many years it has been since the last Major League Baseball perfect game?",
+    "fact_type": "fast-changing",
+    "ground_truth": "more than 2 years",
+    "split": "TEST"
+  },
+  {
+    "claim": "The richest person in the world is 54 years old.",
+    "label": "SUPPORTS",
+    "raw_question": "How old is the richest person in the world?",
+    "fact_type": "fast-changing",
+    "ground_truth": "54 years old",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Wimbledon women's champion plays for Poland.",
+    "label": "SUPPORTS",
+    "raw_question": "What country does the Wimbledon women's champion play for?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Poland",
+    "split": "TEST"
+  },
+  {
+    "claim": "Netflix will celebrate its thirtieth anniversary in more than 1 year.",
+    "label": "SUPPORTS",
+    "raw_question": "In how many years will Netflix celebrate its thirtieth anniversary?",
+    "fact_type": "fast-changing",
+    "ground_truth": "more than 1 year",
+    "split": "TEST"
+  },
+  {
+    "claim": "The most recent winner of the Nobel Prize for Literature was born in Hungary.",
+    "label": "SUPPORTS",
+    "raw_question": "In what country was the most recent winner of the Nobel Prize for Literature born?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Hungary",
+    "split": "TEST"
+  },
+  {
+    "claim": "The current champions of the NBA, NHL, and MLB are the Oklahoma City Thunder, the Florida Panthers, and the Los Angeles Dodgers, respectively.",
+    "label": "SUPPORTS",
+    "raw_question": "Who are the current champions of the NBA, NHL, and MLB?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Oklahoma City Thunder, Florida Panthers, and Los Angeles Dodgers",
+    "split": "TEST"
+  },
+  {
+    "claim": "The most recent Time Magazine Entertainer of the Year comes from the USA.",
+    "label": "SUPPORTS",
+    "raw_question": "What country does the most recent Time Magazine's Entertainer of the Year come from?",
+    "fact_type": "fast-changing",
+    "ground_truth": "the USA",
+    "split": "TEST"
+  },
+  {
+    "claim": "The latest American Nobel laureate in Physics is 67 or 68 years old.",
+    "label": "SUPPORTS",
+    "raw_question": "How old is the latest American Nobel laureate in Physics?",
+    "fact_type": "fast-changing",
+    "ground_truth": "67 or 68",
+    "split": "TEST"
+  },
+  {
+    "claim": "The oldest person to sail solo across the Pacific Ocean is 87 years old.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the current age of the oldest person to sail solo across the Pacific Ocean?",
+    "fact_type": "fast-changing",
+    "ground_truth": "87",
+    "split": "TEST"
+  },
+  {
+    "claim": "The United States representative reached the Top 20 at the last Miss World.",
+    "label": "SUPPORTS",
+    "raw_question": "How far did the United States representative go at the last Miss World?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Top 20",
+    "split": "TEST"
+  },
+  {
+    "claim": "David Beckham's daughter is 14 years old.",
+    "label": "SUPPORTS",
+    "raw_question": "How old is David Beckham's daughter?",
+    "fact_type": "fast-changing",
+    "ground_truth": "14",
+    "split": "TEST"
+  },
+  {
+    "claim": "There were 138 American companies in the Fortune Global 500 list last year.",
+    "label": "SUPPORTS",
+    "raw_question": "How many American companies were there in the Fortune Global 500 list last year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "138",
+    "split": "TEST"
+  },
+  {
+    "claim": "The current Miss Universe is 25 years old.",
+    "label": "SUPPORTS",
+    "raw_question": "How old is the current Miss Universe?",
+    "fact_type": "fast-changing",
+    "ground_truth": "25 years old",
+    "split": "TEST"
+  },
+  {
+    "claim": "The Florida Panthers are the latest champions of North America's oldest professional sports trophy.",
+    "label": "SUPPORTS",
+    "raw_question": "Who are the latest champions of the North America's oldest professional sports trophy?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Florida Panthers (EC)",
+    "split": "TEST"
+  },
+  {
+    "claim": "The richest woman in the world was born in the USA.",
+    "label": "SUPPORTS",
+    "raw_question": "In which country was the richest woman in the world born?",
+    "fact_type": "fast-changing",
+    "ground_truth": "the USA",
+    "split": "TEST"
+  },
+  {
+    "claim": "The most recent individual recipient of Time Person of the Year was born in the USA.",
+    "label": "SUPPORTS",
+    "raw_question": "In what country was the most recent individual recipient of Time Person of the Year born?",
+    "fact_type": "fast-changing",
+    "ground_truth": "the USA",
+    "split": "TEST"
+  },
+  {
+    "claim": "One US dollar is worth more than 82 Indian rupees.",
+    "label": "SUPPORTS",
+    "raw_question": "Is one US dollar worth more than 82 Indian rupees?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Yes",
+    "split": "TEST"
+  },
+  {
+    "claim": "The platinum price to palladium price ratio is currently above 0.7.",
+    "label": "SUPPORTS",
+    "raw_question": "Is the platinum price to palladium price ratio currently above 0.7?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Yes",
+    "split": "TEST"
+  },
+  {
+    "claim": "Bella Poarch posted the most-liked TikTok video.",
+    "label": "SUPPORTS",
+    "raw_question": "Who posted the most-liked TikTok video?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Bella Poarch",
+    "split": "TEST"
+  },
+  {
+    "claim": "Four LauncherOne flights have successfully reached Low Earth orbit.",
+    "label": "SUPPORTS",
+    "raw_question": "How many LauncherOne's flights have successfully reached the Low Earth orbit?",
+    "fact_type": "fast-changing",
+    "ground_truth": "4",
+    "split": "TEST"
+  },
+  {
+    "claim": "Canada has a president.",
+    "label": "REFUTES",
+    "raw_question": "Who is the current Canadian president?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Canada does not have a president but rather has a prime minister.",
+    "split": "DEV"
+  },
+  {
+    "claim": "Russia has finished disposing of all of its nuclear weapons.",
+    "label": "REFUTES",
+    "raw_question": "In what year did Russia finish disposing of all of its nuclear weapons?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Russia has not disposed of all of its nuclear weapons.",
+    "split": "DEV"
+  },
+  {
+    "claim": "Taylor Swift has won a Golden Globe award.",
+    "label": "REFUTES",
+    "raw_question": "When did Taylor Swift win her first Golden Globe?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Taylor Swift has never won a Golden Globe award.",
+    "split": "DEV"
+  },
+  {
+    "claim": "Denmark has adopted the euro as its currency.",
+    "label": "REFUTES",
+    "raw_question": "When did Denmark adopt the euro as its currency?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Denmark has not yet adopted the euro.",
+    "split": "DEV"
+  },
+  {
+    "claim": "OpenAI has released GPT-5.5.",
+    "label": "REFUTES",
+    "raw_question": "When did OpenAI release GPT-5.5?",
+    "fact_type": "slow-changing",
+    "ground_truth": "To date, OpenAI has not yet released GPT-5.5.",
+    "split": "DEV"
+  },
+  {
+    "claim": "Eddie Murphy has won an Oscar.",
+    "label": "REFUTES",
+    "raw_question": "What role did Eddie Murphy win an Oscar for?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Eddie Murphy has never won an Oscar.",
+    "split": "DEV"
+  },
+  {
+    "claim": "Election Day in the United States was made into a federal holiday.",
+    "label": "REFUTES",
+    "raw_question": "What year was Election Day in the United States made into a federal holiday?",
+    "fact_type": "slow-changing",
+    "ground_truth": "It has never been made into a federal holiday.",
+    "split": "DEV"
+  },
+  {
+    "claim": "The Pokemon Franchise has already celebrated its thirtieth anniversary.",
+    "label": "REFUTES",
+    "raw_question": "When did the Pokemon Franchise celebrate its thirtieth anniversary?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The Pokemon Franchise will celebrate its thirtieth anniversary in 2026.",
+    "split": "DEV"
+  },
+  {
+    "claim": "The funeral for Pope Leo XIV was held.",
+    "label": "REFUTES",
+    "raw_question": "Where was the funeral for Pope Leo XIV held?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Pope Leo XIV is still alive.",
+    "split": "DEV"
+  },
+  {
+    "claim": "Canada currently requires arriving travelers to provide proof of COVID vaccination via an app.",
+    "label": "REFUTES",
+    "raw_question": "Canada currently requires arriving travelers to provide proof of COVID vaccination via what app?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Canada dropped all COVID-19 border rules (in September 2022).",
+    "split": "DEV"
+  },
+  {
+    "claim": "The Fields Medal has only had one female recipient.",
+    "label": "REFUTES",
+    "raw_question": "Who is the only female recipient of the Fields Medal?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The Fields Medal has had two female recipients: Maryam Mirzakhani from Iran in 2014, and Maryna Viazovska from Ukraine in 2022.",
+    "split": "DEV"
+  },
+  {
+    "claim": "Abortion has been illegal in the United States.",
+    "label": "REFUTES",
+    "raw_question": "How long has abortion been illegal in the United States?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Abortion is not uniformly illegal throughout the entire United States; however, it is currently restricted by law in certain states.",
+    "split": "DEV"
+  },
+  {
+    "claim": "Sam Bankman-Fried pleaded guilty to federal fraud charges after being extradited to the United States.",
+    "label": "REFUTES",
+    "raw_question": "How many days after Sam Bankman-Fried was extradited to the United States did he plead guilty to federal fraud charges?",
+    "fact_type": "slow-changing",
+    "ground_truth": "He pleaded not guilty.",
+    "split": "DEV"
+  },
+  {
+    "claim": "A city hosted the Summer Olympics in 1940.",
+    "label": "REFUTES",
+    "raw_question": "What city hosted the Summer Olympics in 1940?",
+    "fact_type": "never-changing",
+    "ground_truth": "The Olympics in 1940 were cancelled.",
+    "split": "DEV"
+  },
+  {
+    "claim": "The M1 Macbook Air has a dedicated graphics processing unit.",
+    "label": "REFUTES",
+    "raw_question": "What dedicated graphics processing unit does the M1 Macbook Air have?",
+    "fact_type": "never-changing",
+    "ground_truth": "The M1 Macbook Air does not have a dedicated graphics processing unit (instead, the M1 chip contains its own CPU and GPU).",
+    "split": "DEV"
+  },
+  {
+    "claim": "Mark Zuckerberg graduated from college.",
+    "label": "REFUTES",
+    "raw_question": "When did Mark Zuckerberg graduate from college?",
+    "fact_type": "never-changing",
+    "ground_truth": "Mark Zuckerberg has not graduated from college. He dropped out of Harvard and founded Facebook.",
+    "split": "DEV"
+  },
+  {
+    "claim": "Humans have been killed by dinosaurs.",
+    "label": "REFUTES",
+    "raw_question": "How many humans have been killed by dinosaurs?",
+    "fact_type": "never-changing",
+    "ground_truth": "Dinosaurs went extinct (millions of years ago) before humans appeared on Earth (homo sapiens only emerged around 300,000 years ago).",
+    "split": "DEV"
+  },
+  {
+    "claim": "Venus has a smallest moon.",
+    "label": "REFUTES",
+    "raw_question": "What is the name of Venus' smallest moon?",
+    "fact_type": "never-changing",
+    "ground_truth": "Venus has no moons.",
+    "split": "DEV"
+  },
+  {
+    "claim": "In 2021, an astronomer successfully lobbied the IAU to change Pluto's planetary classification from 'dwarf planet' back to 'planet'.",
+    "label": "REFUTES",
+    "raw_question": "In 2021, which astronomer successfully lobbied the IAU to change Pluto's planetary classification from \"dwarf planet\" back to \"planet\"?",
+    "fact_type": "never-changing",
+    "ground_truth": "This never happened and Pluto is still considered a dwarf planet.",
+    "split": "DEV"
+  },
+  {
+    "claim": "There are days left until the 2022 FIFA World Cup begins.",
+    "label": "REFUTES",
+    "raw_question": "How many days are left until the 2022 FIFA World Cup begins?",
+    "fact_type": "never-changing",
+    "ground_truth": "It happened in 2022.",
+    "split": "DEV"
+  },
+  {
+    "claim": "Daddy Yankee has a next studio album coming up.",
+    "label": "REFUTES",
+    "raw_question": "What is Daddy Yankee's next studio album?",
+    "fact_type": "never-changing",
+    "ground_truth": "Daddy Yankee announced his final studio album in 2022 already.",
+    "split": "DEV"
+  },
+  {
+    "claim": "Netflix will celebrate its twenty-fifth anniversary in a future month of this year.",
+    "label": "REFUTES",
+    "raw_question": "In what month of this year will Netflix celebrate its twenty-fifth anniversary?",
+    "fact_type": "never-changing",
+    "ground_truth": "Netflix celebrated its twenty-fifth anniversary in 2022 already.",
+    "split": "DEV"
+  },
+  {
+    "claim": "In 2022, inflation in the United States was at its lowest rate since 1982.",
+    "label": "REFUTES",
+    "raw_question": "In what month of 2022 was the inflation in the United States at its lowest rate since 1982?",
+    "fact_type": "never-changing",
+    "ground_truth": "In 2022, the US inflation did not reach its lowest rate since 1982. Instead, it peaked at 9.1% in June 2022, its highest rate since 1982.",
+    "split": "DEV"
+  },
+  {
+    "claim": "There are days left until the coronation of Charles III and his wife.",
+    "label": "REFUTES",
+    "raw_question": "How many days are left until the coronation of Charles III and his wife?",
+    "fact_type": "never-changing",
+    "ground_truth": "The event took place on May 6, 2023 already.",
+    "split": "DEV"
+  },
+  {
+    "claim": "After anti-COVID measures were further increased in December 2022 to help support China's 'zero COVID' policy, the quarantine time for international travelers to China was extended.",
+    "label": "REFUTES",
+    "raw_question": "After anti-COVID measures were further increased in December 2022 to help support China's \"zero COVID\" policy, by how many days was the quarantine time for international travelers to China extended?",
+    "fact_type": "never-changing",
+    "ground_truth": "Anti-COVID measures (including quarantine time) were dramatically reduced following widespread protests.",
+    "split": "DEV"
+  },
+  {
+    "claim": "LeBron James plays for the Los Angeles Lakers.",
+    "label": "SUPPORTS",
+    "raw_question": "What team does LeBron James play for?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Los Angeles Lakers",
+    "split": "DEV"
+  },
+  {
+    "claim": "The Airbus A380 is the largest passenger airplane.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the largest passenger airplane?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Airbus A380",
+    "split": "DEV"
+  },
+  {
+    "claim": "Challenger Deep is the deepest place on Earth.",
+    "label": "SUPPORTS",
+    "raw_question": "Where is the deepest place on Earth?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Challenger Deep",
+    "split": "DEV"
+  },
+  {
+    "claim": "English is the language with the third largest population of native speakers.",
+    "label": "SUPPORTS",
+    "raw_question": "Which language has the third largest population by number of native speakers?",
+    "fact_type": "slow-changing",
+    "ground_truth": "English",
+    "split": "DEV"
+  },
+  {
+    "claim": "The United States last won the FIFA Women's World Cup in 2019.",
+    "label": "SUPPORTS",
+    "raw_question": "When did the United States last win the FIFA Women's World Cup?",
+    "fact_type": "slow-changing",
+    "ground_truth": "2019",
+    "split": "DEV"
+  },
+  {
+    "claim": "Brazil is the most recent team to win back-to-back FIFA World Cups, having achieved the feat in 1962.",
+    "label": "SUPPORTS",
+    "raw_question": "Which team is the most recent team to win back-to-back FIFA World Cups?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Brazil 1962",
+    "split": "DEV"
+  },
+  {
+    "claim": "The GitHub repository with the most stars is sindresorhus/awesome.",
+    "label": "SUPPORTS",
+    "raw_question": "Which GitHub repo has the most stars?",
+    "fact_type": "slow-changing",
+    "ground_truth": "sindresorhus/awesome",
+    "split": "DEV"
+  },
+  {
+    "claim": "2024 is the hottest year on record.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the hottest year on record?",
+    "fact_type": "slow-changing",
+    "ground_truth": "2024",
+    "split": "DEV"
+  },
+  {
+    "claim": "Angel Di Maria plays for Rosario Central.",
+    "label": "SUPPORTS",
+    "raw_question": "Which club does Angel Di Maria play for?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Rosario Central",
+    "split": "DEV"
+  },
+  {
+    "claim": "The minimum hourly wage in Tokyo is \u00a51,226.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the minimum hourly wage in Tokyo right now?",
+    "fact_type": "slow-changing",
+    "ground_truth": "\u00a51,226",
+    "split": "DEV"
+  },
+  {
+    "claim": "Ken Jennings is the current host of Jeopardy!.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the current Jeopardy! host?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Ken Jennings",
+    "split": "DEV"
+  },
+  {
+    "claim": "Virat Kohli holds the record for the most centuries in men's one-day international cricket.",
+    "label": "SUPPORTS",
+    "raw_question": "Who holds the record for most hundreds in one day international men's cricket?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Virat Kohli",
+    "split": "DEV"
+  },
+  {
+    "claim": "London Marilyn Hilton Reum is the name of Paris Hilton's daughter.",
+    "label": "SUPPORTS",
+    "raw_question": "Is London Marilyn Hilton Reum the name of Paris Hilton's daughter?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Yes",
+    "split": "DEV"
+  },
+  {
+    "claim": "The minimum hourly wage in Massachusetts is $15.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the minimum hourly wage in Massachusetts right now?",
+    "fact_type": "slow-changing",
+    "ground_truth": "$15",
+    "split": "DEV"
+  },
+  {
+    "claim": "The largest acquisition deal of a tech company in history was Microsoft's purchase of Activision Blizzard for US$68.7 billion.",
+    "label": "SUPPORTS",
+    "raw_question": "What was the largest acquisition deal of a tech company in history?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Microsoft purchases Activision Blizzard for US$68.7 billion.",
+    "split": "DEV"
+  },
+  {
+    "claim": "Liz Truss is the shortest-serving Prime Minister in the history of the United Kingdom.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the shortest-serving Prime Minister in the history of the United Kingdom?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Liz Truss",
+    "split": "DEV"
+  },
+  {
+    "claim": "The Russian invasion of Ukraine is the largest armed conflict in Europe since World War II.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the largest armed conflict in Europe since World War II?",
+    "fact_type": "slow-changing",
+    "ground_truth": "The Russian invasion of Ukraine",
+    "split": "DEV"
+  },
+  {
+    "claim": "Will Smith will not attend the next Academy Awards show because he is banned from the event until 2032.",
+    "label": "SUPPORTS",
+    "raw_question": "Will Will Smith attend the next Academy Awards show?",
+    "fact_type": "slow-changing",
+    "ground_truth": "No, he is banned from show until 2032.",
+    "split": "DEV"
+  },
+  {
+    "claim": "Nine people from Princeton University have won the Fields Medal.",
+    "label": "SUPPORTS",
+    "raw_question": "How many people from Princeton University have won the Fields Medal?",
+    "fact_type": "slow-changing",
+    "ground_truth": "9",
+    "split": "DEV"
+  },
+  {
+    "claim": "The oldest planet known to have life on it is 4.54 billion years old.",
+    "label": "SUPPORTS",
+    "raw_question": "How old is the oldest planet known to have life on it?",
+    "fact_type": "slow-changing",
+    "ground_truth": "4.54 billion years",
+    "split": "DEV"
+  },
+  {
+    "claim": "The star of the international series \"It's Me or the Dog\" is married to Van Zeiler.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the star of the international series \"It's me or the dog\" married to?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Van Zeiler",
+    "split": "DEV"
+  },
+  {
+    "claim": "The most expensive movie ever made cost $490 million.",
+    "label": "SUPPORTS",
+    "raw_question": "How much did the most expensive movie ever made cost?",
+    "fact_type": "slow-changing",
+    "ground_truth": "$490 million",
+    "split": "DEV"
+  },
+  {
+    "claim": "Ivana Zeln\u00ed\u010dkov\u00e1 was the first spouse of the current President of the United States.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the first spouse of the current President of the United States?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Ivana Zeln\u00ed\u010dkov\u00e1",
+    "split": "DEV"
+  },
+  {
+    "claim": "Demb\u00e9l\u00e9 is the latest French player to win the Ballon d'Or.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the latest French player to win the Ballon d'Or?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Demb\u00e9l\u00e9",
+    "split": "DEV"
+  },
+  {
+    "claim": "The World Health Organization has made 8 public health emergency of international concern declarations between 2009 and now.",
+    "label": "SUPPORTS",
+    "raw_question": "How many public health emergency of international concern declarations have been made by WHO between 2009 and now?",
+    "fact_type": "slow-changing",
+    "ground_truth": "8",
+    "split": "DEV"
+  },
+  {
+    "claim": "Chris Godfrey is the owner of the account that has the second most-liked Instagram post.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the owner of the account that has the second most-liked Instagram post?",
+    "fact_type": "slow-changing",
+    "ground_truth": "Chris Godfrey",
+    "split": "DEV"
+  },
+  {
+    "claim": "One cyclist has won all three of women's cycling Grand Tours equivalents.",
+    "label": "SUPPORTS",
+    "raw_question": "How many cyclists have won all three of women's cycling Grand Tours equivalents?",
+    "fact_type": "slow-changing",
+    "ground_truth": "one",
+    "split": "DEV"
+  },
+  {
+    "claim": "Saved from the Titanic is the title of the first film about the Titanic disaster.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the title of the first film about the Titanic disaster?",
+    "fact_type": "never-changing",
+    "ground_truth": "Saved from the Titanic",
+    "split": "DEV"
+  },
+  {
+    "claim": "There are 7 fantasy novels in the Harry Potter series.",
+    "label": "SUPPORTS",
+    "raw_question": "How many fantasy novels are there in the Harry Potter series?",
+    "fact_type": "never-changing",
+    "ground_truth": "7",
+    "split": "DEV"
+  },
+  {
+    "claim": "Jarkko Oikarinen created Internet Relay Chat.",
+    "label": "SUPPORTS",
+    "raw_question": "Who created Internet Relay Chat?",
+    "fact_type": "never-changing",
+    "ground_truth": "Jarkko Oikarinen",
+    "split": "DEV"
+  },
+  {
+    "claim": "Warren McCulloch and Walter Pitts invented the Perceptron.",
+    "label": "SUPPORTS",
+    "raw_question": "Who invented the Perceptron?",
+    "fact_type": "never-changing",
+    "ground_truth": "Warren McCulloch and Walter Pitts",
+    "split": "DEV"
+  },
+  {
+    "claim": "San Jos\u00e9 is the capital of Costa Rica.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the capital of Costa Rica?",
+    "fact_type": "never-changing",
+    "ground_truth": "San Jos\u00e9",
+    "split": "DEV"
+  },
+  {
+    "claim": "Leo Szilard invented the nuclear chain reaction in 1933.",
+    "label": "SUPPORTS",
+    "raw_question": "When did Leo Szilard invent the nuclear chain reaction?",
+    "fact_type": "never-changing",
+    "ground_truth": "1933",
+    "split": "DEV"
+  },
+  {
+    "claim": "William Edward Boeing is the founder of Boeing.",
+    "label": "SUPPORTS",
+    "raw_question": "Who is the founder of Boeing?",
+    "fact_type": "never-changing",
+    "ground_truth": "William Edward Boeing",
+    "split": "DEV"
+  },
+  {
+    "claim": "Vincent van Gogh painted The Starry Night.",
+    "label": "SUPPORTS",
+    "raw_question": "Who painted The Starry Night?",
+    "fact_type": "never-changing",
+    "ground_truth": "Vincent van Gogh",
+    "split": "DEV"
+  },
+  {
+    "claim": "Pip is the name of the main character in Great Expectations.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the name of the main character in Great Expectations?",
+    "fact_type": "never-changing",
+    "ground_truth": "Pip",
+    "split": "DEV"
+  },
+  {
+    "claim": "Yokota Air Base is currently the headquarters of United States Forces Japan.",
+    "label": "SUPPORTS",
+    "raw_question": "What airbase is currently the headquarters of United States Forces Japan?",
+    "fact_type": "never-changing",
+    "ground_truth": "Yokota Air Base",
+    "split": "DEV"
+  },
+  {
+    "claim": "Harvard University was the university where Meta was founded.",
+    "label": "SUPPORTS",
+    "raw_question": "What was the name of the university where Meta was founded?",
+    "fact_type": "never-changing",
+    "ground_truth": "Harvard University",
+    "split": "DEV"
+  },
+  {
+    "claim": "Red Garland played piano in Miles Davis' first quintet.",
+    "label": "SUPPORTS",
+    "raw_question": "Who played piano in Miles Davis' first quintet?",
+    "fact_type": "never-changing",
+    "ground_truth": "Red Garland",
+    "split": "DEV"
+  },
+  {
+    "claim": "Sirius is the brightest star in the sky.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the brightest star in the sky?",
+    "fact_type": "never-changing",
+    "ground_truth": "Sirius",
+    "split": "DEV"
+  },
+  {
+    "claim": "Steven Spielberg directed the movie Jaws.",
+    "label": "SUPPORTS",
+    "raw_question": "Who directed the movie Jaws?",
+    "fact_type": "never-changing",
+    "ground_truth": "Steven Spielberg",
+    "split": "DEV"
+  },
+  {
+    "claim": "Paul Scholes has scored 107 Premier League goals in his senior career.",
+    "label": "SUPPORTS",
+    "raw_question": "How many Premier League goals has Paul Scholes scored in his senior career?",
+    "fact_type": "never-changing",
+    "ground_truth": "107",
+    "split": "DEV"
+  },
+  {
+    "claim": "Magnolia denudata is the city flower of Shanghai.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the city flower of Shanghai?",
+    "fact_type": "never-changing",
+    "ground_truth": "Magnolia denudata",
+    "split": "DEV"
+  },
+  {
+    "claim": "The Great Pyramid of Giza is not one of the New 7 Wonders of the World.",
+    "label": "SUPPORTS",
+    "raw_question": "Is the Great Pyramid of Giza one of the New 7 Wonders of the World?",
+    "fact_type": "never-changing",
+    "ground_truth": "No",
+    "split": "DEV"
+  },
+  {
+    "claim": "Kentucky had the highest death rate of COVID-19 per 100,000 total population in the U.S. in 2023.",
+    "label": "SUPPORTS",
+    "raw_question": "Which state in the U.S. had the highest death rate of COVID-19 per 100,000 total population in 2023?",
+    "fact_type": "never-changing",
+    "ground_truth": "Kentucky",
+    "split": "DEV"
+  },
+  {
+    "claim": "Kylie Jenner was the first woman to gain 300 million followers on Instagram.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the first woman to gain 300 million followers on Instagram?",
+    "fact_type": "never-changing",
+    "ground_truth": "Kylie Jenner",
+    "split": "DEV"
+  },
+  {
+    "claim": "The Lord of the Rings: The Rings of Power Season 1 premiered on Sep 1, 2022.",
+    "label": "SUPPORTS",
+    "raw_question": "What date was The Lord of the Rings: The Rings of Power (Season 1) premiered on?",
+    "fact_type": "never-changing",
+    "ground_truth": "Sep 1, 2022",
+    "split": "DEV"
+  },
+  {
+    "claim": "Beijing was the first ever city to host both the Summer Olympics and Winter Olympics.",
+    "label": "SUPPORTS",
+    "raw_question": "What city was the first ever to host both the Summer Olympics and Winter Olympics?",
+    "fact_type": "never-changing",
+    "ground_truth": "Beijing",
+    "split": "DEV"
+  },
+  {
+    "claim": "8 episodes of The Lord of the Rings: The Rings of Power season 1 have been released.",
+    "label": "SUPPORTS",
+    "raw_question": "How many episodes of The Lord of the Rings: The Rings of Power season 1 have been released?",
+    "fact_type": "never-changing",
+    "ground_truth": "8",
+    "split": "DEV"
+  },
+  {
+    "claim": "Esophageal varices killed the student inventor of the Perceptron.",
+    "label": "SUPPORTS",
+    "raw_question": "What killed the student inventor of the Perceptron?",
+    "fact_type": "never-changing",
+    "ground_truth": "esophageal varices",
+    "split": "DEV"
+  },
+  {
+    "claim": "Ringo Starr is the member of The Beatles who was born first.",
+    "label": "SUPPORTS",
+    "raw_question": "Which member of The Beatles was born first?",
+    "fact_type": "never-changing",
+    "ground_truth": "Ringo Starr",
+    "split": "DEV"
+  },
+  {
+    "claim": "Emperor Wenzong was the emperor of China when the Sweet Dew incident occurred.",
+    "label": "SUPPORTS",
+    "raw_question": "Who was the emperor of China when Sweet Dew incident happened?",
+    "fact_type": "never-changing",
+    "ground_truth": "Emperor Wenzong",
+    "split": "DEV"
+  },
+  {
+    "claim": "Over 290 people have been on the International Space Station.",
+    "label": "SUPPORTS",
+    "raw_question": "How many people have been on the International Space Station?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Over 290",
+    "split": "DEV"
+  },
+  {
+    "claim": "The world population is 8.2 billion people.",
+    "label": "SUPPORTS",
+    "raw_question": "How many people are there in the world?",
+    "fact_type": "fast-changing",
+    "ground_truth": "8.2 billion",
+    "split": "DEV"
+  },
+  {
+    "claim": "Sweden had the highest number of COVID-19 deaths according to the WHO\u2019s latest reported 28-day figures, excluding the United States.",
+    "label": "SUPPORTS",
+    "raw_question": "According to the WHO\u2019s latest reported 28-day figures, which country had the highest number of COVID-19 deaths, excluding the United States?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Sweden",
+    "split": "DEV"
+  },
+  {
+    "claim": "The Girl Who Cried Pearls won the latest Academy Award for Best Animated Short Film.",
+    "label": "SUPPORTS",
+    "raw_question": "What won the latest Academy Award for Best Animated Short Film?",
+    "fact_type": "fast-changing",
+    "ground_truth": "The Girl Who Cried Pearls",
+    "split": "DEV"
+  },
+  {
+    "claim": "The next Lunar New Year is February 6, 2027.",
+    "label": "SUPPORTS",
+    "raw_question": "When is the next Lunar New Year?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Feb 6, 2027",
+    "split": "DEV"
+  },
+  {
+    "claim": "Rosh Hashanah begins on September 11, 2026.",
+    "label": "SUPPORTS",
+    "raw_question": "When will this year's Rosh Hashanah start?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Sep 11, 2026",
+    "split": "DEV"
+  },
+  {
+    "claim": "Spider-Man: Brand New Day is the next Columbia Pictures film.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the next Columbia Pictures film?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Spider-Man: Brand New Day",
+    "split": "DEV"
+  },
+  {
+    "claim": "The next full moon is May 1, 2026.",
+    "label": "SUPPORTS",
+    "raw_question": "When is the next full moon?",
+    "fact_type": "fast-changing",
+    "ground_truth": "May 1, 2026",
+    "split": "DEV"
+  },
+  {
+    "claim": "The current month is April.",
+    "label": "SUPPORTS",
+    "raw_question": "What month is it?",
+    "fact_type": "fast-changing",
+    "ground_truth": "April",
+    "split": "DEV"
+  },
+  {
+    "claim": "Phantom Island is King Gizzard\u2019s most recent studio album.",
+    "label": "SUPPORTS",
+    "raw_question": "What is King Gizzard\u2019s most recent studio album?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Phantom Island",
+    "split": "DEV"
+  },
+  {
+    "claim": "Hurricane Imelda is the most recent hurricane that affected the Southeastern United States.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the name of the most recent hurricane that affected the Southeastern United States?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Imelda",
+    "split": "DEV"
+  },
+  {
+    "claim": "Saint Petersburg State University won the most recent ACM-ICPC World Finals.",
+    "label": "SUPPORTS",
+    "raw_question": "What institution won the most recent ACM-ICPC World Finals?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Saint Petersburg State University",
+    "split": "DEV"
+  },
+  {
+    "claim": "Jessica Sanchez won the most recent season of America's Got Talent.",
+    "label": "SUPPORTS",
+    "raw_question": "Who won the most recent season of America's Got Talent?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Jessica Sanchez",
+    "split": "DEV"
+  },
+  {
+    "claim": "The Studio won the most recent Primetime Emmy Award for Outstanding Comedy Series.",
+    "label": "SUPPORTS",
+    "raw_question": "Which comedy series won the most recent Primetime Emmy Award for Outstanding Comedy Series?",
+    "fact_type": "fast-changing",
+    "ground_truth": "The Studio",
+    "split": "DEV"
+  },
+  {
+    "claim": "Tashkent is the host city of the upcoming International Olympiad in Informatics.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the host city of the upcoming International Olympiad in Informatics (IOI)?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Tashkent",
+    "split": "DEV"
+  },
+  {
+    "claim": "The Fantastic Four: First Steps is the most recent movie in the Marvel Cinematic Universe.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the most recent movie in the Marvel Cinematic Universe?",
+    "fact_type": "fast-changing",
+    "ground_truth": "The Fantastic Four: First Steps",
+    "split": "DEV"
+  },
+  {
+    "claim": "Erling Haaland has scored 158 official goals for his current club.",
+    "label": "SUPPORTS",
+    "raw_question": "How many official goals has Erling Haaland scored for his current club?",
+    "fact_type": "fast-changing",
+    "ground_truth": "158",
+    "split": "DEV"
+  },
+  {
+    "claim": "The maximum temperature this month in the most populated US city is 90 degrees.",
+    "label": "SUPPORTS",
+    "raw_question": "What was max temperature this month in the most populated US city?",
+    "fact_type": "fast-changing",
+    "ground_truth": "90 degrees",
+    "split": "DEV"
+  },
+  {
+    "claim": "Forty accounts have exceeded 100 million followers on Instagram.",
+    "label": "SUPPORTS",
+    "raw_question": "How many accounts have exceeded 100 million followers on Instagram?",
+    "fact_type": "fast-changing",
+    "ground_truth": "40",
+    "split": "DEV"
+  },
+  {
+    "claim": "The current water level of Lake Powell is not above 3550 feet.",
+    "label": "SUPPORTS",
+    "raw_question": "Is the current water level of Lake Powell above 3550 feet?",
+    "fact_type": "fast-changing",
+    "ground_truth": "No",
+    "split": "DEV"
+  },
+  {
+    "claim": "The Apple A19 Pro is the most powerful processor on the latest iPhone models.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the most powerful processor on the latest iPhone models?",
+    "fact_type": "fast-changing",
+    "ground_truth": "Apple A19 Pro",
+    "split": "DEV"
+  },
+  {
+    "claim": "The most recent winner of the Tour de France was born in 1998.",
+    "label": "SUPPORTS",
+    "raw_question": "When was the most recent winner of the Tour de France born?",
+    "fact_type": "fast-changing",
+    "ground_truth": "1998",
+    "split": "DEV"
+  },
+  {
+    "claim": "The oldest singles champion of The ATP Finals is 38 years old.",
+    "label": "SUPPORTS",
+    "raw_question": "What is the current age of the oldest singles champion of The ATP Finals?",
+    "fact_type": "fast-changing",
+    "ground_truth": "38 years old",
+    "split": "DEV"
+  }
+]

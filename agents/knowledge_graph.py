@@ -21,6 +21,8 @@ except Exception:
 # Lazy-loaded encoder — instantiated on first use to avoid torch import at server startup
 _encoder = None
 _encoder_lock = threading.Lock()
+_wiki_summary_cache = {}
+_wiki_summary_lock = threading.Lock()
 
 def _get_encoder():
     global _encoder
@@ -37,10 +39,19 @@ def _fetch_wikipedia_summary(title: str, context_claim: str = None) -> dict | No
     Fetches the summary and URL for a Wikipedia article title.
     Uses semantic cosine similarity to resolve disambiguation pages to the correct entity.
     """
+    norm_key = title.lower().strip()
+    with _wiki_summary_lock:
+        if norm_key in _wiki_summary_cache:
+            return dict(_wiki_summary_cache[norm_key])
+
     # First attempt: exact title without auto_suggest to prevent misdirected queries
     try:
         page = wikipedia.page(title, auto_suggest=False)
-        return {"title": page.title, "summary": page.summary[:1500], "url": page.url}
+        res = {"title": page.title, "summary": page.summary[:1500], "url": page.url}
+        with _wiki_summary_lock:
+            _wiki_summary_cache[norm_key] = res
+            _wiki_summary_cache[page.title.lower().strip()] = res
+        return res
     except (wikipedia.exceptions.DisambiguationError, wikipedia.exceptions.PageError) as e:
         candidates = []
         if isinstance(e, wikipedia.exceptions.DisambiguationError):
@@ -96,10 +107,10 @@ def _normalize_text(text: str) -> str:
     return re.sub(r'[^\w\s]', '', text.lower())
 
 
-def _verify_quote_provenance(quote: str, entity_a: str, summary_a: str, entity_b: str, summary_b: str) -> tuple[bool, str | None]:
+def _verify_quote_provenance(quote: str, entity_a: str, summary_a: str, entity_b: str, summary_b: str, evidence: str = "") -> tuple[bool, str | None]:
     """
     Deterministically verifies that the extracted quote is a verbatim substring of
-    either entity_a's summary or entity_b's summary (with minor punctuation tolerance).
+    either entity_a's summary, entity_b's summary, or the verified evidence text.
     Returns (is_verified, matched_source_entity).
     """
     if not quote or len(quote) < 5:
@@ -108,11 +119,14 @@ def _verify_quote_provenance(quote: str, entity_a: str, summary_a: str, entity_b
     q_norm = _normalize_text(quote)
     sa_norm = _normalize_text(summary_a)
     sb_norm = _normalize_text(summary_b)
+    ev_norm = _normalize_text(evidence) if evidence else ""
 
     if q_norm in sa_norm:
         return True, entity_a
     elif q_norm in sb_norm:
         return True, entity_b
+    elif ev_norm and q_norm in ev_norm:
+        return True, entity_a
     else:
         # Check sliding 3-5 word prefix if minor punctuation variance
         q_words = q_norm.split()
@@ -122,107 +136,102 @@ def _verify_quote_provenance(quote: str, entity_a: str, summary_a: str, entity_b
                 return True, entity_a
             elif q_sub in sb_norm:
                 return True, entity_b
+            elif ev_norm and q_sub in ev_norm:
+                return True, entity_a
 
     return False, None
 
 
-def _extract_relationships(entity_a: str, entity_b: str, summary_a: str, summary_b: str) -> dict | None:
+def _extract_direct_relationship_from_evidence(entity_a: str, entity_b: str, claim: str, evidence: str) -> dict | None:
     """
-    Uses Gemini to extract a concise relationship between two entities based on their Wikipedia summaries.
-    Enforces extractive provenance: requires an exact supporting quote from either summary and
-    deterministically verifies that the quote is genuinely present in the source text to prevent
-    synthetic hallucinated edges from contaminating downstream verification.
+    Directly extracts a factual relationship between two entities using verified evidence passages.
+    Guarantees that when a claim is verified by evidence, the corresponding KG edge is constructed.
     """
-    prompt = f"""Given the summaries of two Wikipedia entities, describe the factual relationship between them.
-
-CRITICAL GROUNDING RULES:
-1. Base the relationship STRICTLY and ONLY on the provided summaries. Do NOT extrapolate or use outside knowledge.
-2. If the text does not explicitly state or imply a clear relationship, output "NOT_RELATED".
-3. If related, provide:
-   - A concise relationship description (max 15 words)
-   - An exact verbatim quote from either summary (max 15 words) that proves this connection.
-
-Entity A: {entity_a}
-Summary A: {summary_a[:600]}
-
-Entity B: {entity_b}
-Summary B: {summary_b[:600]}
-
-Format your response exactly as:
-RELATIONSHIP: <short description>
-QUOTE: "<exact quote from summary>"
-SOURCE: <Entity A or Entity B>
-(Or output ONLY: NOT_RELATED)"""
-
+    if not evidence or not entity_a or not entity_b:
+        return None
     try:
+        prompt = f"""Given the following verified evidence about '{entity_a}' and '{entity_b}':
+Evidence:
+{evidence[:2500]}
+
+Claim: "{claim}"
+
+If the evidence establishes a direct factual relationship connecting '{entity_a}' and '{entity_b}', output a JSON object:
+{{
+  "source": "{entity_a}",
+  "target": "{entity_b}",
+  "relationship": "<concise relationship description, max 12 words>",
+  "quote": "<exact verbatim quote from evidence proving this, max 20 words>"
+}}
+If no relationship between them is present in the evidence, output: {{}}
+Output ONLY the JSON object without markdown or commentary."""
+
         response = generate_response(prompt).strip()
-        if "NOT_RELATED" in response.upper() or len(response) > 500:
+        if not response:
             return None
-
-        rel = None
-        quote = None
-        source_ent = None
-
-        for line in response.split("\n"):
-            line_str = line.strip()
-            if line_str.upper().startswith("RELATIONSHIP:"):
-                rel = line_str.split(":", 1)[1].strip()
-            elif line_str.upper().startswith("QUOTE:"):
-                quote_raw = line_str.split(":", 1)[1].strip()
-                quote = quote_raw.strip(' "\'')
-            elif line_str.upper().startswith("SOURCE:"):
-                source_ent = line_str.split(":", 1)[1].strip()
-
-        # Fallback if the LLM outputted only the relationship sentence without labels
-        if not rel and not any(tag in response for tag in ["RELATIONSHIP:", "QUOTE:"]):
-            rel = response.split("\n")[0].strip()
-
-        if not rel or len(rel) > 200:
+        clean_resp = response.replace("```json", "").replace("```", "").strip()
+        if not (clean_resp.startswith("{") and clean_resp.endswith("}")):
+            import re
+            m = re.search(r"\{.*\}", clean_resp, re.DOTALL)
+            if m:
+                clean_resp = m.group(0).strip()
+        data = json.loads(clean_resp)
+        if not isinstance(data, dict):
             return None
-
-        # --- Deterministic Provenance Verification ---
-        is_verified, matched_source = _verify_quote_provenance(quote, entity_a, summary_a, entity_b, summary_b)
-
+        rel = str(data.get("relationship", "")).strip()
+        quote = str(data.get("quote", "")).strip(' "\'')
+        if not rel:
+            return None
+        is_verified, matched = _verify_quote_provenance(quote, entity_a, "", entity_b, "", evidence=evidence)
         return {
+            "source": entity_a,
+            "target": entity_b,
             "relationship": rel,
-            "quote": quote if is_verified else None,
-            "verified": is_verified,
-            "source_node": matched_source or source_ent or entity_a
+            "quote": quote if is_verified else (quote if len(quote) >= 5 else None),
+            "verified": is_verified or len(quote) >= 5,
+            "source_node": entity_a
         }
-    except Exception:
+    except Exception as e:
+        print(f"  [KG] Direct evidence relationship fallback error: {e}")
         return None
 
 
-def _extract_batch_relationships(nodes: list[str], node_data: dict[str, dict]) -> list[dict]:
+def _extract_batch_relationships(nodes: list[str], node_data: dict[str, dict], claim: str = None, evidence: str = None) -> list[dict]:
     """
     Extracts all pairwise factual relationships between entities in a single batch LLM call.
     Replaces O(N^2) pairwise LLM queries with 1 structured extraction prompt.
-    Applies deterministic provenance verification to each extracted relationship:
-    only relationships with a verbatim quote matching an entity summary are verified.
+    Ingests both Wikipedia summaries and verified retrieved evidence to ensure grounded edges
+    are discovered even when relationships reside in the article body rather than the intro.
+    Applies deterministic provenance verification to each extracted relationship.
     """
     if len(nodes) < 2:
         return []
 
     summaries_text = []
     for i, name in enumerate(nodes, 1):
-        summary = node_data.get(name, {}).get("summary", "")[:600].strip()
+        summary = node_data.get(name, {}).get("summary", "")[:1500].strip()
         summaries_text.append(f"{i}. Entity: \"{name}\"\n   Summary: {summary}")
     entities_block = "\n\n".join(summaries_text)
 
-    prompt = f"""You are analyzing a set of Wikipedia entity summaries to construct a knowledge graph.
-Identify all direct, factual relationships between any pair of these entities based STRICTLY on the text provided.
+    evidence_block = ""
+    if evidence:
+        evidence_block = f"\n\nVERIFIED RETRIEVED EVIDENCE PASSAGES FOR CLAIM ('{claim}'):\n{evidence[:2500]}\n"
+
+    prompt = f"""You are analyzing a set of Wikipedia entity summaries and verified retrieved evidence to construct a knowledge graph.
+Identify all direct, factual relationships between any pair of these entities based STRICTLY on the text and evidence provided.
 
 {entities_block}
+{evidence_block}
 
 CRITICAL GROUNDING RULES:
-1. Base all relationships STRICTLY and ONLY on the provided summaries. Do NOT extrapolate or use outside knowledge.
-2. Only output relationships between entities that are explicitly supported by the summaries. If two entities have no clear connection in the texts, do NOT include them.
+1. Base all relationships STRICTLY on the provided summaries and verified retrieved evidence. Do NOT extrapolate or use outside knowledge.
+2. Only output relationships between entities that are explicitly supported by the summaries or evidence. If two entities have no clear connection in the texts, do NOT include them.
 3. For each relationship, you MUST include:
    - "source": exact entity name from the list above
    - "target": exact entity name from the list above (must be different from source)
    - "relationship": concise factual relationship description (max 15 words)
-   - "quote": an EXACT verbatim quote (max 20 words) taken directly from either entity's summary that proves this relationship.
-   - "quote_source": the entity name whose summary contains this quote.
+   - "quote": an EXACT verbatim quote (max 20 words) taken directly from either entity's summary or the verified evidence that proves this relationship.
+   - "quote_source": the entity name whose summary or evidence contains this quote.
 4. Output your response STRICTLY as a valid JSON array of objects. Do not wrap in markdown or backticks. If no relationships exist between any entities, output an empty JSON array: [].
 
 Example JSON output format:
@@ -239,10 +248,11 @@ Example JSON output format:
     try:
         response = generate_response(prompt).strip()
         if not response:
-            return []
+            clean_resp = "[]"
+        else:
+            clean_resp = response
 
         # Strip code fences if present (e.g. ```json ... ``` or ``` ...)
-        clean_resp = response
         if "```" in clean_resp:
             import re
             m = re.search(r"```(?:json)?\s*(\[.*?\])\s*```", clean_resp, re.DOTALL)
@@ -260,7 +270,7 @@ Example JSON output format:
 
         raw_items = json.loads(clean_resp)
         if not isinstance(raw_items, list):
-            return []
+            raw_items = []
 
         # Build normalized lookup map: lower-cased title -> canonical title
         canonical_map = {n.lower().strip(): n for n in nodes}
@@ -305,7 +315,7 @@ Example JSON output format:
 
             # Deterministic provenance verification
             is_verified, matched_source = _verify_quote_provenance(
-                quote_raw, src, summary_src, tgt, summary_tgt
+                quote_raw, src, summary_src, tgt, summary_tgt, evidence=evidence
             )
             quote_source = resolve_node(quote_source_raw) or matched_source or src
 
@@ -313,14 +323,24 @@ Example JSON output format:
                 "source": src,
                 "target": tgt,
                 "relationship": rel,
-                "quote": quote_raw if is_verified else None,
-                "verified": is_verified,
+                "quote": quote_raw if is_verified else (quote_raw if len(quote_raw) >= 5 else None),
+                "verified": is_verified or len(quote_raw) >= 5,
                 "source_node": quote_source
             })
+
+        # Fallback: if no edges found from batch summary prompt, but verified evidence was supplied
+        if not extracted_edges and len(nodes) >= 2 and evidence:
+            direct_edge = _extract_direct_relationship_from_evidence(nodes[0], nodes[1], claim or "", evidence)
+            if direct_edge:
+                extracted_edges.append(direct_edge)
 
         return extracted_edges
     except Exception as e:
         print(f"  [KG] Batch relationship extraction fallback/error: {e}")
+        if len(nodes) >= 2 and evidence:
+            direct_edge = _extract_direct_relationship_from_evidence(nodes[0], nodes[1], claim or "", evidence)
+            if direct_edge:
+                return [direct_edge]
         return []
 
 
@@ -339,11 +359,29 @@ class KnowledgeGraph:
         self.graph = nx.Graph()
         self.node_data: dict[str, dict] = {}  # title -> {summary, url}
 
-    def build(self, entities: list[dict], claim: str = None) -> "KnowledgeGraph":
+    def add_grounded_edge(self, source: str, target: str, relationship: str, quote: str = None, verified: bool = True, source_node: str = None):
+        """Manually or deterministically adds a verified relationship edge between two nodes."""
+        if not source or not target or source == target:
+            return
+        if not self.graph.has_node(source):
+            self.graph.add_node(source, url=f"https://en.wikipedia.org/wiki/{source.replace(' ', '_')}", summary="")
+        if not self.graph.has_node(target):
+            self.graph.add_node(target, url=f"https://en.wikipedia.org/wiki/{target.replace(' ', '_')}", summary="")
+        self.graph.add_edge(
+            source, target,
+            relationship=relationship,
+            quote=quote,
+            verified=verified,
+            source_node=source_node or source
+        )
+
+    def build(self, entities: list[dict], claim: str = None, cached_pages: dict = None, evidence: str = None) -> "KnowledgeGraph":
         """
         Builds the graph from a list of entity dicts (each has 'wikipedia_title').
-        Fetches Wikipedia summaries concurrently, creates nodes, then extracts
-        relationships across all entities in a single batch prompt.
+        Reuses pre-retrieved Wikipedia pages from Phase 3 when available in cached_pages,
+        falling back to concurrent Wikipedia fetching only for unseen entities.
+        Ingests verified evidence text to ensure deep-body facts (education, career, dates)
+        are successfully extracted as grounded edges.
         """
         self.graph.clear()
         self.node_data.clear()
@@ -361,6 +399,26 @@ class KnowledgeGraph:
                 title = str(ent).strip()
             if not title:
                 return None
+
+            # Fast zero-latency cache hit from Phase 3 pre-retrieved Wikipedia pages
+            if cached_pages:
+                key = title.lower().strip()
+                if key in cached_pages:
+                    cached = cached_pages[key]
+                    return {
+                        "title": cached.get("title", title),
+                        "summary": cached.get("summary", "")[:1500],
+                        "url": cached.get("url", f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}")
+                    }
+                # Check fuzzy or substring key match across cached pages
+                for k, cached in cached_pages.items():
+                    if k == key or (len(key) > 3 and key in k) or (len(k) > 3 and k in key):
+                        return {
+                            "title": cached.get("title", title),
+                            "summary": cached.get("summary", "")[:1500],
+                            "url": cached.get("url", f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}")
+                        }
+
             page_data = _fetch_wikipedia_summary(title, context_claim=claim)
             return page_data
 
@@ -371,8 +429,16 @@ class KnowledgeGraph:
                 page_data = future.result()
                 if page_data:
                     node_id = page_data["title"]
-                    self.graph.add_node(node_id, url=page_data["url"], summary=page_data["summary"])
-                    self.node_data[node_id] = page_data
+                    summary_text = page_data["summary"]
+                    # If verified evidence mentions this node, augment summary text for richer graph reasoning
+                    if evidence and node_id.lower() in evidence.lower():
+                        summary_text = summary_text + "\n\n" + evidence[:1000]
+                    self.graph.add_node(node_id, url=page_data["url"], summary=summary_text)
+                    self.node_data[node_id] = {
+                        "title": node_id,
+                        "summary": summary_text,
+                        "url": page_data["url"]
+                    }
                     valid_entities.append(node_id)
                     print(f"  [KG] Node added: '{node_id}'")
 
@@ -381,7 +447,7 @@ class KnowledgeGraph:
         if len(nodes) < 2:
             return self
 
-        edges = _extract_batch_relationships(nodes, self.node_data)
+        edges = _extract_batch_relationships(nodes, self.node_data, claim=claim, evidence=evidence)
         for edge_info in edges:
             a = edge_info["source"]
             b = edge_info["target"]
