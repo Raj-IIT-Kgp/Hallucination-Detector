@@ -111,13 +111,13 @@ $$
 \text{Epistemic Contradiction} \iff \exists e_a, e_b \in \mathcal{E} \text{ s.t. } \hat{\pi}_{\text{supp}}(e_a) \ge 0.75 \;\land\; \hat{\pi}_{\text{contra}}(e_b) \ge 0.75
 $$
 
-  Only genuine, high-confidence empirical disagreements across independent web sources trigger an epistemic contradiction.
+Only genuine, high-confidence empirical disagreements across independent web sources trigger an epistemic contradiction.
 * *Distinction:* This represents an external factual conflict across web sources, distinct from model posterior dispersion in Phase 4. Conflicting sources are explicitly preserved and passed to Phase 5b for multi-agent arbitration.
 
 ### Phase 4: Primary Verification & Conformal Uncertainty Layer
 The claim and retrieved evidence paragraphs are verified by a zero-shot sequence classification model (`facebook/bart-large-mnli`).
 
-* **Softmax Probability Formulation:** Outputs a probability distribution over classes $\mathcal{Y} = \{ \text{CONTRADICTED}, \text{UNKNOWN}, \text{SUPPORTED} \}$. Given logits $\mathbf{z}$:
+* **Softmax Probability Formulation:** Outputs a probability distribution over classes $`\mathcal{Y} = \{ \text{CONTRADICTED}, \text{UNKNOWN}, \text{SUPPORTED} \}`$. Given logits $\mathbf{z}$:
 
 $$
 P(Y = y_i \mid X) = \hat{\pi}_i(X) = \frac{e^{z_i}}{\sum_{j=1}^3 e^{z_j}}
@@ -125,7 +125,7 @@ $$
 
 * **Hierarchical Evidence Scoring (Context Dilution Mitigation):**
   When multiple evidence snippets are concatenated into a single large context string $`\mathbf{e}_{\text{concat}} = e_1 \oplus e_2 \dots \oplus e_k`$, sequence classification models (`facebook/bart-large-mnli`) suffer from **Context Dilution**. Long background narratives or adjacent facts dilute cross-attention, causing decisive entailment signals to collapse into neutral (`UNKNOWN`).
-  
+
   To solve this, the pipeline executes a **Two-Tier Hierarchical Scoring Policy**:
 
   - **Tier 1 (Per-Paragraph Max Entailment):** Each retrieved evidence snippet $`e_i`$ is evaluated independently:
@@ -134,7 +134,7 @@ $$
 \hat{\mathbf{z}}_i = \text{NLI}(c, e_i), \quad \hat{\pi}_y(e_i) = \text{Softmax}(\hat{\mathbf{z}}_i)
 $$
 
-    If any single snippet provides decisive verification ($`\max_i \hat{\pi}_y(e_i) \ge 0.80`$ for $y \in \{\text{SUPPORTED}, \text{CONTRADICTED}\}$), the pipeline selects the highest-confidence snippet directly. This completely prevents context dilution from suppressing decisive facts.
+If any single snippet provides decisive verification ($`\max_i \hat{\pi}_y(e_i) \ge 0.80`$ for $`y \in \{\text{SUPPORTED}, \text{CONTRADICTED}\}`$), the pipeline selects the highest-confidence snippet directly. This completely prevents context dilution from suppressing decisive facts.
 
   - **Shared-Role Exclusivity Guardrail:** Zero-shot NLI cross-encoders exhibit a documented **entity-exclusivity bias** when evaluating non-exclusive collaborative titles (e.g., asserting person $A$ is a "co-founder" of company $C$, while a snippet highlights founder $B$). The model often predicts an unwarranted high-confidence contradiction ($`\hat{\pi}_{\text{contra}} \ge 0.80`$) simply because $A \ne B$. To prevent premature false refutations, single-snippet contradiction bypass is strictly inhibited for claims referencing shared roles (`co-founder`, `co-author`, `director`, `investor`, `partner`, `board member`). Such claims are retained for joint evaluation and escalated to Multi-Agent Debate arbitration.
 
@@ -164,7 +164,7 @@ $$
 \hat{q}_\alpha = s_{(k)}, \quad \text{where } k = \lceil (n + 1)(1 - \alpha) \rceil
 $$
 
-    where $`s_{(1)} \le s_{(2)} \le \dots \le s_{(n)}`$ are the sorted calibration non-conformity scores. (If $k > n$, insufficient sample size requires $`\hat{q}_\alpha = 1.0`$). Discrete order-statistic indexing avoids continuous interpolation or continuous quantile off-by-one errors.
+where $`s_{(1)} \le s_{(2)} \le \dots \le s_{(n)}`$ are the sorted calibration non-conformity scores. (If $k > n$, insufficient sample size requires $`\hat{q}_\alpha = 1.0`$). Discrete order-statistic indexing avoids continuous interpolation or continuous quantile off-by-one errors.
 
   - **Prediction Set Construction:** For test claim $`X_{\text{test}}`$, the verifier outputs:
 
@@ -172,7 +172,7 @@ $$
 \mathcal{C}(X_{\text{test}}) = \{ y \in \mathcal{Y} : 1 - \hat{\pi}_y(X_{\text{test}}) \le \hat{q}_\alpha \} = \{ y \in \mathcal{Y} : \hat{\pi}_y(X_{\text{test}}) \ge 1 - \hat{q}_\alpha \}
 $$
 
-    For a calibrated significance level $\alpha$ with empirical quantile $`\hat{q}_\alpha`$, any candidate label with posterior probability satisfying $`\hat{\pi}_y(X) \ge 1 - \hat{q}_\alpha`$ is admitted into the conformal prediction set. When evidence is decisive, only the primary label exceeds this threshold, producing a tight singleton set ($\mathcal{C}(X) = \{\hat{y}\}$). Conversely, when evidence is dispersed or ambiguous, multiple candidate labels exceed the threshold, activating conformal escalation.
+For a calibrated significance level $\alpha$ with empirical quantile $`\hat{q}_\alpha`$, any candidate label with posterior probability satisfying $`\hat{\pi}_y(X) \ge 1 - \hat{q}_\alpha`$ is admitted into the conformal prediction set. When evidence is decisive, only the primary label exceeds this threshold, producing a tight singleton set ($`\mathcal{C}(X) = \{\hat{y}\}`$). Conversely, when evidence is dispersed or ambiguous, multiple candidate labels exceed the threshold, activating conformal escalation.
 
   - **Theoretical Guarantee:** Under exchangeability, this satisfies:
 
@@ -187,7 +187,7 @@ p(y) = \frac{1 + \sum_{i=1}^n \mathbb{I}\left(s_i \ge 1 - \hat{\pi}_y(X_{\text{t
 $$
 
 * **Conformal Set Size as an Escalation Signal (Not Proof of Conflict):**
-A prediction set containing multiple labels (e.g., $\{\text{SUPPORTED}, \text{UNKNOWN}\}$) indicates **model posterior dispersion under ambiguous evidence**, not necessarily external source conflict. When $\vert\mathcal{C}(X)\vert > 1$ or $\text{UNKNOWN} \in \mathcal{C}(X)$, the system treats set size as an **escalation trigger**, activating Knowledge Graph reasoning and Multi-Agent Debate.
+A prediction set containing multiple labels (e.g., $`\{\text{SUPPORTED}, \text{UNKNOWN}\}`$) indicates **model posterior dispersion under ambiguous evidence**, not necessarily external source conflict. When $\vert\mathcal{C}(X)\vert > 1$ or $\text{UNKNOWN} \in \mathcal{C}(X)$, the system treats set size as an **escalation trigger**, activating Knowledge Graph reasoning and Multi-Agent Debate.
 
 ### Phase 5a: Knowledge Graph Multi-Hop Reasoning & Semantic Entity Disambiguation
 When escalated from Phase 4, the system constructs a live in-memory Knowledge Graph to perform multi-hop evidence reasoning.
@@ -198,7 +198,7 @@ When escalated from Phase 4, the system constructs a live in-memory Knowledge Gr
   3. Candidate titles $`\mathcal{T} = \{t_1, t_2, \dots, t_m\}`$ are reranked against the context claim vector $\mathbf{c}$ via semantic cosine similarity using `all-MiniLM-L6-v2`:
 
 $$
-\hat{t} = \operatorname*{arg\,max}_{t \in \mathcal{T}} \frac{\mathbf{c} \cdot \mathbf{t}}{\|\mathbf{c}\| \|\mathbf{t}\|}
+\hat{t} = \underset{t \in \mathcal{T}}{\arg\max} \, \frac{\mathbf{c} \cdot \mathbf{t}}{\|\mathbf{c}\| \|\mathbf{t}\|}
 $$
 
 * **Concurrent Graph Construction & Single-Prompt Batch Edge Extraction (Strategy A):** To eliminate the $O(N^2)$ combinatorial explosion of $\binom{N}{2}$ pairwise LLM calls while preventing rate-limit exhaustion:
@@ -214,7 +214,7 @@ $$
 \text{Verified}(u, v) \iff q \subseteq \text{Summary}_u \;\lor\; q \subseteq \text{Summary}_v
 $$
 
-  - **Provenance-Verified Edges:** Edges satisfying this condition are tagged `verified=True` with full provenance metadata $\{u, v, \text{rel}, q, \text{URL}\}$.
+  - **Provenance-Verified Edges:** Edges satisfying this condition are tagged `verified=True` with full provenance metadata $`\{u, v, \text{rel}, q, \text{URL}\}`$.
   - **Unverified Edges (Visual-Only):** If an extracted relation lacks an authentic verbatim quote from the text, it is tagged `verified=False`. In the D3.js visual interface, it is rendered with a dashed edge for user exploration, but it is **strictly barred from being injected into the evidence candidate pool**, guaranteeing that downstream NLI never verifies against synthetic hallucinations.
 * **Multi-Hop Traversal & Vectorized Composite Edge Scoring:** Candidate evidence is extracted across all node summaries using sliding windows (3 sentences, stride 2). In addition, provenance-verified edges are synthesized into composite grounded propositions:
 
@@ -222,13 +222,13 @@ $$
 \mathbf{e}_{\text{edge}} = \text{Grounded Relationship } [u \leftrightarrow v]\text{: rel (Evidence Quote: } q \text{)}
 $$
 
-  Crucially, rather than iteratively encoding candidates in an $O(N)$ scalar loop or applying an uncalibrated additive boost (e.g. $+0.10$), all candidate text chunks and grounded edge strings are batch-encoded in a single vectorized forward pass (`batch_size=64`, guarded by `_encoder_lock`). Pure semantic cosine similarity is evaluated:
+Crucially, rather than iteratively encoding candidates in an $O(N)$ scalar loop or applying an uncalibrated additive boost (e.g. $+0.10$), all candidate text chunks and grounded edge strings are batch-encoded in a single vectorized forward pass (`batch_size=64`, guarded by `_encoder_lock`). Pure semantic cosine similarity is evaluated:
 
 $$
 \text{Score}(\mathbf{e}) = \text{sim}(\mathbf{c}, \mathbf{e}) = \frac{\mathbf{c} \cdot \mathbf{e}}{\|\mathbf{c}\| \|\mathbf{e}\|}
 $$
 
-  Because the composite proposition combines the relational abstraction with the verbatim evidence quote $q$, its natural semantic similarity reflects its true relevance without metric distortion or ranking inversion. Any downstream edge prioritization must be formally tuned on held-out validation data rather than fixed via arbitrary heuristics.
+Because the composite proposition combines the relational abstraction with the verbatim evidence quote $q$, its natural semantic similarity reflects its true relevance without metric distortion or ranking inversion. Any downstream edge prioritization must be formally tuned on held-out validation data rather than fixed via arbitrary heuristics.
 
 ### Phase 5b: Dual-Engine Adversarial Arbitration (Dialectical Fast-Path & Multi-Agent Debate)
 If ambiguity persists after Knowledge Graph traversal (or if an external Epistemic Contradiction was flagged in Phase 3.2), the system invokes adversarial reasoning to arbitrate the claim. To simultaneously optimize for production throughput and rigorous academic ablation, the engine provides a **Dual-Mode Arbitration Architecture**:
@@ -253,7 +253,7 @@ If ambiguity persists after Knowledge Graph traversal (or if an external Epistem
   2. *Collaborative Roles & Non-Exclusive Titles:* When evidence proves an individual co-founded an organization, the assertion that they are "a co-founder" or "the co-founder" is conclusively `SUPPORTED`. The Judge formally dismisses hyper-pedantic prosecution claims arguing the subject was merely "one of several co-founders" or that others share the title.
 
 * **Formal Decision & Conservative Abstention Policy:**
-  To prevent the Judge LLM from forcing a binary hallucination when evidence is incomplete, the system enforces a strict **Conservative Abstention Policy**:
+To prevent the Judge LLM from forcing a binary hallucination when evidence is incomplete, the system enforces a strict **Conservative Abstention Policy**:
 
 $$
 \hat{y}_{\text{final}} = \begin{cases}
@@ -263,7 +263,7 @@ $$
 \end{cases}
 $$
 
-  If the evidence is incomplete, ambiguous, or lacks decisive proof, the Judge is strictly instructed to **abstain** (`UNKNOWN`). In safety-critical verification, abstention is statistically preferred over an uncertain guess.
+If the evidence is incomplete, ambiguous, or lacks decisive proof, the Judge is strictly instructed to **abstain** (`UNKNOWN`). In safety-critical verification, abstention is statistically preferred over an uncertain guess.
 
 ### Phase 6: Real-Time Stream Reconstruction, Conformal Telemetry & Interactive Graph UI
 As atomic claims are verified, the backend pushes asynchronous NDJSON events (Server-Sent Events) to the Flask client:
@@ -368,7 +368,7 @@ $$
 
 yielding an asymptotic 95% confidence interval of **83.26% ± 5.00% ([78.26%, 88.26%])**.
 
-* **Analysis of the Residual 16.7% Error Gap:** 
+* **Analysis of the Residual 16.7% Error Gap:**
 Error analysis reveals that the remaining failure rate is heavily dominated by **Cross-Encoder Literalism**. Zero-shot sequence classification models (`bart-large-mnli`) lack higher-order semantic abstraction for implicit entailments (failing to recognize semantic equivalence when claims use abstract paraphrases rather than verbatim phrasing). This failure mode directly motivated the multi-agent debate escalation mechanism in Phase 5b.
 
 #### Latest Live End-to-End Evaluation Run (`evaluation/run_benchmark.py`):
@@ -519,10 +519,10 @@ The Conformal Verification layer was empirically validated on holdout partitions
 3. **Artifacts:** High-resolution calibration curves and efficiency plots are maintained in `experiments/conformal_coverage_plot.png` and `experiments/conformal_set_size_plot.png`, with the production calibration state saved in `experiments/conformal_calibration.json`.
 4. **Critical Statistical Distinction (Marginal Set Coverage ≠ Pointwise Contradiction Precision):**
    A common fallacy in applied machine learning is assuming that a 90% marginal coverage guarantee ($\mathbb{P}(Y \in \mathcal{C}(X)) \ge 1 - \alpha$) means that any individual hallucination verdict has a 90% probability of being correct. This assumption is statistically invalid for three fundamental reasons:
-   * **Set Guarantee vs. Point Decision:** Conformal prediction guarantees that the true label belongs to the *set* $\mathcal{C}(X)$. If $\mathcal{C}(X) = \{\text{CONTRADICTED}, \text{UNKNOWN}\}$, the set contains the truth, but forcing a point decision of "hallucination" may be wrong.
+   * **Set Guarantee vs. Point Decision:** Conformal prediction guarantees that the true label belongs to the *set* $\mathcal{C}(X)$. If $`\mathcal{C}(X) = \{\text{CONTRADICTED}, \text{UNKNOWN}\}`$, the set contains the truth, but forcing a point decision of "hallucination" may be wrong.
    * **Marginal Average vs. Class-Conditional Coverage:** The guarantee is marginal across the joint distribution $`P_{XY}`$. High coverage on easy factual claims (`SUPPORTED`) can mathematically mask lower coverage on rare, subtle hallucinations (`CONTRADICTED`).
    * **Precision is a Posterior Metric:** Conformal prediction controls the coverage risk (analogous to bounding false negatives of the set). It does *not* bound the precision $\mathbb{P}(Y = \text{contra} \mid \hat{y} = \text{contra})$ of individual positive assertions.
-   
+
    To avoid overinterpreting conformal guarantees, our architecture strictly treats $\mathcal{C}(X)$ as an **epistemic uncertainty gating mechanism** ($g(X)$), while measuring **Contradiction Class Precision (0.89)**, **Recall (0.80)**, and **Selective Risk** ($R(f, g) = 0.11$) independently in Section 3.8.
 
 ---
@@ -556,8 +556,8 @@ During benchmark stress testing, the pipeline achieved **Precision: 0.89**, **Re
 
 #### 1. Mathematical Formulation
 A selective classifier is formally defined as a pair $(f, g)$, where:
-* $f: \mathcal{X} \to \mathcal{Y}$ is the core prediction model ($f(X) \in \{\text{SUPPORTED}, \text{CONTRADICTED}\}$).
-* $g: \mathcal{X} \to \{0, 1\}$ is a selection / gating function governing whether to output a definitive verdict ($g(X) = 1$) or abstain ($g(X) = 0$).
+* $f: \mathcal{X} \to \mathcal{Y}$ is the core prediction model ($`f(X) \in \{\text{SUPPORTED}, \text{CONTRADICTED}\}`$).
+* $`g: \mathcal{X} \to \{0, 1\}`$ is a selection / gating function governing whether to output a definitive verdict ($g(X) = 1$) or abstain ($g(X) = 0$).
 
 The gating rule $g(X)$ is determined by Conformal Prediction Set cardinality and Multi-Agent Judge consensus:
 
@@ -593,7 +593,7 @@ $$
 R(f, g) = \frac{\mathbb{E}_{(X, Y)} [\ell(f(X), Y) \cdot g(X)]}{\Phi(g)}
 $$
 
-  where $\ell(\hat{y}, y) = \mathbb{I}(\hat{y} \ne y)$ is the 0-1 classification loss.
+where $\ell(\hat{y}, y) = \mathbb{I}(\hat{y} \ne y)$ is the 0-1 classification loss.
 
 #### 3. Why Abstention Safeguards Trustworthiness:
 * **Why Binary Benchmarks Penalize Abstention:** Standard benchmarks assume full coverage ($\Phi(g) \equiv 1.0$), scoring any conservative abstention ($g(X) = 0$) as an error ($\ell = 1$). In reality, abstentions represent cases where evidence is ambiguous, contradictory across sources, or under-specified. Scoring abstentions as wrong pulls overall accuracy down to 75.00%.
