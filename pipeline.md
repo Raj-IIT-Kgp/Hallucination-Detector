@@ -61,7 +61,7 @@ The system implements a **Cascaded Verification & Remediation Architecture** (co
 
 ### Phase 1: Atomic Fact Decomposition
 To prevent the introduction of secondary hallucinations and establish a clean, discrete unit of evaluation, complex sentences are parsed into isolated, decontextualized factual claims.
-* **Discrete Unit of Evaluation** ($N_{\text{atomic}}$): Complex sentences contain multiple dependent propositions. By decomposing sentences into atomic claims, every downstream evaluation is conducted over discrete atomic facts rather than coarse sentences.
+* **Discrete Unit of Evaluation** ($`N_{\text{atomic}}`$): Complex sentences contain multiple dependent propositions. By decomposing sentences into atomic claims, every downstream evaluation is conducted over discrete atomic facts rather than coarse sentences.
 * **Q&A Synthesis:** When evaluating Question & Answer pairs, instructional dialogue, or compound prompts, the pipeline synthesizes the context and response into declarative propositions prior to decomposition, preserving contextual premises.
 * **Strict Coreference Resolution:** Pronouns, demonstratives, and implicit referents are deterministically resolved to their explicit proper nouns and antecedents extracted from global context.
 * **Strict Polarity & Truth-Value Preservation:** The decomposition engine enforces strict prompt constraints barring the LLM from 'helpfully correcting' or inverting false or hallucinated assertions into true statements (e.g. rewriting *"Prescott is outside the US"* to *"Prescott is inside the US"*). The exact polarity, negation, and falsity of the input are preserved verbatim across discrete atomic propositions.
@@ -83,17 +83,17 @@ To eliminate network I/O serialization bottlenecks, the pipeline implements a **
 * **Absence Evaluation:** If zero evidence is returned across all retrieval backends even after query reformulation, an LLM evaluates the epistemic salience of the queried entity: absence of evidence for prominent, globally recorded historical or scientific entities strongly indicates refutation (`CONTRADICTED`), whereas lack of evidence for obscure or low-salience entities yields conservative abstention (`UNKNOWN`).
 * **Vectorized Batch Cosine Similarity:** Rather than iteratively computing dense embeddings one paragraph at a time, the pipeline leverages batch tensor encoding (`batch_size=64`) via `all-MiniLM-L6-v2` (shielded by `HF_HUB_OFFLINE=1` when cached locally):
 
-  $$
-  \text{sim}(\mathbf{c}, \mathbf{e}) = \frac{\mathbf{c} \cdot \mathbf{e}}{\|\mathbf{c}\| \|\mathbf{e}\|}
-  $$
+$$
+\text{sim}(\mathbf{c}, \mathbf{e}) = \frac{\mathbf{c} \cdot \mathbf{e}}{\|\mathbf{c}\| \|\mathbf{e}\|}
+$$
 
 * **Hybrid Re-Ranking (RRF) with Calibrated Best-Candidate Fallback:** Dense semantic similarity scores are combined with sparse **BM25** lexical scores using Reciprocal Rank Fusion:
 
-  $$
-  \text{RRF}(d) = \sum_{r \in R} \frac{1}{k + r(d)}
-  $$
+$$
+\text{RRF}(d) = \sum_{r \in R} \frac{1}{k + r(d)}
+$$
 
-  where $r(d)$ is the document rank and $k = 60$ is the smoothing constant. The RRF engine iterates through candidate paragraphs to collect up to $k$ qualified snippets satisfying semantic similarity ($\text{sim}(\mathbf{c}, \mathbf{e}) \ge 0.20$) or BM25 ($> 1.0$). If no candidate crosses these primary thresholds, the pipeline checks a calibrated marginal relevance floor ($\text{sim} \ge 0.15$ or $\text{BM25} > 0.5$) for the top-scoring candidate before falling back; completely unrelated text ($< 0.15$) is discarded to allow Phase 3 Absence Evaluation to refute fabricated assertions.
+where $r(d)$ is the document rank and $k = 60$ is the smoothing constant. The RRF engine iterates through candidate paragraphs to collect up to $k$ qualified snippets satisfying semantic similarity ($\text{sim}(\mathbf{c}, \mathbf{e}) \ge 0.20$) or BM25 ($> 1.0$). If no candidate crosses these primary thresholds, the pipeline checks a calibrated marginal relevance floor ($\text{sim} \ge 0.15$ or $\text{BM25} > 0.5$) for the top-scoring candidate before falling back; completely unrelated text ($< 0.15$) is discarded to allow Phase 3 Absence Evaluation to refute fabricated assertions.
 
 ### Phase 3.1: Self-Reflective Retrieval Feedback Loop (Iterative Query Reformulation)
 Rather than treating retrieval as a static, single-shot operation, the pipeline implements an **Agentic Retrieval Feedback Loop**:
@@ -103,13 +103,13 @@ Rather than treating retrieval as a static, single-shot operation, the pipeline 
 * **Evidence Accumulation Pool:** During iterative query reformulation, newly retrieved evidence snippets are merged into an **Accumulated Evidence Pool** rather than overwriting prior results. If an aggressive query rewrite yields zero or poorer results, evidence discovered in earlier rounds is preserved, preventing false absence-of-evidence abstentions (`UNKNOWN`) caused by retrieval regressions.
 
 ### Phase 3.2: Consensus Evaluation & Calibrated Epistemic Contradiction Detection
-Before merging retrieved paragraphs, the system evaluates the open web for factual consensus. A zero-shot NLI check is executed on each distinct retrieved source snippet $e_i \in \mathcal{E}$ against the claim $c$.
+Before merging retrieved paragraphs, the system evaluates the open web for factual consensus. A zero-shot NLI check is executed on each distinct retrieved source snippet $`e_i \in \mathcal{E}`$ against the claim $c$.
 * **True Source Conflict (Epistemic Contradiction):** If Source $A$ implies `SUPPORTED` and Source $B$ implies `CONTRADICTED`, the system flags an **EPISTEMIC CONTRADICTION**.
 * **Calibrated High-Confidence Constraint:** To prevent false-positive contradiction triggers caused by minor lexical variations or secondary actor mentions, the system enforces a strict calibration threshold:
 
-  $$
-  \text{Epistemic Contradiction} \iff \exists e_a, e_b \in \mathcal{E} \text{ s.t. } \hat{\pi}_{\text{supp}}(e_a) \ge 0.75 \;\land\; \hat{\pi}_{\text{contra}}(e_b) \ge 0.75
-  $$
+$$
+\text{Epistemic Contradiction} \iff \exists e_a, e_b \in \mathcal{E} \text{ s.t. } \hat{\pi}_{\text{supp}}(e_a) \ge 0.75 \;\land\; \hat{\pi}_{\text{contra}}(e_b) \ge 0.75
+$$
 
   Only genuine, high-confidence empirical disagreements across independent web sources trigger an epistemic contradiction.
 * *Distinction:* This represents an external factual conflict across web sources, distinct from model posterior dispersion in Phase 4. Conflicting sources are explicitly preserved and passed to Phase 5b for multi-agent arbitration.
@@ -119,30 +119,30 @@ The claim and retrieved evidence paragraphs are verified by a zero-shot sequence
 
 * **Softmax Probability Formulation:** Outputs a probability distribution over classes $\mathcal{Y} = \{ \text{CONTRADICTED}, \text{UNKNOWN}, \text{SUPPORTED} \}$. Given logits $\mathbf{z}$:
 
-  $$
-  P(Y = y_i \mid X) = \hat{\pi}_i(X) = \frac{e^{z_i}}{\sum_{j=1}^3 e^{z_j}}
-  $$
+$$
+P(Y = y_i \mid X) = \hat{\pi}_i(X) = \frac{e^{z_i}}{\sum_{j=1}^3 e^{z_j}}
+$$
 
 * **Hierarchical Evidence Scoring (Context Dilution Mitigation):**
-  When multiple evidence snippets are concatenated into a single large context string $\mathbf{e}_{\text{concat}} = e_1 \oplus e_2 \dots \oplus e_k$, sequence classification models (`facebook/bart-large-mnli`) suffer from **Context Dilution**. Long background narratives or adjacent facts dilute cross-attention, causing decisive entailment signals to collapse into neutral (`UNKNOWN`).
+  When multiple evidence snippets are concatenated into a single large context string $`\mathbf{e}_{\text{concat}} = e_1 \oplus e_2 \dots \oplus e_k`$, sequence classification models (`facebook/bart-large-mnli`) suffer from **Context Dilution**. Long background narratives or adjacent facts dilute cross-attention, causing decisive entailment signals to collapse into neutral (`UNKNOWN`).
   
   To solve this, the pipeline executes a **Two-Tier Hierarchical Scoring Policy**:
 
-  - **Tier 1 (Per-Paragraph Max Entailment):** Each retrieved evidence snippet $e_i$ is evaluated independently:
+  - **Tier 1 (Per-Paragraph Max Entailment):** Each retrieved evidence snippet $`e_i`$ is evaluated independently:
 
-    $$
-    \hat{\mathbf{z}}_i = \text{NLI}(c, e_i), \quad \hat{\pi}_y(e_i) = \text{Softmax}(\hat{\mathbf{z}}_i)
-    $$
+$$
+\hat{\mathbf{z}}_i = \text{NLI}(c, e_i), \quad \hat{\pi}_y(e_i) = \text{Softmax}(\hat{\mathbf{z}}_i)
+$$
 
-    If any single snippet provides decisive verification ($\max_i \hat{\pi}_y(e_i) \ge 0.80$ for $y \in \{\text{SUPPORTED}, \text{CONTRADICTED}\}$), the pipeline selects the highest-confidence snippet directly. This completely prevents context dilution from suppressing decisive facts.
+    If any single snippet provides decisive verification ($`\max_i \hat{\pi}_y(e_i) \ge 0.80`$ for $y \in \{\text{SUPPORTED}, \text{CONTRADICTED}\}$), the pipeline selects the highest-confidence snippet directly. This completely prevents context dilution from suppressing decisive facts.
 
-  - **Shared-Role Exclusivity Guardrail:** Zero-shot NLI cross-encoders exhibit a documented **entity-exclusivity bias** when evaluating non-exclusive collaborative titles (e.g., asserting person $A$ is a "co-founder" of company $C$, while a snippet highlights founder $B$). The model often predicts an unwarranted high-confidence contradiction ($\hat{\pi}_{\text{contra}} \ge 0.80$) simply because $A \ne B$. To prevent premature false refutations, single-snippet contradiction bypass is strictly inhibited for claims referencing shared roles (`co-founder`, `co-author`, `director`, `investor`, `partner`, `board member`). Such claims are retained for joint evaluation and escalated to Multi-Agent Debate arbitration.
+  - **Shared-Role Exclusivity Guardrail:** Zero-shot NLI cross-encoders exhibit a documented **entity-exclusivity bias** when evaluating non-exclusive collaborative titles (e.g., asserting person $A$ is a "co-founder" of company $C$, while a snippet highlights founder $B$). The model often predicts an unwarranted high-confidence contradiction ($`\hat{\pi}_{\text{contra}} \ge 0.80`$) simply because $A \ne B$. To prevent premature false refutations, single-snippet contradiction bypass is strictly inhibited for claims referencing shared roles (`co-founder`, `co-author`, `director`, `investor`, `partner`, `board member`). Such claims are retained for joint evaluation and escalated to Multi-Agent Debate arbitration.
 
-  - **Tier 2 (Joint Concatenation Fallback):** If no single snippet is individually decisive ($\max_i \hat{\pi}_y(e_i) < 0.80$), the system retains cross-sentence multi-evidence reasoning by falling back to joint evaluation over the concatenated evidence string:
+  - **Tier 2 (Joint Concatenation Fallback):** If no single snippet is individually decisive ($`\max_i \hat{\pi}_y(e_i) < 0.80`$), the system retains cross-sentence multi-evidence reasoning by falling back to joint evaluation over the concatenated evidence string:
 
-    $$
-    \hat{\mathbf{z}}_{\text{joint}} = \text{NLI}\left(c, \bigoplus_{i=1}^k e_i\right)
-    $$
+$$
+\hat{\mathbf{z}}_{\text{joint}} = \text{NLI}\left(c, \bigoplus_{i=1}^k e_i\right)
+$$
 
 * **Thread-Safe C-Extension Synchronization:**
   Zero-shot sequence classification models (`facebook/bart-large-mnli`) and Hugging Face tokenizers allocate dynamic memory via native C/C++ libraries. When multiple claims are analyzed in parallel across OS threads, concurrent access to the shared global PyTorch model instance causes race conditions in C memory allocators (`malloc: double free`). To guarantee bulletproof execution stability while maximizing throughput, the verification module enforces fine-grained critical-section mutual exclusion (`threading.Lock` isolation around tokenization and forward tensor evaluation) while allowing all network I/O and external LLM interactions to execute fully concurrently.
@@ -150,41 +150,41 @@ The claim and retrieved evidence paragraphs are verified by a zero-shot sequence
 * **Split Conformal Prediction (Finite-Sample Guarantees):**
   Because raw softmax outputs are uncalibrated and lack error bounds, the system integrates **Split Conformal Prediction** (Vovk et al.; Angelopoulos & Bates, 2021).
 
-  - **Exchangeability Assumption:** The finite-sample coverage guarantee assumes that calibration and test pairs $(X_i, Y_i)_{i=1}^{n+1}$ are **exchangeable** (drawn from the same underlying data distribution $P_{XY}$). Under out-of-distribution domain shift (e.g., calibrating on Wikipedia and testing on ArXiv), empirical coverage can degrade; hence, domain-stratified calibration profiles are maintained.
+  - **Exchangeability Assumption:** The finite-sample coverage guarantee assumes that calibration and test pairs $`(X_i, Y_i)_{i=1}^{n+1}`$ are **exchangeable** (drawn from the same underlying data distribution $`P_{XY}`$). Under out-of-distribution domain shift (e.g., calibrating on Wikipedia and testing on ArXiv), empirical coverage can degrade; hence, domain-stratified calibration profiles are maintained.
 
-  - **Non-Conformity Scoring Function:** For calibration sample $(X_i, Y_i)$, the non-conformity score measures model error relative to the true class:
+  - **Non-Conformity Scoring Function:** For calibration sample $`(X_i, Y_i)`$, the non-conformity score measures model error relative to the true class:
 
-    $$
-    s(X_i, Y_i) = 1 - \hat{\pi}_{Y_i}(X_i)
-    $$
+$$
+s(X_i, Y_i) = 1 - \hat{\pi}_{Y_i}(X_i)
+$$
 
-  - **Exact Finite-Sample Order-Statistic Computation:** For a user-specified significance level $\alpha \in (0, 1)$ (e.g., $\alpha = 0.10$ for 90% coverage), the finite-sample adjusted conformal quantile $\hat{q}_\alpha$ is the exact $k$-th order statistic:
+  - **Exact Finite-Sample Order-Statistic Computation:** For a user-specified significance level $\alpha \in (0, 1)$ (e.g., $\alpha = 0.10$ for 90% coverage), the finite-sample adjusted conformal quantile $`\hat{q}_\alpha`$ is the exact $k$-th order statistic:
 
-    $$
-    \hat{q}_\alpha = s_{(k)}, \quad \text{where } k = \lceil (n + 1)(1 - \alpha) \rceil
-    $$
+$$
+\hat{q}_\alpha = s_{(k)}, \quad \text{where } k = \lceil (n + 1)(1 - \alpha) \rceil
+$$
 
-    where $s_{(1)} \le s_{(2)} \le \dots \le s_{(n)}$ are the sorted calibration non-conformity scores. (If $k > n$, insufficient sample size requires $\hat{q}_\alpha = 1.0$). Discrete order-statistic indexing avoids continuous interpolation or continuous quantile off-by-one errors.
+    where $`s_{(1)} \le s_{(2)} \le \dots \le s_{(n)}`$ are the sorted calibration non-conformity scores. (If $k > n$, insufficient sample size requires $`\hat{q}_\alpha = 1.0`$). Discrete order-statistic indexing avoids continuous interpolation or continuous quantile off-by-one errors.
 
-  - **Prediction Set Construction:** For test claim $X_{\text{test}}$, the verifier outputs:
+  - **Prediction Set Construction:** For test claim $`X_{\text{test}}`$, the verifier outputs:
 
-    $$
-    \mathcal{C}(X_{\text{test}}) = \{ y \in \mathcal{Y} : 1 - \hat{\pi}_y(X_{\text{test}}) \le \hat{q}_\alpha \} = \{ y \in \mathcal{Y} : \hat{\pi}_y(X_{\text{test}}) \ge 1 - \hat{q}_\alpha \}
-    $$
+$$
+\mathcal{C}(X_{\text{test}}) = \{ y \in \mathcal{Y} : 1 - \hat{\pi}_y(X_{\text{test}}) \le \hat{q}_\alpha \} = \{ y \in \mathcal{Y} : \hat{\pi}_y(X_{\text{test}}) \ge 1 - \hat{q}_\alpha \}
+$$
 
-    For a calibrated significance level $\alpha$ with empirical quantile $\hat{q}_\alpha$, any candidate label with posterior probability satisfying $\hat{\pi}_y(X) \ge 1 - \hat{q}_\alpha$ is admitted into the conformal prediction set. When evidence is decisive, only the primary label exceeds this threshold, producing a tight singleton set ($\mathcal{C}(X) = \{\hat{y}\}$). Conversely, when evidence is dispersed or ambiguous, multiple candidate labels exceed the threshold, activating conformal escalation.
+    For a calibrated significance level $\alpha$ with empirical quantile $`\hat{q}_\alpha`$, any candidate label with posterior probability satisfying $`\hat{\pi}_y(X) \ge 1 - \hat{q}_\alpha`$ is admitted into the conformal prediction set. When evidence is decisive, only the primary label exceeds this threshold, producing a tight singleton set ($\mathcal{C}(X) = \{\hat{y}\}$). Conversely, when evidence is dispersed or ambiguous, multiple candidate labels exceed the threshold, activating conformal escalation.
 
   - **Theoretical Guarantee:** Under exchangeability, this satisfies:
 
-    $$
-    \mathbb{P}\left(Y_{\text{test}} \in \mathcal{C}(X_{\text{test}})\right) \ge 1 - \alpha
-    $$
+$$
+\mathbb{P}\left(Y_{\text{test}} \in \mathcal{C}(X_{\text{test}})\right) \ge 1 - \alpha
+$$
 
   - **Conformal p-values:** For each label $y \in \mathcal{Y}$, exact conformal $p$-values are computed against calibration scores:
 
-    $$
-    p(y) = \frac{1 + \sum_{i=1}^n \mathbb{I}\left(s_i \ge 1 - \hat{\pi}_y(X_{\text{test}})\right)}{n + 1}
-    $$
+$$
+p(y) = \frac{1 + \sum_{i=1}^n \mathbb{I}\left(s_i \ge 1 - \hat{\pi}_y(X_{\text{test}})\right)}{n + 1}
+$$
 
 * **Conformal Set Size as an Escalation Signal (Not Proof of Conflict):**
 A prediction set containing multiple labels (e.g., $\{\text{SUPPORTED}, \text{UNKNOWN}\}$) indicates **model posterior dispersion under ambiguous evidence**, not necessarily external source conflict. When $\vert\mathcal{C}(X)\vert > 1$ or $\text{UNKNOWN} \in \mathcal{C}(X)$, the system treats set size as an **escalation trigger**, activating Knowledge Graph reasoning and Multi-Agent Debate.
@@ -195,11 +195,11 @@ When escalated from Phase 4, the system constructs a live in-memory Knowledge Gr
 * **Semantic Entity Disambiguation:** Wikipedia search and entity extraction frequently suffer from disambiguation traps and lexical auto-suggest drift when queried entities share titles with homonymous media, creative works, or geographical locations. To eliminate this failure mode:
   1. Auto-suggest is strictly deactivated (`auto_suggest=False`) to enforce query fidelity.
   2. Disambiguation pages are parsed, and candidate titles containing irrelevant entertainment tags (e.g., `(album)`, `(song)`, `(band)`) are filtered out when the claim domain is non-entertainment.
-  3. Candidate titles $\mathcal{T} = \{t_1, t_2, \dots, t_m\}$ are reranked against the context claim vector $\mathbf{c}$ via semantic cosine similarity using `all-MiniLM-L6-v2`:
+  3. Candidate titles $`\mathcal{T} = \{t_1, t_2, \dots, t_m\}`$ are reranked against the context claim vector $\mathbf{c}$ via semantic cosine similarity using `all-MiniLM-L6-v2`:
 
-     $$
-     \hat{t} = \operatorname*{arg\,max}_{t \in \mathcal{T}} \frac{\mathbf{c} \cdot \mathbf{t}}{\|\mathbf{c}\| \|\mathbf{t}\|}
-     $$
+$$
+\hat{t} = \operatorname*{arg\,max}_{t \in \mathcal{T}} \frac{\mathbf{c} \cdot \mathbf{t}}{\|\mathbf{c}\| \|\mathbf{t}\|}
+$$
 
 * **Concurrent Graph Construction & Single-Prompt Batch Edge Extraction (Strategy A):** To eliminate the $O(N^2)$ combinatorial explosion of $\binom{N}{2}$ pairwise LLM calls while preventing rate-limit exhaustion:
   1. **Parallel Entity Resolution:** Wikipedia article summaries and canonical URLs for all extracted entities are fetched concurrently via a worker thread pool (`ThreadPoolExecutor(max_workers=max(1, min(len(entities), 6)))`). If a claim references $< 2$ valid entities, the graph builder triggers an immediate early return.
@@ -207,26 +207,26 @@ When escalated from Phase 4, the system constructs a live in-memory Knowledge Gr
   3. Grounding constraints are strictly enforced in the batch schema:
      - Exact `source` and `target` entity alignment with canonical graph nodes.
      - A concise relationship description $\text{rel}(u, v) \le 15$ words.
-     - An exact verbatim quotation $q$ (max 20 words) extracted from $\text{Summary}_u$ or $\text{Summary}_v$ proving the relationship, and its source entity.
+     - An exact verbatim quotation $q$ (max 20 words) extracted from $`\text{Summary}_u`$ or $`\text{Summary}_v`$ proving the relationship, and its source entity.
 * **Deterministic Provenance Verification & Evidence Separation Guardrail:** To eliminate **Secondary Hallucination Contamination** (where synthetic LLM relations inject ungrounded falsehoods into downstream verification), the system executes a deterministic substring provenance check:
 
-  $$
-  \text{Verified}(u, v) \iff q \subseteq \text{Summary}_u \;\lor\; q \subseteq \text{Summary}_v
-  $$
+$$
+\text{Verified}(u, v) \iff q \subseteq \text{Summary}_u \;\lor\; q \subseteq \text{Summary}_v
+$$
 
   - **Provenance-Verified Edges:** Edges satisfying this condition are tagged `verified=True` with full provenance metadata $\{u, v, \text{rel}, q, \text{URL}\}$.
   - **Unverified Edges (Visual-Only):** If an extracted relation lacks an authentic verbatim quote from the text, it is tagged `verified=False`. In the D3.js visual interface, it is rendered with a dashed edge for user exploration, but it is **strictly barred from being injected into the evidence candidate pool**, guaranteeing that downstream NLI never verifies against synthetic hallucinations.
 * **Multi-Hop Traversal & Vectorized Composite Edge Scoring:** Candidate evidence is extracted across all node summaries using sliding windows (3 sentences, stride 2). In addition, provenance-verified edges are synthesized into composite grounded propositions:
 
-  $$
-  \mathbf{e}_{\text{edge}} = \text{Grounded Relationship } [u \leftrightarrow v]\text{: rel (Evidence Quote: "} q \text{")}
-  $$
+$$
+\mathbf{e}_{\text{edge}} = \text{Grounded Relationship } [u \leftrightarrow v]\text{: rel (Evidence Quote: } q \text{)}
+$$
 
   Crucially, rather than iteratively encoding candidates in an $O(N)$ scalar loop or applying an uncalibrated additive boost (e.g. $+0.10$), all candidate text chunks and grounded edge strings are batch-encoded in a single vectorized forward pass (`batch_size=64`, guarded by `_encoder_lock`). Pure semantic cosine similarity is evaluated:
 
-  $$
-  \text{Score}(\mathbf{e}) = \text{sim}(\mathbf{c}, \mathbf{e}) = \frac{\mathbf{c} \cdot \mathbf{e}}{\|\mathbf{c}\| \|\mathbf{e}\|}
-  $$
+$$
+\text{Score}(\mathbf{e}) = \text{sim}(\mathbf{c}, \mathbf{e}) = \frac{\mathbf{c} \cdot \mathbf{e}}{\|\mathbf{c}\| \|\mathbf{e}\|}
+$$
 
   Because the composite proposition combines the relational abstraction with the verbatim evidence quote $q$, its natural semantic similarity reflects its true relevance without metric distortion or ranking inversion. Any downstream edge prioritization must be formally tuned on held-out validation data rather than fixed via arbitrary heuristics.
 
@@ -255,13 +255,13 @@ If ambiguity persists after Knowledge Graph traversal (or if an external Epistem
 * **Formal Decision & Conservative Abstention Policy:**
   To prevent the Judge LLM from forcing a binary hallucination when evidence is incomplete, the system enforces a strict **Conservative Abstention Policy**:
 
-  $$
-  \hat{y}_{\text{final}} = \begin{cases}
-  \text{SUPPORTED} & \text{if } \mathcal{E} \vdash \phi \land \text{no unrefuted counter-evidence} \\\\
-  \text{CONTRADICTED} & \text{if } \mathcal{E} \vdash \neg \phi \land \text{decisive refutation} \\\\
-  \text{UNKNOWN} & \text{otherwise (Conservative Abstention)}
-  \end{cases}
-  $$
+$$
+\hat{y}_{\text{final}} = \begin{cases}
+\text{SUPPORTED} & \text{if } \mathcal{E} \vdash \phi \land \text{no unrefuted counter-evidence} \\\\
+\text{CONTRADICTED} & \text{if } \mathcal{E} \vdash \neg \phi \land \text{decisive refutation} \\\\
+\text{UNKNOWN} & \text{otherwise (Conservative Abstention)}
+\end{cases}
+$$
 
   If the evidence is incomplete, ambiguous, or lacks decisive proof, the Judge is strictly instructed to **abstain** (`UNKNOWN`). In safety-critical verification, abstention is statistically preferred over an uncertain guess.
 
@@ -278,7 +278,7 @@ As atomic claims are verified, the backend pushes asynchronous NDJSON events (Se
 To scale verification throughput without degrading statistical guarantees, the pipeline integrates an **Asynchronous Multi-Tier Concurrency Engine** paired with native runtime synchronization guards:
 
 1. **Claim-Level Concurrency & Bounds Protection (`analyze()` / `analyze_stream()`):**
-   When processing multi-claim text documents, the end-to-end evaluation of discrete atomic claims is parallelized across worker threads using `ThreadPoolExecutor(max_workers=max(1, min(len(claims), 5)))`. Bounded thread pool allocation and empty input guards (`if not claims: return ...`) prevent runtime exceptions (`ValueError: max_workers must be greater than 0`) on empty prompts or malformed input. Each thread independently executes query generation, two-tier retrieval, and verification. Results are deterministically mapped back to original text ordering, reducing multi-claim evaluation latency from $\sum_{i=1}^N T_i$ down toward $\max_i T_i$.
+   When processing multi-claim text documents, the end-to-end evaluation of discrete atomic claims is parallelized across worker threads using `ThreadPoolExecutor(max_workers=max(1, min(len(claims), 5)))`. Bounded thread pool allocation and empty input guards (`if not claims: return ...`) prevent runtime exceptions (`ValueError: max_workers must be greater than 0`) on empty prompts or malformed input. Each thread independently executes query generation, two-tier retrieval, and verification. Results are deterministically mapped back to original text ordering, reducing multi-claim evaluation latency from $`\sum_{i=1}^N T_i`$ down toward $`\max_i T_i`$.
 
 2. **Two-Tier Concurrent Web Retrieval Engine:**
    - **Inter-Query Concurrency:** Multiple search queries synthesized for an atomic claim are dispatched simultaneously across threads.
@@ -301,16 +301,16 @@ To scale verification throughput without degrading statistical guarantees, the p
 6. **Gemini Dual-Model Round-Robin Load Balancer & Multi-Quota Safety Hierarchy (`llm/gemini.py`):**
    - **Active Quota-Pooling Engine:** Rather than routing all traffic serially through a single endpoint until it hits the free-tier rate ceiling (15 RPM), the pipeline implements a thread-safe atomic round-robin load balancer that interleaves requests 50/50 across `gemini-3.5-flash-lite` and `gemini-3.1-flash-lite`. Because Google AI Studio tracks rate limits per individual model name, this **doubles overall pipeline throughput to 30 RPM** and prevents 429 quota exhaustion during multi-claim batches:
 
-     $$
-     \text{Active Pool (50/50 Interleaved):} \quad \{\text{gemini-3.5-flash-lite}, \;\text{gemini-3.1-flash-lite}\} \implies 30\text{ RPM Capacity}
-     $$
+$$
+\text{Active Pool (50/50 Interleaved):} \quad \{\text{gemini-3.5-flash-lite}, \;\text{gemini-3.1-flash-lite}\} \implies \text{30 RPM Capacity}
+$$
 
    - **Zero-Wait Instant Failover (`attempts=1`):** The `google-genai` client is configured with `HttpRetryOptions(attempts=1)`, eliminating internal SDK exponential backoff sleep loops (which previously froze execution for 10–14 seconds on rate-limited endpoints). If either model encounters an HTTP 429, it enters a 45-second rolling cooldown and Python fails over **instantly ($0.00\text{s}$ delay)** to the other primary model.
    - **Multi-Quota Safety Fallback:** If an intense burst saturates both primary models simultaneously, requests automatically route to a secondary tier (`gemini-3.8-flash` or `gemini-2.5-flash`), providing an additional 15 RPM buffer (up to 45 RPM total capacity) with 99.9% uptime.
 
 7. **Hardware Acceleration via Apple Silicon GPU (MPS) & Batched NLI (`verification/nli_verifier.py`):**
    - **Metal Performance Shaders (MPS) Execution:** Zero-shot sequence classification (`facebook/bart-large-mnli`) detects and leverages Apple Silicon GPU acceleration via `torch.device("mps")` with command-buffer synchronization. Single-claim forward evaluation latency drops from **6.074s on CPU** down to **0.096s on MPS** (a **63× hardware speedup**).
-   - **Batched Snippet Evaluation (`verify_claims_batch`):** Rather than evaluating retrieved passages serially across multiple scalar forward passes ($k \times \tau_{\text{NLI}}$), all candidate evidence snippets are packed into a single padded tensor matrix pass on the GPU, collapsing snippet verification latency from $\sim 17.5\text{s}$ to $< 1.5\text{s}$.
+   - **Batched Snippet Evaluation (`verify_claims_batch`):** Rather than evaluating retrieved passages serially across multiple scalar forward passes ($`k \times \tau_{\text{NLI}}`$), all candidate evidence snippets are packed into a single padded tensor matrix pass on the GPU, collapsing snippet verification latency from $\sim 17.5\text{s}$ to $< 1.5\text{s}$.
    - **PyTorch `inference_mode` C++ Dispatch Acceleration:** Forward evaluation blocks (`verify_claim` and `verify_claims_batch`) execute inside `with torch.inference_mode():` rather than `torch.no_grad()`. This completely deactivates PyTorch autograd tracking, version tracking, and tensor view metadata recording, eliminating 5–15ms of C++ dispatch overhead per tensor evaluation with bit-for-bit identical mathematical outputs.
 
 8. **Atomic Proposition Fast-Path (`agents/claim_extractor.py`):**
@@ -349,9 +349,9 @@ The system was evaluated against three standard and contemporary fact-verificati
 ### 3.1 FEVER Benchmark Performance Analysis (5-Run Cross Validation)
 To evaluate real-world generalization on live Wikipedia retrieval, the system was evaluated across 5 randomized batches on the FEVER benchmark dataset.
 
-* **Unit of Evaluation** ($N_{\text{atomic}}$): Each batch consisted of $N_{\text{sentence}} = 20$ parent sentences. Because complex sentences decompose into 2–3 independent atomic facts, the actual denominator is the total number of evaluated atomic claims ($N_{\text{atomic}}$). This explains the exact percentage scores below:
+* **Unit of Evaluation** ($`N_{\text{atomic}}`$): Each batch consisted of $`N_{\text{sentence}} = 20`$ parent sentences. Because complex sentences decompose into 2–3 independent atomic facts, the actual denominator is the total number of evaluated atomic claims ($`N_{\text{atomic}}`$). This explains the exact percentage scores below:
 
-| Batch Run | Parent Sentences ($N_{\text{sentence}}$) | Atomic Claims ($N_{\text{atomic}}$) | Correct Atomic Claims | Overall Accuracy | Precision | Recall | F1-Score |
+| Batch Run | Parent Sentences ($`N_{\text{sentence}}`$) | Atomic Claims ($`N_{\text{atomic}}`$) | Correct Atomic Claims | Overall Accuracy | Precision | Recall | F1-Score |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Test 1** | 20 | 40 | 34 | **85.00%** (34/40) | 0.86 | 0.84 | 0.85 |
 | **Test 2** | 20 | 46 | 36 | **78.26%** (36/46) | 0.80 | 0.75 | 0.77 |
@@ -362,11 +362,11 @@ To evaluate real-world generalization on live Wikipedia retrieval, the system wa
 
 * **Statistical Sampling Uncertainty:** Across the pooled sample of $N = 215$ atomic claims, the overall accuracy is 83.26% with a standard error of:
 
-  $$
-  \text{SE} = \sqrt{\frac{\hat{p}(1 - \hat{p})}{N}} = \sqrt{\frac{0.8326 \times 0.1674}{215}} = 2.55\\%
-  $$
+$$
+\text{SE} = \sqrt{\frac{\hat{p}(1 - \hat{p})}{N}} = \sqrt{\frac{0.8326 \times 0.1674}{215}} = 2.55\\%
+$$
 
-  yielding an asymptotic 95% confidence interval of **83.26% ± 5.00% ([78.26%, 88.26%])**.
+yielding an asymptotic 95% confidence interval of **83.26% ± 5.00% ([78.26%, 88.26%])**.
 
 * **Analysis of the Residual 16.7% Error Gap:** 
 Error analysis reveals that the remaining failure rate is heavily dominated by **Cross-Encoder Literalism**. Zero-shot sequence classification models (`bart-large-mnli`) lack higher-order semantic abstraction for implicit entailments (failing to recognize semantic equivalence when claims use abstract paraphrases rather than verbatim phrasing). This failure mode directly motivated the multi-agent debate escalation mechanism in Phase 5b.
@@ -384,9 +384,9 @@ During this evaluation, the dialectical arbitration successfully resolved tricky
 ---
 
 ### 3.2 FreshQA Benchmark Performance Analysis (5-Run Cross Validation)
-To evaluate real-world generalization on dynamic web knowledge, fast-changing facts, and false premises, the system was evaluated across 5 stratified, non-overlapping batches ($N_{\text{total}} = 100$ claims, 50 SUPPORTS and 50 REFUTES) on the FreshQA benchmark dataset (Google Research, 2023–2024).
+To evaluate real-world generalization on dynamic web knowledge, fast-changing facts, and false premises, the system was evaluated across 5 stratified, non-overlapping batches ($`N_{\text{total}} = 100`$ claims, 50 SUPPORTS and 50 REFUTES) on the FreshQA benchmark dataset (Google Research, 2023–2024).
 
-* **Unit of Evaluation** ($N_{\text{claims}}$): Each batch consisted of $N = 20$ discrete claims sampled without replacement across all fact categories (fast-changing, slow-changing, never-changing, and false-premise questions). The exact empirical scores per set are detailed below:
+* **Unit of Evaluation** ($`N_{\text{claims}}`$): Each batch consisted of $N = 20$ discrete claims sampled without replacement across all fact categories (fast-changing, slow-changing, never-changing, and false-premise questions). The exact empirical scores per set are detailed below:
 
 | Batch Run | Evaluated Claims ($N$) | Correct Claims | Overall Accuracy | Precision | Recall | F1-Score |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -399,11 +399,11 @@ To evaluate real-world generalization on dynamic web knowledge, fast-changing fa
 
 * **Statistical Sampling Uncertainty:** Across the pooled sample of $N = 100$ FreshQA claims, the overall accuracy is 80.00% with a standard error of:
 
-  $$
-  \text{SE} = \sqrt{\frac{\hat{p}(1 - \hat{p})}{N}} = \sqrt{\frac{0.8000 \times 0.2000}{100}} = 4.00\\%
-  $$
+$$
+\text{SE} = \sqrt{\frac{\hat{p}(1 - \hat{p})}{N}} = \sqrt{\frac{0.8000 \times 0.2000}{100}} = 4.00\\%
+$$
 
-  yielding an asymptotic 95% confidence interval of **80.00% ± 7.84% ([72.16%, 87.84%])**.
+yielding an asymptotic 95% confidence interval of **80.00% ± 7.84% ([72.16%, 87.84%])**.
 
 * **Analysis of the Residual 20.0% Error Gap on FreshQA:**
 Error analysis across the 20 misclassifications reveals that FreshQA failures stem from three distinct open-domain web challenges:
@@ -414,9 +414,9 @@ Error analysis across the 20 misclassifications reveals that FreshQA failures st
 ---
 
 ### 3.3 Climate-FEVER Benchmark Performance Analysis (5-Run Cross Validation)
-To evaluate real-world generalization on peer-reviewed scientific claims, subtle statistical assertions, and climate-science consensus, the system was evaluated across 5 stratified, non-overlapping batches ($N_{\text{total}} = 100$ claims, 50 SUPPORTS and 50 REFUTES) on the Climate-FEVER benchmark dataset (Diggelmann et al., NeurIPS 2020).
+To evaluate real-world generalization on peer-reviewed scientific claims, subtle statistical assertions, and climate-science consensus, the system was evaluated across 5 stratified, non-overlapping batches ($`N_{\text{total}} = 100`$ claims, 50 SUPPORTS and 50 REFUTES) on the Climate-FEVER benchmark dataset (Diggelmann et al., NeurIPS 2020).
 
-* **Unit of Evaluation** ($N_{\text{claims}}$): Each batch consisted of $N = 20$ discrete claims sampled without replacement across all scientific categories (atmospheric physics, ice sheet dynamics, sea-level trends, global climate modeling, and emissions baselines). The exact empirical scores per set are detailed below:
+* **Unit of Evaluation** ($`N_{\text{claims}}`$): Each batch consisted of $N = 20$ discrete claims sampled without replacement across all scientific categories (atmospheric physics, ice sheet dynamics, sea-level trends, global climate modeling, and emissions baselines). The exact empirical scores per set are detailed below:
 
 | Batch Run | Evaluated Claims ($N$) | Correct Claims | Overall Accuracy | Precision | Recall | F1-Score |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -429,11 +429,11 @@ To evaluate real-world generalization on peer-reviewed scientific claims, subtle
 
 * **Statistical Sampling Uncertainty:** Across the pooled sample of $N = 100$ Climate-FEVER claims, the overall accuracy is 74.00% with a standard error of:
 
-  $$
-  \text{SE} = \sqrt{\frac{\hat{p}(1 - \hat{p})}{N}} = \sqrt{\frac{0.7400 \times 0.2600}{100}} = 4.39\\%
-  $$
+$$
+\text{SE} = \sqrt{\frac{\hat{p}(1 - \hat{p})}{N}} = \sqrt{\frac{0.7400 \times 0.2600}{100}} = 4.39\\%
+$$
 
-  yielding an asymptotic 95% confidence interval of **74.00% ± 8.60% ([65.40%, 82.60%])**.
+yielding an asymptotic 95% confidence interval of **74.00% ± 8.60% ([65.40%, 82.60%])**.
 
 * **Analysis of the Residual 26.0% Error Gap on Climate-FEVER:**
 Error analysis across the 26 misclassifications reveals that Climate-FEVER failures stem from three primary challenges inherent to scientific fact verification against live open-domain sources:
@@ -502,7 +502,7 @@ The Conformal Verification layer was empirically validated on holdout partitions
 
 #### Empirical Results Table (Scaled $N = 200$):
 
-| Significance Level ($\alpha$) | Nominal Coverage ($1 - \alpha$) | Empirical Test Coverage | Wilson 95% Confidence Interval | Average Set Size $\vert\mathcal{C}(X)\vert$ | Conformal Quantile ($\hat{q}_\alpha$) |
+| Significance Level ($\alpha$) | Nominal Coverage ($1 - \alpha$) | Empirical Test Coverage | Wilson 95% Confidence Interval | Average Set Size ($`\vert\mathcal{C}(X)\vert`$) | Conformal Quantile ($`\hat{q}_\alpha`$) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **0.05** | 95.0% | **99.00%** | [94.57%, 99.82%] | 1.63 | 0.9881 |
 | **0.10** | 90.0% | **90.00%** | [82.59%, 94.51%] | 1.26 | 0.8985 |
@@ -515,15 +515,15 @@ The Conformal Verification layer was empirically validated on holdout partitions
 
 #### Key Statistical Findings:
 1. **Strict Finite-Sample Validity:** In every single test condition, empirical test coverage strictly equals or exceeds nominal coverage ($\text{Empirical Coverage} \ge 1 - \alpha$), validating exchangeability and order-statistic calibration.
-2. **Superior Information Efficiency:** With $n = 100$ calibration samples and the exact discrete order-statistic implementation ($s_{(91)}$), the average prediction set size at $\alpha = 0.10$ (90% coverage guarantee) contracts from 2.72 down to **1.26**, and achieves near-singleton efficiency ($\vert\mathcal{C}(X)\vert = 1.01$) at $\alpha = 0.20$.
+2. **Superior Information Efficiency:** With $n = 100$ calibration samples and the exact discrete order-statistic implementation ($`s_{(91)}`$), the average prediction set size at $\alpha = 0.10$ (90% coverage guarantee) contracts from 2.72 down to **1.26**, and achieves near-singleton efficiency ($\vert\mathcal{C}(X)\vert = 1.01$) at $\alpha = 0.20$.
 3. **Artifacts:** High-resolution calibration curves and efficiency plots are maintained in `experiments/conformal_coverage_plot.png` and `experiments/conformal_set_size_plot.png`, with the production calibration state saved in `experiments/conformal_calibration.json`.
 4. **Critical Statistical Distinction (Marginal Set Coverage ≠ Pointwise Contradiction Precision):**
    A common fallacy in applied machine learning is assuming that a 90% marginal coverage guarantee ($\mathbb{P}(Y \in \mathcal{C}(X)) \ge 1 - \alpha$) means that any individual hallucination verdict has a 90% probability of being correct. This assumption is statistically invalid for three fundamental reasons:
    * **Set Guarantee vs. Point Decision:** Conformal prediction guarantees that the true label belongs to the *set* $\mathcal{C}(X)$. If $\mathcal{C}(X) = \{\text{CONTRADICTED}, \text{UNKNOWN}\}$, the set contains the truth, but forcing a point decision of "hallucination" may be wrong.
-   * **Marginal Average vs. Class-Conditional Coverage:** The guarantee is marginal across the joint distribution $P_{XY}$. High coverage on easy factual claims (`SUPPORTED`) can mathematically mask lower coverage on rare, subtle hallucinations (`CONTRADICTED`).
+   * **Marginal Average vs. Class-Conditional Coverage:** The guarantee is marginal across the joint distribution $`P_{XY}`$. High coverage on easy factual claims (`SUPPORTED`) can mathematically mask lower coverage on rare, subtle hallucinations (`CONTRADICTED`).
    * **Precision is a Posterior Metric:** Conformal prediction controls the coverage risk (analogous to bounding false negatives of the set). It does *not* bound the precision $\mathbb{P}(Y = \text{contra} \mid \hat{y} = \text{contra})$ of individual positive assertions.
    
-   To avoid overinterpreting conformal guarantees, our architecture strictly treats $\mathcal{C}(X)$ as an **epistemic uncertainty gating mechanism** ($g(X)$), while measuring **Contradiction Class Precision (0.89)**, **Recall (0.80)**, and **Selective Risk ($R(f, g) = 0.11$)** independently in Section 3.8.
+   To avoid overinterpreting conformal guarantees, our architecture strictly treats $\mathcal{C}(X)$ as an **epistemic uncertainty gating mechanism** ($g(X)$), while measuring **Contradiction Class Precision (0.89)**, **Recall (0.80)**, and **Selective Risk** ($R(f, g) = 0.11$) independently in Section 3.8.
 
 ---
 
@@ -538,15 +538,15 @@ To determine whether Multi-Agent Debate provides genuine verification utility or
 | :--- | :--- | :--- | :--- |
 | **Verification Accuracy** | 86.67% | **100.00%** | **+13.33%** |
 | **Claims Escalated to Debate** | — | 13.33% (2/15) | — |
-| **Successful Corrections (Wrong $\to$ Right)** | — | **100.00%** (2/2) | **+2 claims corrected** |
-| **Sycophancy / Degradations (Right $\to$ Wrong)** | — | **0.00%** (0/2) | **0 claims degraded** |
+| **Successful Corrections** (Wrong → Right) | — | **100.00%** (2/2) | **+2 claims corrected** |
+| **Sycophancy / Degradations** (Right → Wrong) | — | **0.00%** (0/2) | **0 claims degraded** |
 | **Average Latency per Claim** | 5.046 sec | 5.808 sec | **+0.762 sec (+15.1%)** |
 | **LLM API Calls Consumed** | 0 calls | 6 calls (3 per escalation) | **+6 API calls** |
 
 #### Critical Insights on Debate Mechanics:
 * **Targeted Value:** Multi-Agent Debate is not applied uniformly across all claims; it is an escalation mechanism triggered only when NLI confidence collapses. In 86.7% of claims, fast deterministic NLI resolves the claim with zero LLM API overhead.
 * **Correction of NLI Literalism:** For the escalated claims, the debate successfully bridged the semantic gap (resolving figurative phrasings, domain terminology, and role interpretations), achieving a 100% correction rate with zero sycophantic degradations.
-* **Cost-Latency Trade-off:** The +13.33% accuracy uplift comes at the cost of $+0.762$ seconds average latency per claim and 3 LLM calls per escalated claim.
+* **Cost-Latency Trade-off:** The +13.33% accuracy uplift comes at the cost of +0.762 seconds average latency per claim and 3 LLM calls per escalated claim.
 
 ---
 
@@ -581,17 +581,17 @@ $$
 #### 2. Coverage vs. Selective Risk
 Under selective classification, the system's operational behavior is governed by two coupled metrics:
 
-* **System Coverage $\Phi(g)$:** The probability that the model accepts an arbitrary claim and renders a definitive verdict:
+* **System Coverage** ($\Phi(g)$): The probability that the model accepts an arbitrary claim and renders a definitive verdict:
 
-  $$
-  \Phi(g) = \mathbb{E}_{X \sim P_X}[g(X)]
-  $$
+$$
+\Phi(g) = \mathbb{E}_{X \sim P_X}[g(X)]
+$$
 
-* **Selective Risk $R(f, g)$:** The conditional misclassification rate restricted strictly to accepted claims:
+* **Selective Risk** ($R(f, g)$): The conditional misclassification rate restricted strictly to accepted claims:
 
-  $$
-  R(f, g) = \frac{\mathbb{E}_{(X, Y)} [\ell(f(X), Y) \cdot g(X)]}{\Phi(g)}
-  $$
+$$
+R(f, g) = \frac{\mathbb{E}_{(X, Y)} [\ell(f(X), Y) \cdot g(X)]}{\Phi(g)}
+$$
 
   where $\ell(\hat{y}, y) = \mathbb{I}(\hat{y} \ne y)$ is the 0-1 classification loss.
 
@@ -610,7 +610,7 @@ To quantify the wall-clock performance gains introduced by the multi-tier concur
 
 | Pipeline Subsystem | Baseline (Sequential) | Optimized (Concurrent) | Absolute Time Saved | Throughput Gain |
 | :--- | :--- | :--- | :--- | :--- |
-| **Query Generation ($N = 4$ claims)** | 7.22 sec | **1.81 sec** | 5.41 sec | **75% faster (4.0×)** |
+| **Query Generation** ($N = 4$ claims) | 7.22 sec | **1.81 sec** | 5.41 sec | **75% faster (4.0×)** |
 | **Web Retrieval (3 queries / claim)** | 12.64 sec | **1.21 sec** | 11.43 sec | **90% faster (10.4×)** |
 | **Arbitration (Dialectical Fast-Path vs. 3-Agent Waterfall)** | 3.61 sec | **1.35 sec** | 2.26 sec | **63% faster (2.7×)** |
 | **Knowledge Graph Construction (5 entities, single batch prompt)** | 24.05 sec | **1.25 sec** | 22.80 sec | **95% faster (19.2×)** |
@@ -627,7 +627,7 @@ To quantify the wall-clock performance gains introduced by the multi-tier concur
   - **Net Reduction:** **~38.4 sec saved per claim (88% latency reduction)**
 
 #### Statistical Invariance Guarantee:
-The concurrency architecture strictly bounds execution reordering to network and thread workers without altering prompt templates, token generation seeds, conformal calibration quantiles ($\hat{q}_\alpha$), or heuristic thresholds. Downstream classification accuracy, precision ($0.89$), and empirical coverage (90.0% at $\alpha = 0.10$) remain identical to the sequential baseline.
+The concurrency architecture strictly bounds execution reordering to network and thread workers without altering prompt templates, token generation seeds, conformal calibration quantiles ($`\hat{q}_\alpha`$), or heuristic thresholds. Downstream classification accuracy, precision (0.89), and empirical coverage (90.0% at $\alpha = 0.10$) remain identical to the sequential baseline.
 
 ---
 
