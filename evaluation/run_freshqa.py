@@ -17,22 +17,21 @@ torch.set_num_threads(2)
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from evaluation.benchmarks.freshqa_dataset import load_freshqa
+from evaluation.benchmarks.freshqa_dataset import load_freshqa, DEFAULT_FACT_TYPES
 from retrieval.web_search import WebRetriever
 from detector.hallucination_detector import HallucinationDetector
 from evaluation.metrics import precision, recall, f1_score
 from tqdm import tqdm
 
-def run_freshqa_benchmark(num_samples=20, fact_types=None):
+def run_freshqa_benchmark(num_samples=20):
     print("=" * 60)
     print("  FreshQA Benchmark Evaluation (Google Research, 2023-2024)  ")
     print("  Fast-changing facts, dynamic web knowledge, & false premises")
-    if fact_types:
-        print(f"  Filtering by fact types: {fact_types}")
+    print(f"  Fact types: {', '.join(DEFAULT_FACT_TYPES)}")
     print("=" * 60)
     
     print("\nLoading FreshQA dataset...")
-    data = load_freshqa(split="all", fact_types=fact_types)
+    data = load_freshqa(split="all")
     
     supported_claims = [item for item in data if item["label"] == "SUPPORTS"]
     refuted_claims = [item for item in data if item["label"] == "REFUTES"]
@@ -153,11 +152,9 @@ def run_freshqa_benchmark(num_samples=20, fact_types=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run FreshQA benchmark")
     parser.add_argument("--samples", type=int, default=20, help="Number of random samples (default: 20)")
-    parser.add_argument("--stable", action="store_true", help="Filter for slow-changing and never-changing claims (avoids 2023 fast-changing temporal drift)")
     args = parser.parse_args()
     
-    f_types = ["slow-changing", "never-changing"] if args.stable else None
-    run_freshqa_benchmark(num_samples=args.samples, fact_types=f_types)
+    run_freshqa_benchmark(num_samples=args.samples)
 
     # Results are printed/saved above. Exit immediately: interpreter shutdown joins every
     # thread-pool worker, and a DuckDuckGo/Wikipedia request stuck past its timeout would

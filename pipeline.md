@@ -328,7 +328,7 @@ The verdict takes the probability vector of its highest-confidence decisive snip
 
 Step 1: $S = 0.744 < 0.85$, so there is no source conflict. Step 2: $`\lvert D_{\text{con}} \rvert = 2 \ge m`$ and $`D_{\text{sup}} = \varnothing`$, so the verdict is **CONTRADICTED** with $`\hat{\boldsymbol{\pi}} = (0.9994, 0.0005, 0.0001)`$, with no LLM call. Under a "highest confidence wins" rule the same verdict would follow here; the corroboration rule only changes the outcome when a contradiction stands alone or is contested.
 
-**Design rationale and limitations.** The rule is asymmetric on purpose: a decisive *supporting* snippet is rarely wrong, while lone contradictions are wrong more often than right, and a false accusation is the more harmful error (§1.1). Corroborated contradictions — the typical case for genuinely false encyclopedic claims, which several Wikipedia sentences contradict — stay on the fast path, so the extra LLM cost is limited to the ambiguous cases (3 of 40 FEVER claims in the held-out evaluation). The NLI model cannot do arithmetic or date reasoning and ignores words such as *"currently"*; such cases surface as residual errors (§3.5). `HallucinationDetector(min_contra_snippets=None)` restores the original rule (the highest-confidence decisive snippet wins regardless of label) for ablation studies; a randomised check over 20,000 synthetic score configurations confirms it reproduces the original decisions exactly.
+**Design rationale and limitations.** The rule is asymmetric on purpose: a decisive *supporting* snippet is rarely wrong, while lone contradictions are wrong more often than right, and a false accusation is the more harmful error (§1.1). Corroborated contradictions — the typical case for genuinely false encyclopedic claims, which several Wikipedia sentences contradict — stay on the fast path, so the extra LLM cost is limited to the ambiguous cases (8 of 100 FEVER claims in the five-set evaluation, §3.3). The NLI model cannot do arithmetic or date reasoning and ignores words such as *"currently"*; such cases surface as residual errors (§3.5). `HallucinationDetector(min_contra_snippets=None)` restores the original rule (the highest-confidence decisive snippet wins regardless of label) for ablation studies; a randomised check over 20,000 synthetic score configurations confirms it reproduces the original decisions exactly.
 
 ### 2.6 Conformal Uncertainty Layer (`statistical_layer/conformal_predictor.py`)
 
@@ -566,7 +566,7 @@ for pass in {1, 2}:                                                 # at most on
 | Lightweight review | 0 or 1 |
 | Full escalation | entity linking 0 or 1, edge extraction 1 (if ≥ 2 nodes), arbitration 1, display edge 0 or 1 |
 
-A claim settled on the fast path with fast-path queries needs **no LLM call at all**. Measured averages on held-out claims: 1.27 calls per FEVER claim and 1.73 per FreshQA claim (§3.4).
+A claim settled on the fast path with fast-path queries needs **no LLM call at all**. In the FEVER five-set evaluation, 77 of 100 claims were settled by the NLI verdict without any arbitration call; in the FreshQA five-set evaluation, 57 of 100 (§3.4).
 
 ### 2.12 Execution Details
 
@@ -589,7 +589,7 @@ A claim settled on the fast path with fast-path queries needs **no LLM call at a
 | Normal question + answer, e.g. *"Who is the CEO of Google?" – "Sundar Pichai"* | *"Sundar Pichai is the CEO of Google."* | `SUPPORTS` |
 | False-premise question, e.g. *"When was League of Legends 2 released?"* | the false premise as a claim: *"League of Legends 2 was released in the past."* | `REFUTES` |
 
-FreshQA tests web retrieval, temporal reasoning and false-premise detection. Its gold answers are snapshots dated by the maintainers, so a fast-changing answer can be out of date when the benchmark is run; `--stable` restricts sampling to never- and slow-changing questions.
+FreshQA tests web retrieval, temporal reasoning and false-premise detection. Its gold answers are snapshots dated by the maintainers, so a fast-changing answer can be out of date when the benchmark is run. In an earlier 40-claim run, fast-changing questions scored 38% against 78% for the rest, mostly through such out-of-date labels. All FreshQA runs therefore sample only *never-changing* and *slow-changing* questions (`DEFAULT_FACT_TYPES` in `evaluation/benchmarks/freshqa_dataset.py`; 298 true and 147 false claims).
 
 Benchmarks built from synthetic perturbations of a fixed reference text (such as HaluEval) are not used: their "false" claims are often true in the open world that this detector searches, which would penalise correct verdicts.
 
@@ -606,62 +606,74 @@ Benchmarks built from synthetic perturbations of a fixed reference text (such as
 python evaluation/run_5_runs.py --dataset all          # FEVER then FreshQA, 5 sets x 20 claims each
 python evaluation/run_5_runs.py --dataset fever        # one benchmark
 python evaluation/run_benchmark.py --dataset fever --samples 20                 # quick single run
-python evaluation/run_benchmark.py --dataset freshqa --samples 20 --stable      # never- and slow-changing only
+python evaluation/run_benchmark.py --dataset freshqa --samples 20              # never- and slow-changing questions only
 ```
 
 ### 3.3 Results (Current Pipeline)
 
-All figures below are measured with the current pipeline (the single configuration described in Section 2) on held-out claims: 40 per benchmark, stratified 20 `SUPPORTS` / 20 `REFUTES`, drawn with seed 2026 and excluded from all development work, so no design decision was tuned on them. Retrieval and LLM calls were live (October 2026).
+All figures below are measured with the current pipeline (the single configuration described in Section 2), with live retrieval and LLM calls (October 2026).
 
-| Benchmark | Claims | Correct | Accuracy | 95% CI | Precision | Recall | F1 |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **FEVER** | 40 | 37 | **92.50%** | [84.3%, 100%] | **1.00** | 0.85 | **0.92** |
-| **FreshQA** (all fact types) | 40 | 26 | **65.00%** | [50.2%, 79.8%] | 0.70 | 0.80 | 0.74 |
-| **FreshQA** (stable: never- and slow-changing) | 27 | 21 | **77.78%** | [62.1%, 93.5%] | **0.94** | 0.80 | **0.86** |
+**FEVER: five-set evaluation.** 5 non-overlapping stratified sets of 20 claims (10 `SUPPORTS`, 10 `REFUTES`), seed 42, 100 claims in total (`python evaluation/run_5_runs.py --dataset fever`; summary in `evaluation/fever_5_runs_results.json`, per-claim results in `evaluation/fever_5_runs_claims.jsonl`):
 
-Precision, recall and F1 refer to the `CONTRADICTED` (hallucination) class; the confidence interval is the normal approximation of §4.4. The confusion counts behind these figures (definitions in §4.1):
+| Set | Claims | Correct | Accuracy | Precision | Recall | F1 | TP | FP | FN | TN | `UNKNOWN` | Mean latency |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Set 1 | 20 | 19 | 95.00% | 0.91 | 1.00 | 0.95 | 10 | 1 | 0 | 9 | 0 | 8.8 s |
+| Set 2 | 20 | 20 | 100.00% | 1.00 | 1.00 | 1.00 | 10 | 0 | 0 | 10 | 0 | 13.4 s |
+| Set 3 | 20 | 20 | 100.00% | 1.00 | 1.00 | 1.00 | 10 | 0 | 0 | 10 | 0 | 12.6 s |
+| Set 4 | 20 | 18 | 90.00% | 1.00 | 0.80 | 0.89 | 8 | 0 | 2 | 10 | 2 | 10.1 s |
+| Set 5 | 20 | 19 | 95.00% | 0.91 | 1.00 | 0.95 | 10 | 1 | 0 | 9 | 0 | 7.9 s |
+| **Pooled** | **100** | **96** | **96.00%** | **0.96** | **0.96** | **0.96** | 48 | 2 | 2 | 48 | 2 | 10.5 s |
 
-| Benchmark | TP | FP | FN | TN | `UNKNOWN` |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| FEVER | 17 | 0 | 3 | 20 | 0 |
-| FreshQA (all) | 16 | 7 | 4 | 10 | 3 |
-| FreshQA (stable) | 16 | 1 | 4 | 5 | 1 |
+Pooled 95% CI (normal approximation, §4.4): [92.2%, 99.8%]. Per-set accuracy ranges from 90% to 100%; with 20 claims per set, one error moves a set's accuracy by 5 points, so the pooled figure is the one to quote.
 
-On FEVER the detector never accused a true claim (FP = 0); its 3 errors are missed hallucinations. On FreshQA, 6 of the 7 false accusations and 2 of the 3 abstentions occur on fast-changing questions; restricted to the stable subset, precision rises from 0.70 to 0.94. The stable subset is not balanced (20 false and 7 true claims), because in this sample all 13 fast-changing questions were true claims; for that reason precision and recall are not defined on the fast-changing subset alone, whose accuracy is 38% (5/13). Section 3.5 explains why fast-changing questions behave differently.
+**FreshQA: five-set evaluation.** Same protocol on never- and slow-changing questions (§3.1): 5 non-overlapping stratified sets of 20 claims (10 `SUPPORTS`, 10 `REFUTES`), seed 42, 100 claims in total (`python evaluation/run_5_runs.py --dataset freshqa`; summary in `evaluation/freshqa_5_runs_results.json`, per-claim results in `evaluation/freshqa_5_runs_claims.jsonl`):
 
-With 40 claims per benchmark the confidence intervals are wide (±8 points for FEVER, ±15 for FreshQA). A larger evaluation of 5 non-overlapping sets of 20 claims per benchmark (`python evaluation/run_5_runs.py --dataset all`, §3.2) will narrow them; its per-set and pooled results will replace this table when the run is complete.
+| Set | Claims | Correct | Accuracy | Precision | Recall | F1 | TP | FP | FN | TN | `UNKNOWN` | Mean latency |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| Set 1 | 20 | 15 | 75.00% | 0.88 | 0.70 | 0.78 | 7 | 1 | 3 | 8 | 1 | 24.5 s |
+| Set 2 | 20 | 16 | 80.00% | 0.89 | 0.80 | 0.84 | 8 | 1 | 2 | 8 | 2 | 13.7 s |
+| Set 3 | 20 | 19 | 95.00% | 1.00 | 0.90 | 0.95 | 9 | 0 | 1 | 10 | 1 | 14.1 s |
+| Set 4 | 20 | 16 | 80.00% | 1.00 | 0.70 | 0.82 | 7 | 0 | 3 | 9 | 3 | 19.8 s |
+| Set 5 | 20 | 19 | 95.00% | 0.91 | 1.00 | 0.95 | 10 | 1 | 0 | 9 | 0 | 11.9 s |
+| **Pooled** | **100** | **85** | **85.00%** | **0.93** | **0.82** | **0.87** | 41 | 3 | 9 | 44 | 7 | 16.8 s |
+
+Pooled 95% CI (normal approximation, §4.4): [78.0%, 92.0%]. Precision, recall and F1 refer to the `CONTRADICTED` (hallucination) class (definitions in §4.1); `UNKNOWN` counts as an error, and on a false claim as a missed hallucination (FN).
+
+**FEVER vs FreshQA.** On 100 claims each, the confidence intervals are about ±4 points for FEVER and ±7 for FreshQA, and they do not overlap: FreshQA is genuinely harder. The gap comes mainly from recall (0.82 vs 0.96): 7 of the 9 missed FreshQA hallucinations are abstentions on false-premise claims (§3.5), while precision stays high on both (0.93 vs 0.96).
 
 ### 3.4 Latency and Routing (Current Pipeline)
 
 | Benchmark | Mean latency | Median | 90th percentile | LLM calls per claim |
 | :--- | :--- | :--- | :--- | :--- |
-| FEVER | 15.8 s | 13.8 s | 31.9 s | 1.27 |
-| FreshQA | 19.7 s | 15.0 s | 51.5 s | 1.73 |
+| FEVER (100 claims, five sets) | 10.5 s | 7.7 s | 21.3 s | not recorded |
+| FreshQA (100 claims, five sets) | 16.8 s | 12.2 s | 33.3 s | not recorded |
 
 | Benchmark | NLI verdict stands | Lightweight review | Full escalation |
 | :--- | :--- | :--- | :--- |
-| FEVER (40 claims) | 31 | 3 | 6 |
-| FreshQA (40 claims) | 22 | 10 | 8 |
+| FEVER (100 claims, five sets) | 77 | 8 | 15 |
+| FreshQA (100 claims, five sets) | 57 | 20 | 23 |
 
 Latency is measured end to end with live Wikipedia, web and Gemini calls on an Apple M1 laptop. Claims settled by the NLI verdict are fastest; fully escalated claims, which add Knowledge Graph construction and arbitration, account for the long tail.
 
 ### 3.5 Error Analysis
 
-**FEVER (current, held-out).** All 3 errors are false claims judged `SUPPORTED` on the direct NLI path; no true claim was flagged as a hallucination (precision 1.00). In earlier runs the dominant failure was **NLI literalism**: the classifier misses entailments stated as abstract paraphrases, which is what the arbitration stage addresses.
+**FEVER (current, five sets, 100 claims).** No false claim was judged `SUPPORTED`. The 4 errors are 2 false accusations and 2 abstentions:
 
-**FreshQA (current, held-out).** Accuracy depends strongly on the question's `fact_type`:
+1. **False accusations (2).** *"Tamerlan Tsarnaev carjacked an SUV."* was settled `CONTRADICTED` on the fast path although the evidence says "the Tsarnaev brothers … carjacked an SUV": the NLI model read the following sentence, in which Tamerlan was dragged beneath the SUV *driven by his brother*, as a contradiction, and two such snippets met the corroboration rule. *"Brian Michael Bendis began teaching English at the University of Oregon in fall of 2013."* was escalated, and the arbiter rejected it because the evidence says he taught courses on graphic novels and never names "English" — a hyper-literal reading of a FEVER claim that annotators labelled true.
+2. **Abstentions (2).** *"Nuuk is the largest military center of Greenland."* and *"Marvel vs. Capcom is part of a trilogy."* (both false) ended `UNKNOWN`: the evidence established related facts (the Joint Arctic Command is headquartered in Nuuk; *Marvel vs. Capcom 3* exists) but neither confirmed nor refuted the superlative or the series count, and the arbiter abstained.
 
-| Fact type | Correct | Wrong | Accuracy |
-| :--- | :--- | :--- | :--- |
-| never-changing | 11 | 4 | 73% |
-| slow-changing | 10 | 2 | 83% |
-| fast-changing | 5 | 8 | 38% |
+**FreshQA (current, five sets, 100 claims, never- and slow-changing).** Accuracy is similar for the two fact types:
 
-The 14 errors fall into three groups:
+| Fact type | Claims | Correct | Wrong | Accuracy |
+| :--- | :--- | :--- | :--- | :--- |
+| never-changing | 52 | 45 | 7 | 86.5% |
+| slow-changing | 48 | 40 | 8 | 83.3% |
 
-1. **Out-of-date gold labels (8 errors, all fast-changing).** The gold answer is a dated snapshot that no longer holds, or a value that cannot be checked from encyclopedic sources. Examples: *"The latest version of Android is Android 16"* while the retrieved evidence documents Android 17; *"The next U.S. federal holiday is Memorial Day"*, recorded in spring and evaluated in October; *"The last time it rained in New York City was April 17, 2026."* In these cases the benchmark measures the freshness of its labels as much as the detector, so FreshQA is best reported on the stable subset, with fast-changing questions reported separately.
-2. **Genuine NLI errors involving time (about 4 errors).** *"A city hosted the Summer Olympics in 1940"* was judged supported because the evidence says the 1940 games were "planned" and "awarded to Helsinki" (they were cancelled); a claim about what Canada *currently* requires was matched to evidence about 2020–21 policy. The NLI model does not distinguish planned from actual events or past from present.
-3. **Question-to-claim conversion (2 errors).** The generated claim is arguably true: *"Joe Biden announced his second presidential campaign in 2023"* was produced from a false-premise question, yet Biden did announce his re-election campaign in 2023.
+The 15 errors fall into three groups:
+
+1. **Abstentions (7: 5 false claims, 2 true).** The evidence covers the topic but does not settle the claim, and the arbiter returns `UNKNOWN`. False premises are the typical case: *"An animal has landed on the moon"*, *"Humans have been killed by dinosaurs"*, *"Taylor Swift has been a UNICEF Goodwill Ambassador"*, *"There is a current Protestant majority in Northern Ireland"* (the evidence describes the 1921 majority, not today's population). Proving that something never happened needs evidence that states the absence, which encyclopedic text rarely does. The two true claims were not settled for lack of a specific fact (Biden's most-visited country; the UMass NLP faculty count) or despite partial evidence (*"Pope Emeritus Benedict XVI and Queen Elizabeth II both died in 2022"*).
+2. **NLI errors on negation, time and near-matching entities (5).** Settled on the fast path without LLM review. False accusations: *"The Great Pyramid of Giza is not one of the New 7 Wonders of the World"* (negation) and *"There is no total solar eclipse in the continental US this year"* (the evidence lists eclipses over 1900–2100, not this year). Missed hallucinations: *"Walt Disney Animation Studios' 60th animated film is being released this year"* (*Encanto*, 2021: the model ignores "this year"), *"Donald Trump tweeted in 2022 after his unbanning from Twitter"* (the evidence reports the reinstatement, not a tweet), and a claim about a cube that is the sum of two cubes in two ways, matched to evidence about 1729, which is not a cube.
+3. **Disputed or changing facts (3).** *"Joe Biden announced his second presidential campaign in 2023"* was generated from a false-premise question but is true as stated (question-to-claim conversion, §3.1); *"OpenAI has released GPT-5.5"* was judged supported from 2026 evidence against a gold label recorded earlier; *"Lewandowski plays for Barcelona"* met conflicting sources and the arbiter judged it contradicted.
 
 ---
 
@@ -709,10 +721,10 @@ $$
 
 the harmonic mean of precision and recall, which is high only when both are.
 
-**Worked example** (current pipeline, FEVER held-out, 40 claims: 20 false and 20 true): 17 false claims were flagged `CONTRADICTED` and 3 were judged `SUPPORTED`; all 20 true claims were judged `SUPPORTED`. So $TP = 17$, $FN = 3$, $FP = 0$, $TN = 20$:
+**Worked example** (current pipeline, FEVER five-set evaluation, 100 claims: 50 false and 50 true): 48 false claims were flagged `CONTRADICTED` and 2 ended `UNKNOWN`; 48 true claims were judged `SUPPORTED` and 2 were flagged `CONTRADICTED`. So $TP = 48$, $FN = 2$, $FP = 2$, $TN = 48$:
 
 $$
-\text{Accuracy} = \frac{17 + 20}{40} = 92.5\\%, \quad \text{Precision} = \frac{17}{17 + 0} = 1.00, \quad \text{Recall} = \frac{17}{17 + 3} = 0.85, \quad F_1 = \frac{2 \times 17}{2 \times 17 + 0 + 3} = 0.92
+\text{Accuracy} = \frac{48 + 48}{100} = 96.0\\%, \quad \text{Precision} = \frac{48}{48 + 2} = 0.96, \quad \text{Recall} = \frac{48}{48 + 2} = 0.96, \quad F_1 = \frac{2 \times 48}{2 \times 48 + 2 + 2} = 0.96
 $$
 
 ### 4.3 Abstentions and Selective Classification

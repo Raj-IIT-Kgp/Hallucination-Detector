@@ -43,17 +43,16 @@ def run_fever_benchmark(num_samples=20):
     
     return _evaluate_dataset("FEVER", sample_dataset, num_samples)
 
-def run_freshqa_benchmark_entry(num_samples=20, fact_types=None):
-    from evaluation.benchmarks.freshqa_dataset import load_freshqa
+def run_freshqa_benchmark_entry(num_samples=20):
+    from evaluation.benchmarks.freshqa_dataset import load_freshqa, DEFAULT_FACT_TYPES
     
     print("=" * 60)
     print("  FreshQA Benchmark Evaluation (Google Research, 2023-2024)  ")
     print("  Fast-changing facts, dynamic web knowledge, & false premises")
-    if fact_types:
-        print(f"  Filtering by fact types: {fact_types}")
+    print(f"  Fact types: {', '.join(DEFAULT_FACT_TYPES)}")
     print("=" * 60)
     print("\nLoading FreshQA dataset...")
-    data = load_freshqa(split="all", fact_types=fact_types)
+    data = load_freshqa(split="all")
     
     supported_claims = [item for item in data if item["label"] == "SUPPORTS"]
     refuted_claims = [item for item in data if item["label"] == "REFUTES"]
@@ -219,11 +218,6 @@ def main():
         help="Number of random samples to evaluate (default: 20)"
     )
     parser.add_argument(
-        "--stable",
-        action="store_true",
-        help="Filter for slow-changing and never-changing claims (FreshQA only, avoids 2023 temporal drift)"
-    )
-    parser.add_argument(
         "--seed",
         type=int,
         default=None,
@@ -239,18 +233,16 @@ def main():
 
     if args.seed is not None:
         random.seed(args.seed)
-    
-    freshqa_fact_types = ["slow-changing", "never-changing"] if args.stable else None
 
     results = []
     if args.dataset == "fever":
         results.append(run_fever_benchmark(num_samples=args.samples))
     elif args.dataset == "freshqa":
-        results.append(run_freshqa_benchmark_entry(num_samples=args.samples, fact_types=freshqa_fact_types))
+        results.append(run_freshqa_benchmark_entry(num_samples=args.samples))
     elif args.dataset == "all":
         for fn, name, kwargs in [
             (run_fever_benchmark, "FEVER", {}),
-            (run_freshqa_benchmark_entry, "FreshQA", {"fact_types": freshqa_fact_types}),
+            (run_freshqa_benchmark_entry, "FreshQA", {}),
         ]:
             print(f"\n>>> Running {name} Benchmark ({args.samples} samples)...")
             res = fn(num_samples=args.samples, **kwargs)

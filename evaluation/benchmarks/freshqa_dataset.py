@@ -84,7 +84,12 @@ def _qa_to_claim(q: str, ans: str) -> str:
 
 CLAIMS_CACHE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "freshqa_claims.json")
 
-def load_freshqa(split="all", fact_types=None):
+# Benchmarks run on never- and slow-changing questions only: fast-changing gold answers are dated
+# snapshots that drift out of date, so errors on them measure label staleness, not the detector.
+# Pass fact_types=None to load every fact type.
+DEFAULT_FACT_TYPES = ("never-changing", "slow-changing")
+
+def load_freshqa(split="all", fact_types=DEFAULT_FACT_TYPES):
     """
     Loads FreshQA (Google Research, 2023-2024), a benchmark for dynamic, fast-changing,
     slow-changing, and false-premise real-world world knowledge.
