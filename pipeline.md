@@ -34,7 +34,7 @@ A **hallucination** is a statement produced by a language model that is not supp
 3. assign a verdict
 
 $$
-f(c, \mathcal{E}(c)) \in \mathcal{Y} = \{\text{CONTRADICTED}, \; \text{UNKNOWN}, \; \text{SUPPORTED}\}
+f(c, \mathcal{E}(c)) \in \mathcal{Y} = \lbrace \text{CONTRADICTED}, \; \text{UNKNOWN}, \; \text{SUPPORTED} \rbrace
 $$
 
 where `CONTRADICTED` means the claim is a hallucination, `SUPPORTED` means the evidence confirms it, and `UNKNOWN` means the detector abstains because the evidence is insufficient or genuinely conflicting.
@@ -295,7 +295,7 @@ On conflict the verdict is set to `UNKNOWN` with uniform probabilities $(0.33, 0
 A single contradicting snippet was wrong more often than right; three agreeing snippets were right 13 times out of 16. (The embedding similarity between snippet and claim was also tested as a relevance filter and did not separate the two groups: median similarity 0.62 for real refutations vs. 0.60 for false ones.) Let
 
 $$
-D_{\text{sup}} = \{ i : \hat{y}(e_i) = \text{SUPPORTED},\; \hat{\pi}_{\text{sup}}(e_i) \ge \tau \}, \qquad D_{\text{con}} = \{ i : \hat{y}(e_i) = \text{CONTRADICTED},\; \hat{\pi}_{\text{con}}(e_i) \ge \tau \}
+D_{\text{sup}} = \lbrace  i : \hat{y}(e_i) = \text{SUPPORTED},\; \hat{\pi}_{\text{sup}}(e_i) \ge \tau  \rbrace, \qquad D_{\text{con}} = \lbrace  i : \hat{y}(e_i) = \text{CONTRADICTED},\; \hat{\pi}_{\text{con}}(e_i) \ge \tau  \rbrace
 $$
 
 The verdict is then
@@ -357,7 +357,7 @@ The production calibration (`experiments/conformal_calibration.json`) uses $n = 
 **Step 3 — Prediction set.** For a new claim $X$, every label whose score would not be unusually high is included:
 
 $$
-\mathcal{C}(X) = \{ y \in \mathcal{Y} : s(X, y) \le \hat{q}_\alpha \} = \{ y \in \mathcal{Y} : \hat{\pi}_y(X) \ge 1 - \hat{q}_\alpha \}
+\mathcal{C}(X) = \lbrace  y \in \mathcal{Y} : s(X, y) \le \hat{q}_\alpha  \rbrace = \lbrace  y \in \mathcal{Y} : \hat{\pi}_y(X) \ge 1 - \hat{q}_\alpha  \rbrace
 $$
 
 With $`\hat{q} = 0.8985`$, a label is admitted when its probability is at least $`1 - 0.8985 = 0.1015`$. If no label qualifies (possible only with probability at most $\alpha$), the set falls back to the single most probable label.
@@ -523,7 +523,7 @@ The prompt reserves `UNKNOWN` for evidence that is absent, unrelated, or genuine
 **Report.** A summary of the whole input:
 
 $$
-\text{hallucination rate} = \frac{\#\{\text{claims labelled CONTRADICTED}\}}{\#\{\text{claims}\}}
+\text{hallucination rate} = \frac{\text{number of claims labelled CONTRADICTED}}{\text{total number of claims}}
 $$
 
 together with the numbers of supported, contradicted and unknown claims, of escalated claims, and of claims settled by a single-label conformal set.
@@ -600,41 +600,38 @@ Benchmarks built from synthetic perturbations of a fixed reference text (such as
 3. **Aggregation.** If an input yields several claims, it is predicted `CONTRADICTED` if any claim is contradicted, otherwise `UNKNOWN` if any is unknown, otherwise `SUPPORTED` (one false fact makes an answer a hallucination). With `extract_atomic_facts=False` there is exactly one claim.
 4. **Scoring.** The prediction is compared with the gold label (`SUPPORTS` → `SUPPORTED`, `REFUTES` → `CONTRADICTED`). `UNKNOWN` and runtime errors count as wrong. Accuracy, precision/recall/F1 of the `CONTRADICTED` class (§4) and latency per claim (mean, median, 90th percentile) are reported.
 
+**Five-set evaluation.** The reported results use `evaluation/run_5_runs.py`: each benchmark is split into 5 non-overlapping stratified sets of 20 claims (10 `SUPPORTS`, 10 `REFUTES`) drawn with seed 42, so every run evaluates the same 100 claims per benchmark. Results are reported per set and pooled. A claim whose verification hits an LLM infrastructure failure (exhausted quota, timeout) is retried once after a pause and the run stops if it fails again, so infrastructure failures are never scored as abstentions; per-claim results are saved as they finish (`evaluation/<dataset>_5_runs_claims.jsonl`), and an interrupted run resumes where it stopped.
+
 ```bash
-python evaluation/run_benchmark.py --dataset fever --samples 20
-python evaluation/run_benchmark.py --dataset freshqa --samples 20
-python evaluation/run_benchmark.py --dataset freshqa --samples 20 --stable    # never- and slow-changing only
-python evaluation/run_benchmark.py --dataset all --samples 20 --seed 42 --out results.json
-python evaluation/run_freshqa_5_runs.py                                        # 5 non-overlapping sets of 20
+python evaluation/run_5_runs.py --dataset all          # FEVER then FreshQA, 5 sets x 20 claims each
+python evaluation/run_5_runs.py --dataset fever        # one benchmark
+python evaluation/run_benchmark.py --dataset fever --samples 20                 # quick single run
+python evaluation/run_benchmark.py --dataset freshqa --samples 20 --stable      # never- and slow-changing only
 ```
 
-### 3.3 Results
+### 3.3 Results (Current Pipeline)
 
-| Benchmark | Pipeline version | Claims | Accuracy | Precision | Recall | F1 |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| FEVER | earlier version, 5 runs (with atomic decomposition) | 215 atomic claims | 83.26% (179/215) | 0.85 | 0.82 | 0.83 |
-| FEVER | earlier version, single run | 20 | 95.00% (19/20) | 1.00 | 0.90 | 0.95 |
-| **FEVER** | **current, held-out (Oct 2026)** | **40** | **92.50% (37/40)** | **1.00** | **0.85** | **0.92** |
-| FreshQA | earlier version, 5 runs (`evaluation/freshqa_5_runs_results.json`) | 100 | 80.00% (80/100) | 0.84 | 0.82 | 0.83 |
-| **FreshQA** | **current, held-out (Oct 2026)** | **40** | **65.00% (26/40)** | **0.70** | **0.80** | **0.74** |
-| FreshQA, stable subset | current, held-out (Oct 2026) | 27 | 77.78% (21/27) | — | — | — |
+All figures below are measured with the current pipeline (the single configuration described in Section 2) on held-out claims: 40 per benchmark, stratified 20 `SUPPORTS` / 20 `REFUTES`, drawn with seed 2026 and excluded from all development work, so no design decision was tuned on them. Retrieval and LLM calls were live (October 2026).
 
-Precision, recall and F1 refer to the `CONTRADICTED` (hallucination) class. The held-out claims (random seed 2026) were excluded from all development work, so no design decision was tuned on them. The rows come from different samples and pipeline versions, and the two versions have not been compared on the same claims, so differences between rows mix pipeline changes with sampling variation. With 40 claims the 95% confidence interval is roughly ±9 points at 90% accuracy and ±15 points at 65% (§4.4).
+| Benchmark | Claims | Correct | Accuracy | 95% CI | Precision | Recall | F1 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **FEVER** | 40 | 37 | **92.50%** | [84.3%, 100%] | **1.00** | 0.85 | **0.92** |
+| **FreshQA** (all fact types) | 40 | 26 | **65.00%** | [50.2%, 79.8%] | 0.70 | 0.80 | 0.74 |
+| **FreshQA** (stable: never- and slow-changing) | 27 | 21 | **77.78%** | [62.1%, 93.5%] | **0.94** | 0.80 | **0.86** |
 
-**Five-run FreshQA result (earlier version), per set:**
+Precision, recall and F1 refer to the `CONTRADICTED` (hallucination) class; the confidence interval is the normal approximation of §4.4. The confusion counts behind these figures (definitions in §4.1):
 
-| Set | Claims | Correct | Accuracy | Precision | Recall | F1 |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| 1 | 20 | 16 | 80.00% | 0.82 | 0.90 | 0.86 |
-| 2 | 20 | 16 | 80.00% | 0.75 | 0.90 | 0.82 |
-| 3 | 20 | 17 | 85.00% | 0.89 | 0.80 | 0.84 |
-| 4 | 20 | 15 | 75.00% | 0.88 | 0.70 | 0.78 |
-| 5 | 20 | 16 | 80.00% | 0.89 | 0.80 | 0.84 |
-| **Pooled** | **100** | **80** | **80.00%** | **0.84** | **0.82** | **0.83** |
+| Benchmark | TP | FP | FN | TN | `UNKNOWN` |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| FEVER | 17 | 0 | 3 | 20 | 0 |
+| FreshQA (all) | 16 | 7 | 4 | 10 | 3 |
+| FreshQA (stable) | 16 | 1 | 4 | 5 | 1 |
 
-Pooled standard error: $`\sqrt{0.8 \times 0.2 / 100} = 4.0\%`$, 95% interval $`[72.2\%, 87.8\%]`$.
+On FEVER the detector never accused a true claim (FP = 0); its 3 errors are missed hallucinations. On FreshQA, 6 of the 7 false accusations and 2 of the 3 abstentions occur on fast-changing questions; restricted to the stable subset, precision rises from 0.70 to 0.94. The stable subset is not balanced (20 false and 7 true claims), because in this sample all 13 fast-changing questions were true claims; for that reason precision and recall are not defined on the fast-changing subset alone, whose accuracy is 38% (5/13). Section 3.5 explains why fast-changing questions behave differently.
 
-### 3.4 Latency and Routing (current pipeline, held-out runs)
+With 40 claims per benchmark the confidence intervals are wide (±8 points for FEVER, ±15 for FreshQA). A larger evaluation of 5 non-overlapping sets of 20 claims per benchmark (`python evaluation/run_5_runs.py --dataset all`, §3.2) will narrow them; its per-set and pooled results will replace this table when the run is complete.
+
+### 3.4 Latency and Routing (Current Pipeline)
 
 | Benchmark | Mean latency | Median | 90th percentile | LLM calls per claim |
 | :--- | :--- | :--- | :--- | :--- |
@@ -689,7 +686,7 @@ The **positive class is a hallucination**: a claim whose gold label is `REFUTES`
 With $N$ evaluated claims:
 
 $$
-\text{Accuracy} = \frac{\#\{\text{claims whose prediction equals the gold label}\}}{N}
+\text{Accuracy} = \frac{\text{number of claims whose prediction equals the gold label}}{N}
 $$
 
 For a binary output without abstentions this equals $`(TP + TN)/N`$; with abstentions, a true claim predicted `UNKNOWN` is counted in $N$ but in none of TP, FP, TN.
