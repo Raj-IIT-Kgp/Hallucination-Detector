@@ -3,6 +3,7 @@ import os
 import random
 import time
 import argparse
+import json
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -66,29 +67,9 @@ def run_freshqa_benchmark_entry(num_samples=20, fact_types=None):
     return _evaluate_dataset("FreshQA", sample_dataset, num_samples)
 
 
-def run_climate_fever_benchmark_entry(num_samples=20):
-    from evaluation.benchmarks.climate_fever_dataset import load_climate_fever
-    
-    print("=" * 60)
-    print("  Climate-FEVER Benchmark Evaluation (NeurIPS, 2020)  ")
-    print("  Real-world scientific, environmental & statistical claims")
-    print("=" * 60)
-    print("\nLoading Climate-FEVER dataset...")
-    data = load_climate_fever()
-    
-    supported_claims = [item for item in data if item["label"] == "SUPPORTS"]
-    refuted_claims = [item for item in data if item["label"] == "REFUTES"]
-    
-    half = num_samples // 2
-    selected_supported = random.sample(supported_claims, min(half, len(supported_claims)))
-    selected_refuted = random.sample(refuted_claims, min(num_samples - len(selected_supported), len(refuted_claims)))
-    sample_dataset = selected_supported + selected_refuted
-    random.shuffle(sample_dataset)
-    
-    return _evaluate_dataset("Climate-FEVER", sample_dataset, num_samples)
-
 def _evaluate_dataset(benchmark_name, sample_dataset, num_samples):
     retriever = WebRetriever()
+    # One general detector configuration for every benchmark (and server.py)
     detector = HallucinationDetector(retriever=retriever)
     
     label_map = {
@@ -100,6 +81,8 @@ def _evaluate_dataset(benchmark_name, sample_dataset, num_samples):
     y_true = []
     y_pred = []
     failures = []
+    records = []
+    latencies = []
     
     print(f"\nEvaluating FULL PIPELINE on {len(sample_dataset)} {benchmark_name} samples...")
     print("WARNING: This will make live web/search requests. Throttling applied.\n")
@@ -122,8 +105,11 @@ def _evaluate_dataset(benchmark_name, sample_dataset, num_samples):
             context_parts.append(f"Source: {item['reporting_source']}")
         claim_context = " | ".join(context_parts) if context_parts else None
 
+        policy = None
         try:
+            t0 = time.perf_counter()
             response = detector.analyze(claim, context=claim_context, extract_atomic_facts=False)
+            latencies.append(time.perf_counter() - t0)
             report_dict = response.get("report", {})
             claims_list = report_dict.get("claims", [])
             
@@ -142,9 +128,17 @@ def _evaluate_dataset(benchmark_name, sample_dataset, num_samples):
                     prediction = "supported"
                     
                 evidence = "\n".join([f"Fact {i+1}: {c.get('evidence', '')}" for i, c in enumerate(claims_list)])
+                policy = claims_list[0]["verification"].get("final_decision_policy")
                 
             y_true.append(true_label)
             y_pred.append(prediction)
+            records.append({
+                "claim": claim,
+                "true_label": true_label,
+                "prediction": prediction,
+                "decision_policy": policy,
+                "latency_sec": latencies[-1],
+            })
             
             if prediction != true_label:
                 failures.append({
@@ -171,6 +165,11 @@ def _evaluate_dataset(benchmark_name, sample_dataset, num_samples):
     p = precision(tp, fp)
     r = recall(tp, fn)
     f1 = f1_score(p, r)
+
+    sorted_lat = sorted(latencies)
+    mean_latency = sum(sorted_lat) / len(sorted_lat) if sorted_lat else 0.0
+    p50_latency = sorted_lat[len(sorted_lat) // 2] if sorted_lat else 0.0
+    p90_latency = sorted_lat[min(len(sorted_lat) - 1, int(0.9 * len(sorted_lat)))] if sorted_lat else 0.0
     
     print("\n" + "="*50)
     print(f"      {benchmark_name.upper()} BENCHMARK RESULTS")
@@ -180,6 +179,7 @@ def _evaluate_dataset(benchmark_name, sample_dataset, num_samples):
     print(f"  Precision: {p:.2f}")
     print(f"  Recall:    {r:.2f}")
     print(f"  F1 Score:  {f1:.2f}")
+    print(f"\nLatency per claim: mean {mean_latency:.2f}s | p50 {p50_latency:.2f}s | p90 {p90_latency:.2f}s")
     print("="*50)
     
     if failures:
@@ -196,7 +196,11 @@ def _evaluate_dataset(benchmark_name, sample_dataset, num_samples):
         "precision": p,
         "recall": r,
         "f1": f1,
-        "total": len(y_true)
+        "total": len(y_true),
+        "mean_latency_sec": mean_latency,
+        "p50_latency_sec": p50_latency,
+        "p90_latency_sec": p90_latency,
+        "records": records
     }
 
 def main():
@@ -205,7 +209,7 @@ def main():
         "--dataset",
         type=str,
         default="fever",
-        choices=["fever", "freshqa", "climate_fever", "all"],
+        choices=["fever", "freshqa", "all"],
         help="Benchmark dataset to run (default: fever)"
     )
     parser.add_argument(
@@ -225,6 +229,12 @@ def main():
         default=None,
         help="Random seed for sampling reproducibility"
     )
+    parser.add_argument(
+        "--out",
+        type=str,
+        default=None,
+        help="Optional path to write per-claim results and summary metrics as JSON"
+    )
     args = parser.parse_args()
 
     if args.seed is not None:
@@ -232,18 +242,15 @@ def main():
     
     freshqa_fact_types = ["slow-changing", "never-changing"] if args.stable else None
 
+    results = []
     if args.dataset == "fever":
-        run_fever_benchmark(num_samples=args.samples)
+        results.append(run_fever_benchmark(num_samples=args.samples))
     elif args.dataset == "freshqa":
-        run_freshqa_benchmark_entry(num_samples=args.samples, fact_types=freshqa_fact_types)
-    elif args.dataset == "climate_fever":
-        run_climate_fever_benchmark_entry(num_samples=args.samples)
+        results.append(run_freshqa_benchmark_entry(num_samples=args.samples, fact_types=freshqa_fact_types))
     elif args.dataset == "all":
-        results = []
         for fn, name, kwargs in [
             (run_fever_benchmark, "FEVER", {}),
             (run_freshqa_benchmark_entry, "FreshQA", {"fact_types": freshqa_fact_types}),
-            (run_climate_fever_benchmark_entry, "Climate-FEVER", {})
         ]:
             print(f"\n>>> Running {name} Benchmark ({args.samples} samples)...")
             res = fn(num_samples=args.samples, **kwargs)
@@ -252,11 +259,23 @@ def main():
         print("\n" + "="*65)
         print("                 BENCHMARK SUITE SUMMARY                 ")
         print("="*65)
-        print(f"{'Benchmark':<15} | {'Accuracy':<10} | {'Precision':<10} | {'Recall':<10} | {'F1':<10}")
-        print("-" * 65)
+        print(f"{'Benchmark':<15} | {'Accuracy':<10} | {'Precision':<10} | {'Recall':<10} | {'F1':<10} | {'Mean Lat.':<10}")
+        print("-" * 78)
         for r in results:
-            print(f"{r['benchmark']:<15} | {r['accuracy']:<9.1%} | {r['precision']:<10.2f} | {r['recall']:<10.2f} | {r['f1']:<10.2f}")
-        print("="*65)
+            print(f"{r['benchmark']:<15} | {r['accuracy']:<9.1%} | {r['precision']:<10.2f} | {r['recall']:<10.2f} | {r['f1']:<10.2f} | {r['mean_latency_sec']:<9.2f}s")
+        print("="*78)
+
+    if args.out:
+        with open(args.out, "w") as f:
+            json.dump({"seed": args.seed, "samples": args.samples, "results": results}, f, indent=2)
+        print(f"\nSaved results to: {args.out}")
 
 if __name__ == "__main__":
     main()
+
+    # Results are printed/saved above. Exit immediately: interpreter shutdown joins every
+    # thread-pool worker, and a DuckDuckGo/Wikipedia request stuck past its timeout would
+    # otherwise keep the process alive indefinitely.
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(0)

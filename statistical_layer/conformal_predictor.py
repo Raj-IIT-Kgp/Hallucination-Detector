@@ -15,7 +15,7 @@ class ConformalVerifier:
     This guarantee holds under the standard statistical assumption that calibration and 
     test samples (X_i, Y_i) are exchangeable (drawn from the same joint distribution P_{XY}).
     If the deployment environment suffers from severe domain shift (e.g., calibrating on 
-    general-knowledge FEVER and deploying on complex scientific Climate-FEVER), coverage 
+    general-knowledge FEVER and deploying on specialised scientific claims), coverage 
     can degrade. In such cases, domain-specific calibration partitions are required.
     """
 

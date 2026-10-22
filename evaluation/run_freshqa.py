@@ -158,3 +158,10 @@ if __name__ == "__main__":
     
     f_types = ["slow-changing", "never-changing"] if args.stable else None
     run_freshqa_benchmark(num_samples=args.samples, fact_types=f_types)
+
+    # Results are printed/saved above. Exit immediately: interpreter shutdown joins every
+    # thread-pool worker, and a DuckDuckGo/Wikipedia request stuck past its timeout would
+    # otherwise keep the process alive indefinitely.
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(0)

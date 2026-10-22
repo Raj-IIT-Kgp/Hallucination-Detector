@@ -9,6 +9,8 @@ except Exception:
 import functools
 import os
 import re
+import time
+from collections import OrderedDict
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 import wikipedia
 import requests
@@ -25,6 +27,11 @@ from nltk.tokenize import sent_tokenize
 import numpy as np
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# Retrieval caches: ~384-dim float32 vectors (~1.5 KB each) and short-lived DuckDuckGo results
+_EMBEDDING_CACHE_MAX = 20000
+_DDG_CACHE_TTL = 600.0
+_DDG_CACHE_MAX = 512
 
 # ── Persistent requests.Session with connection pool for Wikipedia HTTP/1.1 Keep-Alive ──
 _wiki_session = requests.Session()
@@ -95,13 +102,19 @@ def _cached_wiki_fetch(match: str) -> tuple[tuple[dict, ...], dict | None]:
             except Exception:
                 return ((), None)
 
+        # The wikipedia library loads .content and .summary lazily with one HTTP request each;
+        # issue both concurrently instead of back-to-back (same requests, one round trip saved).
+        with ThreadPoolExecutor(max_workers=2) as prop_executor:
+            content_future = prop_executor.submit(getattr, page, 'content', "")
+            summary_future = prop_executor.submit(getattr, page, 'summary', '')
+            content = (content_future.result() or "")[:25000]
+            summary_val = summary_future.result() or ''
+
         # Clean page content to remove junk sections at the bottom
-        content = page.content[:25000] if hasattr(page, 'content') else ""
         for section in ["== See also ==", "== References ==", "== External links =="]:
             if section in content:
                 content = content.split(section)[0]
 
-        summary_val = getattr(page, 'summary', '') or ''
         page_entry = {
             "title": getattr(page, 'title', match),
             "summary": summary_val[:1500] if summary_val else (content[:1500] if content else ""),
@@ -161,6 +174,27 @@ class WebRetriever:
         self._encode_lock = threading.Lock()
         self.page_cache = {}
         self._page_cache_lock = threading.Lock()
+        # Paragraph-embedding cache (text -> vector). Wikipedia pages recur across searches
+        # (query-rewrite retries, shared pages across claims) and re-encoding ~160 paragraphs
+        # costs ~2.5s on CPU. Guarded by _encode_lock.
+        self._embedding_cache = OrderedDict()
+        # DuckDuckGo results per query string, reused within _DDG_CACHE_TTL so a query-rewrite
+        # retry (which re-searches the same claim seconds later) does not pay another 2-3s.
+        self._ddg_cache = {}
+        self._ddg_cache_lock = threading.Lock()
+
+    def _encode_cached(self, texts):
+        """Encodes texts, reusing cached embeddings. Caller must hold _encode_lock."""
+        missing = [t for t in dict.fromkeys(texts) if t not in self._embedding_cache]
+        if missing:
+            embs = self.encoder.encode(missing, batch_size=64, show_progress_bar=False)
+            for t, e in zip(missing, embs):
+                self._embedding_cache[t] = e
+        for t in texts:
+            self._embedding_cache.move_to_end(t)
+        while len(self._embedding_cache) > _EMBEDDING_CACHE_MAX:
+            self._embedding_cache.popitem(last=False)
+        return np.stack([self._embedding_cache[t] for t in texts])
 
     def get_page_cache(self):
         """Returns a snapshot of pre-fetched Wikipedia pages/summaries for downstream reuse."""
@@ -208,6 +242,11 @@ class WebRetriever:
             if not query_str:
                 return paragraphs
 
+            with self._ddg_cache_lock:
+                cached = self._ddg_cache.get(query_str)
+            if cached and time.monotonic() - cached[0] < _DDG_CACHE_TTL:
+                return [dict(p) for p in cached[1]]
+
             def _search():
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
@@ -233,7 +272,14 @@ class WebRetriever:
             if ddg_results:
                 for res in ddg_results:
                     if "body" in res and "href" in res:
-                        paragraphs.append({"text": res["body"], "url": res["href"]})
+                        # Tagged so the detector can strip open-web snippets that merely quote the claim
+                        paragraphs.append({"text": res["body"], "url": res["href"], "source": "web"})
+            # Only successful lookups are cached; timeouts/rate limits are retried as before
+            if paragraphs:
+                with self._ddg_cache_lock:
+                    if len(self._ddg_cache) >= _DDG_CACHE_MAX:
+                        self._ddg_cache.clear()
+                    self._ddg_cache[query_str] = (time.monotonic(), [dict(p) for p in paragraphs])
         except Exception:
             # DDG rate-limited or timed out; rely cleanly on Wikipedia/ArXiv
             pass
@@ -356,7 +402,7 @@ class WebRetriever:
         # at a time (prevents macOS "double free" when claims run concurrently).
         with self._encode_lock:
             claim_emb = self.encoder.encode(claim, show_progress_bar=False)
-            para_embs = self.encoder.encode(para_texts, batch_size=64, show_progress_bar=False)
+            para_embs = self._encode_cached(para_texts)
             dense_scores = util.cos_sim(claim_emb, para_embs)[0].cpu().numpy()
 
         # Calculate dense ranks (0 is the best)

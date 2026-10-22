@@ -1,6 +1,14 @@
 from llm.generator import generate_response
 from concurrent.futures import ThreadPoolExecutor
 
+# Opt-in rule for false-premise benchmarks (FreshQA). Kept out of the default prompts because the
+# default "no hyper-literal skepticism" stance is tuned for FEVER-style paraphrased claims.
+_STRICT_PREMISE_RULE = (
+    "- False Premises & Misidentified Entities: If the claim refers to an entity by a name, title, date or "
+    "attribute that is wrong (e.g. the wrong given name for a known person, or a title they no longer hold), treat the claim as "
+    "CONTRADICTED. Never silently correct the claim's premise so that it matches the evidence.\n"
+)
+
 def _defense_agent(claim, evidence):
     prompt = f"""
 You are the Defense Attorney in a debate. Your ONLY goal is to prove that the following claim is SUPPORTED by the provided evidence.
@@ -27,10 +35,12 @@ Provide your compelling argument to prove the claim is CONTRADICTED. Be concise 
 """
     return generate_response(prompt).strip()
 
-def _judge_agent(claim, evidence, defense_arg, prosecution_arg, domain="general"):
+def _judge_agent(claim, evidence, defense_arg, prosecution_arg, domain="general", strict_premises=False):
     academic_rule = ""
     if domain == "scientific":
         academic_rule = "\nCRITICAL RULE: You are evaluating peer-reviewed scientific abstracts. Cautious language (e.g., 'suggests', 'likely') should be interpreted as affirmative support if the underlying finding aligns with the claim.\n"
+    if strict_premises:
+        academic_rule += "\n" + _STRICT_PREMISE_RULE
         
     prompt = f"""
 You are an impartial Expert Judge in a debate regarding fact-checking.
@@ -68,10 +78,12 @@ Reasoning and Verdict:
 """
     return generate_response(prompt).strip()
 
-def _dialectical_agent(claim, evidence, domain="general"):
+def _dialectical_agent(claim, evidence, domain="general", strict_premises=False):
     academic_rule = ""
     if domain == "scientific":
         academic_rule = "\n- Scientific Abstracts: Cautious language (e.g., 'suggests', 'likely') should be interpreted as affirmative support if the underlying finding aligns with the claim.\n"
+    if strict_premises:
+        academic_rule += "\n" + _STRICT_PREMISE_RULE
 
     prompt = f"""You are an Expert Arbiter evaluating a claim against evidence using strict dialectical reasoning.
 
@@ -104,7 +116,7 @@ VERDICT: SUPPORTED | CONTRADICTED | UNKNOWN
     return generate_response(prompt).strip()
 
 
-def nli_override(claim, evidence, domain="general", mode="dialectical"):
+def nli_override(claim, evidence, domain="general", mode="dialectical", strict_premises=False):
     """
     Arbitrates uncertain or conformal-dispersed claims using adversarial reasoning.
 
@@ -114,11 +126,13 @@ def nli_override(claim, evidence, domain="general", mode="dialectical"):
         Eliminates network waterfall latency (~1.4s vs ~3.8s) and saves 67% API calls.
       - 'multi_agent': Concurrent 3-agent debate (Defense + Prosecution in parallel -> Judge).
         Preserved for academic benchmark ablations and strict context-isolation experiments.
+
+    strict_premises adds a rule that wrong names/attributes contradict the claim (FreshQA profile).
     """
     try:
         if mode == "dialectical":
             print("    [Critic Debate] Running Unified Dialectical CoT Arbitration...")
-            judge_response = _dialectical_agent(claim, evidence, domain=domain)
+            judge_response = _dialectical_agent(claim, evidence, domain=domain, strict_premises=strict_premises)
             print(f"    [Critic Debate] Dialectical reasoning:\n{judge_response}")
         else:
             print("    [Critic Debate] Starting Multi-Agent Debate (3-Agent Waterfall)...")
@@ -131,7 +145,7 @@ def nli_override(claim, evidence, domain="general", mode="dialectical"):
             print("    [Critic Debate] Defense Agent constructed SUPPORTED argument.")
             print("    [Critic Debate] Prosecution Agent constructed CONTRADICTED argument.")
             
-            judge_response = _judge_agent(claim, evidence, defense_arg, prosecution_arg, domain)
+            judge_response = _judge_agent(claim, evidence, defense_arg, prosecution_arg, domain, strict_premises=strict_premises)
             print(f"    [Critic Debate] Judge reasoning:\n{judge_response}")
 
         lines = judge_response.split('\n')

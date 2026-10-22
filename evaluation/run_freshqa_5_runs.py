@@ -233,3 +233,10 @@ def run_5_sets_freshqa(samples_per_set=20, num_sets=5, seed=42):
 
 if __name__ == "__main__":
     run_5_sets_freshqa(samples_per_set=20, num_sets=5, seed=42)
+
+    # Results are printed/saved above. Exit immediately: interpreter shutdown joins every
+    # thread-pool worker, and a DuckDuckGo/Wikipedia request stuck past its timeout would
+    # otherwise keep the process alive indefinitely.
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(0)
