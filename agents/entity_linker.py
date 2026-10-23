@@ -31,7 +31,7 @@ Claim: {claim}
 Output:"""
 
     try:
-        response = generate_response(prompt).strip()
+        response = generate_response(prompt, tier="light").strip()
     except Exception as e:
         print(f"[EntityLinker] LLM unavailable: {e}")
         return []

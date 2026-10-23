@@ -1,53 +1,329 @@
-from flask import Flask, request, jsonify, send_from_directory, Response
+"""
+VeriFact web server.
+
+    python server.py                 production mode: waitress on 127.0.0.1:8080
+    VERIFACT_DEBUG=1 python server.py   development mode: Flask debug server with auto-reload
+
+Settings (environment variables): VERIFACT_HOST, VERIFACT_PORT, VERIFACT_DEBUG,
+VERIFACT_MAX_CHARS, VERIFACT_RATE_LIMIT (live runs per client per window),
+VERIFACT_RATE_WINDOW_SEC, VERIFACT_MAX_CONCURRENT (live runs at once), VERIFACT_CACHE_TTL_SEC.
+"""
+from flask import Flask, request, jsonify, send_from_directory, Response, g
 from detector.hallucination_detector import HallucinationDetector
-import os
-
 from retrieval.web_search import WebRetriever
+from llm.generator import get_failure_count
+from run_cache import RunCache
+from collections import defaultdict, deque
+import os
+import json
+import time
+import uuid
+import logging
+import threading
 
-app = Flask(__name__, static_folder='static')
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+HOST = os.environ.get("VERIFACT_HOST", "127.0.0.1")
+PORT = int(os.environ.get("VERIFACT_PORT", "8080"))
+DEBUG = os.environ.get("VERIFACT_DEBUG", "0") == "1"
+MAX_CHARS = int(os.environ.get("VERIFACT_MAX_CHARS", "4000"))
+RATE_LIMIT = int(os.environ.get("VERIFACT_RATE_LIMIT", "12"))
+RATE_WINDOW_SEC = int(os.environ.get("VERIFACT_RATE_WINDOW_SEC", "600"))
+MAX_CONCURRENT = int(os.environ.get("VERIFACT_MAX_CONCURRENT", "3"))
+CACHE_TTL_SEC = int(os.environ.get("VERIFACT_CACHE_TTL_SEC", str(24 * 3600)))
+# Recorded runs are replayed with gaps shortened to at most this long, so a replay still shows
+# the pipeline's progress but takes seconds instead of the original run time
+REPLAY_MAX_GAP_SEC = 0.6
+VERSION = "1.0"
+
+# Example inputs offered in the UI; their recorded runs are kept without expiry (demo_runs/)
+SAMPLES = [
+    {"label": "Factual answer",
+     "text": "The Eiffel Tower is located in Paris, France. It was designed and built by Gustave Eiffel's company for the 1889 World's Fair."},
+    {"label": "Hallucinated answer",
+     "text": "Albert Einstein was born in 1950 in San Francisco, and he won the Nobel Prize in Literature in 1980."},
+    {"label": "Mixed answer",
+     "text": "The James Webb Space Telescope was launched in December 2021. It orbits the Sun near the second Lagrange point. It was built by the European Space Agency alone."},
+    {"label": "False premise",
+     "text": "Hikaru Nakamura became the World Chess Champion."},
+]
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+log = logging.getLogger("verifact")
+
+app = Flask(__name__, static_folder="static")
+app.config["MAX_CONTENT_LENGTH"] = 64 * 1024   # request bodies are small JSON objects
 store = WebRetriever()
 detector = HallucinationDetector(store)
+runs = RunCache(os.path.join(BASE_DIR, "run_cache"), os.path.join(BASE_DIR, "demo_runs"),
+                [s["text"] for s in SAMPLES], CACHE_TTL_SEC)
+STARTED_AT = time.time()
+_state = {"warm": False}
 
-@app.route('/')
+# Live runs cost API quota and CPU: limit them per client and overall (replays are free)
+_live_slots = threading.BoundedSemaphore(MAX_CONCURRENT)
+_rate_lock = threading.Lock()
+_rate_history = defaultdict(deque)
+
+
+def _client_ip():
+    return request.remote_addr or "unknown"
+
+
+def _rate_limited(ip):
+    """Records a live run for ip; returns seconds to wait if the limit is exceeded, else 0."""
+    now = time.time()
+    with _rate_lock:
+        history = _rate_history[ip]
+        while history and now - history[0] > RATE_WINDOW_SEC:
+            history.popleft()
+        if len(history) >= RATE_LIMIT:
+            return int(RATE_WINDOW_SEC - (now - history[0])) + 1
+        history.append(now)
+        return 0
+
+
+def _error(message, status, **headers):
+    response = jsonify({"error": message})
+    response.status_code = status
+    response.headers.update(headers)
+    return response
+
+
+def _read_input():
+    """Returns (text, force_kg, live) from the JSON body, or raises ValueError with a message."""
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        raise ValueError("Expected a JSON object with a 'text' field.")
+    text = data.get("text")
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("No text provided.")
+    if len(text) > MAX_CHARS:
+        raise ValueError(f"Text is too long ({len(text)} characters; the limit is {MAX_CHARS}).")
+    return text, bool(data.get("forceKG", False)), bool(data.get("live", False))
+
+
+@app.before_request
+def _start_timer():
+    g.request_id = uuid.uuid4().hex[:8]
+    g.started = time.perf_counter()
+
+
+@app.after_request
+def _finish(response):
+    response.headers["X-Request-ID"] = g.get("request_id", "")
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "same-origin"
+    if request.path.startswith("/api/") and not response.is_streamed:
+        log.info("%s %s %s %d %.0fms", g.get("request_id"), request.method, request.path,
+                 response.status_code, (time.perf_counter() - g.get("started", time.perf_counter())) * 1000)
+    return response
+
+
+@app.errorhandler(404)
+def _not_found(e):
+    return _error("Not found.", 404) if request.path.startswith("/api/") else e
+
+
+@app.errorhandler(405)
+def _not_allowed(e):
+    return _error("Method not allowed.", 405) if request.path.startswith("/api/") else e
+
+
+@app.errorhandler(413)
+def _too_large(e):
+    return _error("Request body too large.", 413)
+
+
+@app.errorhandler(500)
+def _server_error(e):
+    log.exception("%s unhandled error", g.get("request_id"))
+    return _error("Internal server error.", 500)
+
+
+@app.route("/")
 def index():
-    return send_from_directory(app.static_folder, 'index.html')
+    return send_from_directory(app.static_folder, "index.html")
 
-@app.route('/api/analyze', methods=['POST'])
+
+@app.route("/api/health")
+def health():
+    from verification.nli_verifier import model_name, device
+    return jsonify({
+        "status": "ok",
+        "version": VERSION,
+        "uptime_sec": round(time.time() - STARTED_AT),
+        "models_warm": _state["warm"],
+        "llm_provider": os.environ.get("MODEL_PROVIDER", "ollama"),
+        "nli_model": model_name,
+        "nli_device": str(device),
+        **runs.counts(),
+    })
+
+
+@app.route("/api/samples")
+def samples():
+    return jsonify([{**s, "recorded": runs.get(s["text"], False) is not None} for s in SAMPLES])
+
+
+@app.route("/api/benchmarks")
+def benchmarks():
+    """Five-set benchmark summaries written by evaluation/run_5_runs.py, for the Benchmarks tab."""
+    results = {}
+    for name in ("fever", "freshqa"):
+        path = os.path.join(BASE_DIR, "evaluation", f"{name}_5_runs_results.json")
+        if os.path.exists(path):
+            with open(path) as f:
+                results[name] = json.load(f)
+            results[name]["route_outcomes"] = _route_outcomes(name)
+            results[name]["latency"] = _latency(name)
+    return jsonify(results)
+
+
+def _latency(name):
+    """
+    Measured latency per claim: the full five-set run, and the run of the current default settings
+    on the first set (evaluation/runs/default-latency/), with the same claims' latency in the full run.
+    """
+    def load(path):
+        if not os.path.exists(path):
+            return []
+        with open(path) as f:
+            return [json.loads(line) for line in f if line.strip()]
+
+    def summary(values):
+        values = sorted(values)
+        n = len(values)
+        return {"claims": n, "mean": sum(values) / n, "p50": values[n // 2], "p90": values[min(n - 1, int(0.9 * n))]} if n else None
+
+    full = load(os.path.join(BASE_DIR, "evaluation", f"{name}_5_runs_claims.jsonl"))
+    current = load(os.path.join(BASE_DIR, "evaluation", "runs", "default-latency", f"{name}_5_runs_claims.jsonl"))
+    # matched on (set, claim): FEVER repeats a few claim texts in different sets
+    by_claim = {(r["set"], r["claim"]): r for r in full}
+    same = [by_claim[(r["set"], r["claim"])]["latency_sec"] for r in current if (r["set"], r["claim"]) in by_claim]
+    return {
+        "full_run": summary([r["latency_sec"] for r in full]),
+        "current_settings": summary([r["latency_sec"] for r in current]),
+        "same_claims_full_run": summary(same),
+    }
+
+
+def _route_outcomes(name):
+    """Claims and correct verdicts per decision route, from the per-claim results of the five-set run."""
+    path = os.path.join(BASE_DIR, "evaluation", f"{name}_5_runs_claims.jsonl")
+    outcomes = {}
+    if os.path.exists(path):
+        with open(path) as f:
+            for line in f:
+                record = json.loads(line)
+                route = outcomes.setdefault(record.get("decision_policy") or "unknown", {"claims": 0, "correct": 0})
+                route["claims"] += 1
+                route["correct"] += record.get("gold") == record.get("prediction")
+    return outcomes
+
+
+@app.route("/api/docs")
+def docs():
+    """pipeline.md, rendered client-side in the Docs tab."""
+    return send_from_directory(BASE_DIR, "pipeline.md", mimetype="text/markdown")
+
+
+@app.route("/api/analyze", methods=["POST"])
 def analyze():
-    data = request.json
-    text = data.get('text', '')
-    
-    if not text:
-        return jsonify({"error": "No text provided"}), 400
-
     try:
-        # Run the detector pipeline
-        report = detector.analyze(text)
-        return jsonify(report)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        text, _, _ = _read_input()
+    except ValueError as e:
+        return _error(str(e), 400)
+    wait = _rate_limited(_client_ip())
+    if wait:
+        return _error(f"Rate limit reached ({RATE_LIMIT} checks per {RATE_WINDOW_SEC // 60} minutes). Try again in {wait} s.",
+                      429, **{"Retry-After": str(wait)})
+    if not _live_slots.acquire(blocking=False):
+        return _error("The server is busy with other checks. Try again in a moment.", 503, **{"Retry-After": "10"})
+    try:
+        return jsonify(detector.analyze(text))
+    finally:
+        _live_slots.release()
 
-@app.route('/api/analyze_stream', methods=['POST'])
+
+def _replay(record):
+    """Streams a recorded run, shortening long gaps; events keep their original time offsets ('t')."""
+    yield json.dumps({"status": "replay", "recorded_at": record["recorded_at"],
+                      "duration_sec": record["duration_sec"]}) + "\n"
+    previous = 0.0
+    for line in record["lines"]:
+        t = json.loads(line).get("t", previous)
+        time.sleep(min(max(t - previous, 0.0), REPLAY_MAX_GAP_SEC))
+        previous = t
+        yield line
+
+
+@app.route("/api/analyze_stream", methods=["POST"])
 def analyze_stream_endpoint():
-    data = request.json
-    text = data.get('text', '')
-    force_kg = data.get('forceKG', False)
-    
-    if not text:
-        return jsonify({"error": "No text provided"}), 400
+    try:
+        text, force_kg, live = _read_input()
+    except ValueError as e:
+        return _error(str(e), 400)
+    request_id, ip = g.request_id, _client_ip()
+
+    if not live:
+        record = runs.get(text, force_kg)
+        if record:
+            log.info("%s replay of a run recorded %s", request_id, time.strftime("%Y-%m-%d %H:%M", time.localtime(record["recorded_at"])))
+            return Response(_replay(record), mimetype="application/x-ndjson")
+
+    wait = _rate_limited(ip)
+    if wait:
+        return _error(f"Rate limit reached ({RATE_LIMIT} live checks per {RATE_WINDOW_SEC // 60} minutes). Try again in {wait} s.",
+                      429, **{"Retry-After": str(wait)})
+    if not _live_slots.acquire(blocking=False):
+        return _error("The server is busy with other checks. Try again in a moment.", 503, **{"Retry-After": "10"})
 
     def generate():
+        started = time.perf_counter()
+        failures_before = get_failure_count()
+        lines, completed, failed = [], False, False
         try:
             for update in detector.analyze_stream(text, force_kg=force_kg):
-                yield update
+                event = json.loads(update)
+                event["t"] = round(time.perf_counter() - started, 3)   # time since the request started
+                line = json.dumps(event) + "\n"
+                lines.append(line)
+                completed = event.get("status") == "done"
+                yield line
         except Exception as e:
-            import json
+            failed = True
+            log.exception("%s analysis failed", request_id)
             yield json.dumps({"status": "error", "message": str(e)}) + "\n"
+        finally:
+            _live_slots.release()
+            duration = time.perf_counter() - started
+            # Only clean, complete runs are recorded: an LLM failure can turn a verdict into UNKNOWN
+            llm_failed = get_failure_count() != failures_before
+            if completed and not failed and not llm_failed:
+                runs.put(text, force_kg, lines, duration)
+            log.info("%s live run: %d events, %.1fs, %s", request_id, len(lines), duration,
+                     "recorded" if completed and not failed and not llm_failed
+                     else "not recorded (LLM failure)" if llm_failed else "incomplete")
 
-    return Response(generate(), mimetype='application/x-ndjson')
+    return Response(generate(), mimetype="application/x-ndjson")
 
-if __name__ == '__main__':
-    # Make sure static folder exists
-    os.makedirs('static', exist_ok=True)
-    print("Starting Hallucination Detector Web Server...")
-    app.run(debug=True, host='0.0.0.0', port=8080)
+
+def _warm_up():
+    detector.warm_up()
+    _state["warm"] = True
+    log.info("Models warmed up.")
+
+
+if __name__ == "__main__":
+    if DEBUG:
+        # Flask's reloader runs a parent plus the serving child (WERKZEUG_RUN_MAIN=true); only the child serves
+        if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+            _warm_up()
+        log.warning("Development mode: Flask debug server on http://%s:%d (do not expose it on a network)", HOST, PORT)
+        app.run(debug=True, host=HOST, port=PORT, threaded=True)
+    else:
+        from waitress import serve
+        _warm_up()
+        log.info("VeriFact %s serving on http://%s:%d", VERSION, HOST, PORT)
+        serve(app, host=HOST, port=PORT, threads=8, channel_timeout=300)

@@ -130,7 +130,8 @@ def generate_queries(claim, context=None):
                 return {
                     "queries": entities,
                     "domain": "scientific" if is_scientific else "general",
-                    "requires_current_state": requires_current
+                    "requires_current_state": requires_current,
+                    "route": "fast_path",
                 }
 
     current_date = datetime.now().strftime("%Y-%m-%d")
@@ -165,10 +166,10 @@ Output:
 """
     
     try:
-        response = generate_response(prompt)
+        response = generate_response(prompt, tier="light")
     except Exception as e:
         print(f"[QueryGenerator] LLM connection unavailable ({e}). Falling back to claim heuristic.")
-        return {"queries": [claim], "domain": "general", "requires_current_state": False}
+        return {"queries": [claim], "domain": "general", "requires_current_state": False, "route": "fallback"}
     
     try:
         # Clean up the LLM output in case it wrapped it in markdown
@@ -196,14 +197,14 @@ Output:
         if not queries:
             queries = [claim]
             
-        return {"queries": queries, "domain": domain, "requires_current_state": requires_current_state}
+        return {"queries": queries, "domain": domain, "requires_current_state": requires_current_state, "route": "llm"}
     except Exception as e:
         print(f"[QueryGenerator] Failed to parse JSON. Falling back. Error: {e}")
         # Fallback if parsing fails
         query = response.strip()
         if query.startswith('"') and query.endswith('"'):
             query = query[1:-1]
-        return {"queries": [query], "domain": "general", "requires_current_state": False}
+        return {"queries": [query], "domain": "general", "requires_current_state": False, "route": "fallback"}
 
 def rewrite_queries(claim, bad_evidence, previous_queries):
     """
@@ -227,7 +228,7 @@ Example: ["Entity Alternate Name", "Specific Event Name"]
 Output:
 """
     try:
-        response = generate_response(prompt)
+        response = generate_response(prompt, tier="light")
     except Exception as e:
         print(f"[QueryGenerator] LLM rewrite failed: {e}")
         return []

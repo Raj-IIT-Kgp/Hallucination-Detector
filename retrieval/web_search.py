@@ -349,11 +349,14 @@ class WebRetriever:
     #  Public interface                                                    #
     # ------------------------------------------------------------------ #
 
-    def search(self, queries, claim, domain="general", k=3):
+    def search(self, queries, claim, domain="general", k=3, diagnostics=None):
         """
         Searches Wikipedia (top-2 pages per entity query) and ArXiv concurrently,
         accompanied by a single propositional DuckDuckGo search on the claim string.
         Then uses Cosine Similarity + BM25 RRF to find the best paragraphs.
+
+        If diagnostics is a dict, it is filled with the re-ranking numbers (candidate counts per
+        source and the top candidates' scores and ranks) for display; the result is unchanged.
         """
         if not isinstance(queries, list):
             queries = [queries]
@@ -438,6 +441,32 @@ class WebRetriever:
             # Completely unrelated text (similarity < 0.15) is rejected to allow Phase 3.1 Absence Evaluation.
             if dense_scores[best_idx] >= 0.15 or sparse_scores[best_idx] > 0.5:
                 top_k = [all_paragraphs[best_idx]]
+
+        if diagnostics is not None:
+            selected = {id(p) for p in top_k}
+            def source_of(p):
+                url = p.get("url") or ""
+                return p.get("source") or ("arxiv" if "arxiv.org" in url else "wikipedia")
+            counts = {}
+            for p in all_paragraphs:
+                counts[source_of(p)] = counts.get(source_of(p), 0) + 1
+            diagnostics.update({
+                "queries": list(queries),
+                "candidates": len(all_paragraphs),
+                "by_source": counts,
+                "avgdl": round(float(np.mean([len(t) for t in tokenized_corpus])), 1) if tokenized_corpus else 0.0,
+                "top": [{
+                    "text": all_paragraphs[i]["text"][:160],
+                    "source": source_of(all_paragraphs[i]),
+                    "dense": round(float(dense_scores[i]), 3),
+                    "bm25": round(float(sparse_scores[i]), 2),
+                    "dense_rank": int(dense_ranks[i]) + 1,
+                    "bm25_rank": int(sparse_ranks[i]) + 1,
+                    "rrf": round(float(rrf_scores[i]), 5),
+                    "selected": id(all_paragraphs[i]) in selected,
+                } for i in sorted_indices[:8]],
+                "selected": len(top_k),
+            })
 
         return top_k
 

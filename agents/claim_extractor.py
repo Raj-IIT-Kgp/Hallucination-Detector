@@ -39,7 +39,7 @@ Output ONLY a valid JSON array of strings. Do not include markdown formatting or
 Example: ["Tim Cook replaced Steve Jobs in 2011.", "Tim Cook is the CEO of Apple."]
 """
     try:
-        response = generate_response(prompt)
+        response = generate_response(prompt, tier="heavy")
         cleaned = response.strip()
         if cleaned.startswith("```json"):
             cleaned = cleaned[7:]

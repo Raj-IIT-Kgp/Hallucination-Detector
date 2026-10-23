@@ -1,0 +1,97 @@
+{
+  "dataset": "freshqa",
+  "seed": 42,
+  "samples_per_set": 20,
+  "num_sets": 1,
+  "set_results": [
+    {
+      "set": "Set 1",
+      "evaluated_claims": 20,
+      "correct_claims": 16,
+      "accuracy": 0.8,
+      "precision": 0.8888888888888888,
+      "recall": 0.8,
+      "f1": 0.8421052631578948,
+      "tp": 8,
+      "fp": 1,
+      "fn": 2,
+      "tn": 8,
+      "unknown": 1,
+      "mean_latency_sec": 11.048105650092475,
+      "p50_latency_sec": 9.637913665734231,
+      "p90_latency_sec": 19.981911915820092,
+      "mean_llm_calls": 1.65
+    }
+  ],
+  "pooled": {
+    "evaluated_claims": 20,
+    "correct_claims": 16,
+    "accuracy": 0.8,
+    "precision": 0.8888888888888888,
+    "recall": 0.8,
+    "f1": 0.8421052631578948,
+    "tp": 8,
+    "fp": 1,
+    "fn": 2,
+    "tn": 8,
+    "unknown": 1,
+    "mean_latency_sec": 11.048105650092475,
+    "p50_latency_sec": 9.637913665734231,
+    "p90_latency_sec": 19.981911915820092,
+    "mean_llm_calls": 1.65,
+    "standard_error": 0.08944271909999157,
+    "ci_lower_95": 0.6246922705640165,
+    "ci_upper_95": 0.9753077294359835
+  },
+  "routing": {
+    "conformal_singleton": 12,
+    "multi_agent_debate": 4,
+    "contradiction_arbitration": 4
+  },
+  "failures": [
+    {
+      "set": 1,
+      "claim": "The Great Pyramid of Giza is not one of the New 7 Wonders of the World.",
+      "gold": "supported",
+      "prediction": "contradicted",
+      "decision_policy": "conformal_singleton",
+      "latency_sec": 7.972649833187461,
+      "llm_calls": 1,
+      "fact_type": "never-changing",
+      "evidence": "Evidence 1: The Great Pyramids of Giza are indeed one of the Seven Wonders of the World, specifically categorized as the only surviving member of the original \"Seven Wonders of the Ancient World.\"\n\nEvidence 2: The Great Pyramid of Giza, the only remaining wonder of the traditional Seven Wonders of t"
+    },
+    {
+      "set": 1,
+      "claim": "Donald Trump tweeted in 2022 after his unbanning from Twitter by Elon Musk.",
+      "gold": "contradicted",
+      "prediction": "supported",
+      "decision_policy": "conformal_singleton",
+      "latency_sec": 10.44000433338806,
+      "llm_calls": 1,
+      "fact_type": "never-changing",
+      "evidence": "Evidence 1: Nov 20, 2022 \u00b7 Former President Donald Trump has responded to Elon Musk reinstating him to Twitter on Saturday, following a poll Musk conducted asking users if he should be allowed back. Nov 19, 2022 \u00b7 Due to the results of a poll on Elon Musk's Twitter account, former president Donald T"
+    },
+    {
+      "set": 1,
+      "claim": "The United Kingdom is the country President Joe Biden has visited the most during his presidency so far.",
+      "gold": "supported",
+      "prediction": "unknown",
+      "decision_policy": "contradiction_arbitration",
+      "latency_sec": 12.725414209067822,
+      "llm_calls": 2,
+      "fact_type": "slow-changing",
+      "evidence": "[SYSTEM TIMESTAMP: 2026-10-23]\nEvidence 1: This is a list of international presidential trips made by Joe Biden, the 46th president of the United States. Joe Biden made 21 international trips to 28 countries (in addition to visiting the West Bank) during his presidency, which began on January 20, 20"
+    },
+    {
+      "set": 1,
+      "claim": "Joe Biden announced his second presidential campaign in 2023.",
+      "gold": "contradicted",
+      "prediction": "supported",
+      "decision_policy": "conformal_singleton",
+      "latency_sec": 8.819598000030965,
+      "llm_calls": 1,
+      "fact_type": "never-changing",
+      "evidence": "Evidence 1: Joe Biden, the 46th president of the United States, announced his candidacy for re-election for a second presidential term on April 25, 2023, confirming that Vice President Kamala Harris would remain as his running mate. After winning the Democratic primaries, he faced off against the Re"
+    }
+  ]
+}

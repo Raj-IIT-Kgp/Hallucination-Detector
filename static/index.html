@@ -3,198 +3,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VeriFact | Academic Hallucination & Factuality Detection System</title>
+    <title>VeriFact — Hallucination Detector</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=22">
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=46">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 </head>
 <body>
-    <!-- Top Navigation Bar -->
-    <nav class="academic-navbar">
-        <div class="nav-container">
-            <div class="nav-brand">
-                <span class="brand-badge">RESEARCH SYSTEM</span>
-                <span class="brand-title">VeriFact <span class="brand-version">v4.2</span></span>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 2l8 3.5v6c0 5-3.4 9.3-8 10.5-4.6-1.2-8-5.5-8-10.5v-6L12 2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8.5 12.2l2.4 2.4 4.6-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <span class="brand-name">VeriFact</span>
+                <span class="brand-sub">Hallucination Detector</span>
             </div>
-            <div class="nav-meta">
-                <span class="meta-tag">Multi-Agent Epistemic Reasoning</span>
-                <span class="meta-tag highlight">Split Conformal Prediction (1-&alpha;=90%)</span>
-            </div>
+            <nav class="tabs" role="tablist">
+                <button class="tab active" role="tab" data-view="verify" aria-selected="true">Verify</button>
+                <button class="tab" role="tab" data-view="benchmarks" aria-selected="false">Benchmarks</button>
+                <button class="tab" role="tab" data-view="method" aria-selected="false">Method</button>
+                <button class="tab" role="tab" data-view="docs" aria-selected="false">Docs</button>
+            </nav>
+            <button class="icon-btn" id="themeToggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+                <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            </button>
         </div>
-    </nav>
+    </header>
 
-    <div class="main-layout">
-        <!-- Header Introduction -->
-        <header class="page-header">
-            <div class="badge-pill">RESEARCH DEMONSTRATION & BENCHMARK SUITE</div>
-            <h1 class="page-title">Automated Hallucination Detection & Conformal Fact Verification</h1>
-            <p class="page-description">
-                A cascaded statistical and multi-agent pipeline providing finite-sample coverage guarantees, 
-                self-reflective Wikipedia retrieval, and knowledge graph multi-hop inference.
-            </p>
-        </header>
-
-        <main class="content-container">
-            <!-- Input & Preset Section -->
-            <section class="card input-card">
-                <div class="card-header">
-                    <div class="card-header-left">
-                        <h2 class="card-title">Corpus Verification Input</h2>
-                        <span class="card-subtitle">Paste any AI-generated response, statement, or claim to evaluate factuality</span>
-                    </div>
-                    <div class="sample-presets">
-                        <span class="presets-label">Quick Samples:</span>
-                        <button type="button" class="preset-btn" id="sampleFactualBtn">Factual Statement</button>
-                        <button type="button" class="preset-btn" id="sampleHallucinatedBtn">Hallucinated Claim</button>
-                        <button type="button" class="preset-btn" id="sampleComplexBtn">Multi-Hop Reasoning</button>
-                    </div>
-                </div>
-
-                <div class="textarea-container">
-                    <textarea id="inputText" rows="5" placeholder="Enter text or claims to verify against live external evidence..."></textarea>
-                </div>
-
-                <div class="card-footer">
-                    <div class="options-group">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="forceKgToggle">
-                            <span class="slider-round"></span>
-                        </label>
-                        <div class="toggle-text">
-                            <span class="toggle-title">Deep Scan (Force Knowledge Graph)</span>
-                            <span class="toggle-caption">Traverse multi-hop relational entity paths regardless of initial NLI confidence</span>
-                        </div>
-                    </div>
-
-                    <button id="analyzeBtn" class="primary-btn">
-                        <span class="btn-text">Verify Claims</span>
-                        <span class="btn-spinner spinner" style="display: none;"></span>
-                    </button>
-                </div>
-            </section>
-
-            <!-- Verification Progress Bar & Live Status -->
-            <section id="progressSection" class="card progress-card hidden">
-                <div class="progress-top">
-                    <div class="status-indicator">
-                        <div class="pulse-dot"></div>
-                        <span class="status-title">Pipeline Active</span>
-                    </div>
-                    <span class="status-step" id="progressStepText">Processing...</span>
-                </div>
-
-                <div class="progress-track">
-                    <div class="progress-fill"></div>
-                </div>
-
-                <div class="stream-console">
-                    <div class="console-header">
-                        <span>Live Verification Stream</span>
-                        <span class="console-badge">NDJSON SSE</span>
-                    </div>
-                    <div id="terminalStream" class="terminal-stream">
-                        <div class="stream-row">Ready for verification sequence...</div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Results & Analysis Section -->
-            <section id="resultsSection" class="results-container hidden">
-                <!-- 4 Metrics Cards -->
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-label">Total Claims Extracted</div>
-                        <div class="metric-value" id="totalClaims">0</div>
-                        <div class="metric-footnote">Atomic facts decomposed</div>
-                    </div>
-                    <div class="metric-card metric-success">
-                        <div class="metric-label">Verified (Supported)</div>
-                        <div class="metric-value text-success" id="supportedClaims">0</div>
-                        <div class="metric-footnote">Corroborated by evidence</div>
-                    </div>
-                    <div class="metric-card metric-danger">
-                        <div class="metric-label">Hallucinations (Contradicted)</div>
-                        <div class="metric-value text-danger" id="hallucinatedClaims">0</div>
-                        <div class="metric-footnote">Refuted by primary sources</div>
-                    </div>
-                    <div class="metric-card metric-purple">
-                        <div class="metric-label">Conformal Coverage</div>
-                        <div class="metric-value text-purple" id="conformalGuarantee">90%</div>
-                        <div class="metric-footnote">Finite-sample guarantee (&alpha;=0.10)</div>
-                    </div>
-                </div>
-
-                <!-- Document Reader / Annotated Text -->
-                <div class="card analysis-card">
-                    <div class="card-header border-bottom">
-                        <div>
-                            <h2 class="card-title">Document Factuality Analysis</h2>
-                            <span class="card-subtitle">Hover over highlighted sentences to inspect evidence, conformal prediction sets, and p-values</span>
-                        </div>
-                        <div class="legend-group">
-                            <span class="legend-item"><span class="legend-dot dot-supported"></span> Supported</span>
-                            <span class="legend-item"><span class="legend-dot dot-hallucinated"></span> Hallucinated</span>
-                            <span class="legend-item"><span class="legend-dot dot-unknown"></span> Uncertain / Escalated</span>
-                        </div>
-                    </div>
-
-                    <div class="document-view">
-                        <div id="annotatedText" class="annotated-document"></div>
-                    </div>
-                </div>
-
-                <!-- Knowledge Graph Panel -->
-                <div id="kgPanel" class="card kg-card hidden">
-                    <div class="card-header border-bottom">
-                        <div>
-                            <h2 class="card-title">Extracted Knowledge Graph Topology</h2>
-                            <span class="card-subtitle" id="kgSubtitle">Discovered entity concepts and relational vector edges</span>
-                        </div>
-                        <div class="kg-legend">
-                            <span class="kg-legend-item"><span class="kg-dot-node"></span> Entity Node</span>
-                            <span class="kg-legend-item"><span class="kg-line-edge"></span> Extracted Relation</span>
-                        </div>
-                    </div>
-                    <div id="kgContainer" class="kg-container">
-                        <svg id="kgSvg"></svg>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- Academic Footer -->
-        <footer class="academic-footer">
-            <p>VeriFact Fact-Checking System • Grounded in FEVER, FreshQA, and Split Conformal Prediction</p>
-        </footer>
-    </div>
-
-    <!-- Floating Clean Tooltip -->
-    <div id="tooltip" class="clean-tooltip hidden">
-        <div class="tooltip-header">
-            <span class="status-badge" id="ttBadge">VERIFIED</span>
-            <span class="confidence-badge" id="ttConfidence">99% Confidence</span>
-        </div>
-        <div class="tooltip-body">
-            <!-- Conformal Prediction Set Section -->
-            <div class="tooltip-section" id="ttConformalSection">
-                <div class="section-label">CONFORMAL PREDICTION SET (1 - &alpha; = 90%)</div>
-                <div id="ttConformalSet" class="conformal-chip-container"></div>
-                <div id="ttPValues" class="p-values-text"></div>
+    <main class="page">
+        <!-- ============================== VERIFY ============================== -->
+        <section id="view-verify" class="view active">
+            <div class="intro">
+                <h1>Check an AI answer for hallucinations</h1>
+                <p>Each statement is split into atomic claims, checked against live Wikipedia and web evidence with an NLI model, wrapped in a conformal prediction set with a 90% coverage guarantee, and escalated to a knowledge graph and an LLM arbiter only when the evidence is ambiguous.</p>
             </div>
 
-            <!-- Matched Evidence Section -->
-            <div class="tooltip-section">
-                <div class="section-label">RETRIEVED SOURCE EVIDENCE</div>
-                <p id="ttEvidence" class="evidence-text"></p>
-                <a id="ttSource" href="#" target="_blank" class="source-link" rel="noopener noreferrer">
-                    Open Source Document &rarr;
-                </a>
+            <div class="card input-card">
+                <label for="inputText" class="field-label">Text to verify</label>
+                <textarea id="inputText" rows="5" placeholder="Paste an AI-generated answer or type a factual claim…"></textarea>
+                <div class="samples" id="samples"></div>
+                <div class="input-footer">
+                    <label class="switch">
+                        <input type="checkbox" id="forceKgToggle">
+                        <span class="switch-track"><span class="switch-thumb"></span></span>
+                        <span class="switch-text">
+                            <span class="switch-title">Deep scan</span>
+                            <span class="switch-caption">Always build the knowledge graph</span>
+                        </span>
+                    </label>
+                    <div class="input-actions">
+                        <span class="kbd-hint"><kbd>⌘</kbd>/<kbd>Ctrl</kbd> + <kbd>Enter</kbd></span>
+                        <button id="analyzeBtn" class="btn-primary">
+                            <span class="btn-label">Verify</span>
+                            <span class="btn-spinner" aria-hidden="true"></span>
+                        </button>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <script src="/static/app.js?v=22"></script>
+            <div id="errorBanner" class="banner banner-error hidden" role="alert"></div>
+
+            <!-- Live run -->
+            <div id="runPanel" class="card run-card hidden">
+                <div class="run-head">
+                    <div class="run-status">
+                        <span class="live-dot" id="liveDot"></span>
+                        <span id="runTitle">Running pipeline</span>
+                        <span class="run-claim" id="runClaim"></span>
+                    </div>
+                    <span class="run-timer" id="runTimer">0.0 s</span>
+                </div>
+                <div class="replay-note hidden" id="replayNote" role="status">
+                    <span class="replay-icon" aria-hidden="true">▶</span>
+                    <span id="replayText"></span>
+                    <button type="button" class="btn-ghost" id="runLiveBtn">Run live instead</button>
+                </div>
+                <ol class="stepper" id="stepper"></ol>
+                <p class="run-message" id="runMessage">Starting…</p>
+                <details class="run-log">
+                    <summary>Event log <span class="muted" id="logCount">(0)</span></summary>
+                    <div class="log-body" id="logBody"></div>
+                </details>
+            </div>
+
+            <!-- Under the hood: the computation of one claim, step by step, with the real numbers -->
+            <div id="hoodSection" class="card hood-card hidden">
+                <div class="card-head">
+                    <div>
+                        <h2>Under the hood</h2>
+                        <span class="muted">Every computation for the selected claim, with the actual numbers from this run, as it happens</span>
+                    </div>
+                    <div class="hood-chips" id="hoodChips" role="tablist" aria-label="Claim"></div>
+                </div>
+                <div class="hood-claim" id="hoodClaim"></div>
+                <ol class="hood-steps" id="hoodSteps"></ol>
+            </div>
+
+            <!-- Results -->
+            <div id="results" class="hidden">
+                <div class="summary-grid">
+                    <div class="stat">
+                        <span class="stat-label">Claims</span>
+                        <span class="stat-value" id="statTotal">0</span>
+                        <span class="stat-foot">atomic facts checked</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label"><span class="status-icon s-good">✓</span> Supported</span>
+                        <span class="stat-value" id="statSupported">0</span>
+                        <span class="stat-foot">backed by evidence</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label"><span class="status-icon s-critical">✕</span> Hallucinated</span>
+                        <span class="stat-value" id="statContradicted">0</span>
+                        <span class="stat-foot">contradicted by evidence</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label"><span class="status-icon s-warning">?</span> Uncertain</span>
+                        <span class="stat-value" id="statUnknown">0</span>
+                        <span class="stat-foot">evidence inconclusive</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <h2>Verdict distribution</h2>
+                        <span class="muted" id="verdictCaption"></span>
+                    </div>
+                    <div class="verdict-bar" id="verdictBar"></div>
+                </div>
+
+                <div class="card">
+                    <div class="card-head">
+                        <h2>Annotated text</h2>
+                        <div class="legend">
+                            <span><span class="legend-swatch s-good-bg"></span>Supported</span>
+                            <span><span class="legend-swatch s-critical-bg"></span>Hallucinated</span>
+                            <span><span class="legend-swatch s-warning-bg"></span>Uncertain</span>
+                        </div>
+                    </div>
+                    <p class="annotated" id="annotated"></p>
+                    <p class="hint">Click a highlighted claim to jump to its evidence.</p>
+                </div>
+            </div>
+
+            <div id="claimsSection" class="hidden">
+                <div class="section-head">
+                    <h2>Claims</h2>
+                    <button class="btn-ghost" id="expandAllBtn">Expand all</button>
+                </div>
+                <div id="claimList" class="claim-list"></div>
+            </div>
+
+            <div id="timelineSection" class="card hidden">
+                <div class="card-head">
+                    <div>
+                        <h2>Pipeline timeline</h2>
+                        <span class="muted" id="timelineCaption"></span>
+                    </div>
+                    <div class="legend" id="timelineLegend"></div>
+                </div>
+                <div class="chart timeline-chart" id="timelineChart"></div>
+                <details class="timeline-table">
+                    <summary>Show as table</summary>
+                    <table class="data" id="timelineTable"></table>
+                </details>
+                <p class="hint">Time each claim spent in each stage. Claims are verified in parallel; the knowledge graph and LLM arbiter appear only for claims that needed them. Hover a segment for its duration.</p>
+            </div>
+
+            <div id="kgSection" class="card hidden">
+                <div class="card-head">
+                    <div>
+                        <h2>Knowledge graph</h2>
+                        <span class="muted" id="kgCaption"></span>
+                    </div>
+                    <div class="legend">
+                        <span><span class="legend-line solid"></span>Provenance-verified relation</span>
+                        <span><span class="legend-line dashed"></span>Extracted relation</span>
+                    </div>
+                </div>
+                <div class="kg-wrap" id="kgWrap"><svg id="kgSvg"></svg></div>
+                <p class="hint">Drag nodes to rearrange · hover for details · click a node to open its source.</p>
+            </div>
+        </section>
+
+        <!-- ============================== BENCHMARKS ============================== -->
+        <section id="view-benchmarks" class="view">
+            <div class="intro">
+                <h1>Benchmark results</h1>
+                <p>Five non-overlapping stratified sets of 20 claims per benchmark (10 true, 10 false; seed 42), run end to end with live retrieval and LLM calls. The positive class is a hallucination; <em>Uncertain</em> counts as an error.</p>
+            </div>
+            <div id="benchLoading" class="muted">Loading results…</div>
+            <div id="benchGrid" class="bench-grid"></div>
+        </section>
+
+        <!-- ============================== METHOD ============================== -->
+        <section id="view-method" class="view">
+            <div class="intro">
+                <h1>How the pipeline decides</h1>
+                <p>A cascade: cheap, calibrated checks settle most claims; the expensive knowledge-graph and LLM stages run only when the evidence is ambiguous. On FEVER, 78 of 100 claims are settled by the NLI model without any arbitration call, and 97% of those verdicts are correct.</p>
+            </div>
+            <div class="card cascade-card">
+                <div class="card-head">
+                    <div>
+                        <h2>The cascade in action</h2>
+                        <span class="muted">Each dot is a claim; dots split into the three routes in the proportions measured on 100 benchmark claims</span>
+                    </div>
+                    <div class="seg-toggle" role="group" aria-label="Benchmark">
+                        <button type="button" class="seg-btn active" data-cascade="fever">FEVER</button>
+                        <button type="button" class="seg-btn" data-cascade="freshqa">FreshQA</button>
+                    </div>
+                </div>
+                <div class="cascade-wrap" id="cascadeWrap"><p class="muted">Loading benchmark routing…</p></div>
+                <p class="cascade-insight" id="cascadeInsight"></p>
+            </div>
+
+            <ol class="method-list" id="methodList"></ol>
+
+            <div class="card limits-card">
+                <div class="card-head">
+                    <h2>Known limitations</h2>
+                    <a href="#docs" class="btn-ghost" data-goto="docs" data-anchor="5-limitations-and-future-work">Read §5 in the docs →</a>
+                </div>
+                <ul class="limits-list" id="limitsList"></ul>
+            </div>
+            <p class="hint">The full write-up, with the mathematics and worked examples for every stage, is in the <a href="#docs" data-goto="docs">Docs</a> tab; installation and configuration are in <a href="#docs" data-goto="docs" data-anchor="6-reproducibility">§6 Reproducibility</a>.</p>
+        </section>
+
+        <!-- ============================== DOCS ============================== -->
+        <section id="view-docs" class="view">
+            <div class="docs-layout">
+                <aside class="docs-toc">
+                    <div class="docs-toc-title">On this page</div>
+                    <nav id="docsToc"></nav>
+                </aside>
+                <article class="card docs-body markdown" id="docsBody">
+                    <p class="muted">Loading pipeline.md…</p>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">VeriFact · FEVER &amp; FreshQA evaluation · split conformal prediction (α = 0.10)</footer>
+
+    <div id="vizTip" class="viz-tip" role="tooltip"></div>
+
+    <script src="/static/app.js?v=49"></script>
 </body>
 </html>

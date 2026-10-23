@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 .env
 .DS_Store
+
+# Recorded runs of arbitrary inputs (the example inputs are kept in demo_runs/, which is committed)
+run_cache/

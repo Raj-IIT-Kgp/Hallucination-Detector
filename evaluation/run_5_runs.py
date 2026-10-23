@@ -8,7 +8,11 @@ interrupted run resumes where it stopped. A claim whose verification hit an LLM 
 timeout) is not scored as an abstention: it is retried once after a pause, and the run stops if
 it fails again. The summary is written to evaluation/<dataset>_5_runs_results.json.
 
-usage: python evaluation/run_5_runs.py --dataset fever|freshqa|all [--fresh]
+With --tag NAME the run is written to evaluation/runs/NAME/ instead (so earlier results are kept),
+and each per-claim record also holds the claim's full result (verdict, computation trace and
+complete evidence) and its LLM-call log, for analysis by experiments/full_evaluation.py.
+
+usage: python evaluation/run_5_runs.py --dataset fever|freshqa|all [--fresh] [--tag NAME]
 """
 import sys
 import os
@@ -34,7 +38,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from retrieval.web_search import WebRetriever
 from detector.hallucination_detector import HallucinationDetector
 from evaluation.metrics import precision, recall, f1_score
-from llm.generator import get_failure_count
+from llm.generator import get_failure_count, get_call_count, get_call_log
 
 EVAL_DIR = os.path.dirname(os.path.abspath(__file__))
 LABEL_MAP = {"SUPPORTS": "supported", "REFUTES": "contradicted"}
@@ -68,12 +72,17 @@ def make_sets(items, samples_per_set, num_sets, seed):
     return sets
 
 
-def verify(detector, item):
-    """Returns (prediction, decision_policy, evidence) for one benchmark item."""
+def verify(detector, item, details=None):
+    """
+    Returns (prediction, decision_policy, evidence) for one benchmark item; if details is a dict,
+    the claim's full result (verification with its trace, complete evidence) is stored in it.
+    """
     context = f"Question: {item['raw_question']}" if item.get("raw_question") else None
     claims = detector.analyze(item["claim"], context=context, extract_atomic_facts=False)["report"]["claims"]
     if not claims:
         return "unknown", None, "No report generated."
+    if details is not None:
+        details["result"] = {k: v for k, v in claims[0].items() if k != "graph"}
     labels = [c["verification"]["label"] for c in claims]
     if "contradicted" in labels:
         prediction = "contradicted"
@@ -103,11 +112,24 @@ def metrics(records):
         "mean_latency_sec": sum(lat) / n if n else 0.0,
         "p50_latency_sec": lat[n // 2] if n else 0.0,
         "p90_latency_sec": lat[min(n - 1, int(0.9 * n))] if n else 0.0,
+        # records saved before LLM-call logging existed have no llm_calls field
+        "mean_llm_calls": (sum(x["llm_calls"] for x in records) / n
+                           if n and all("llm_calls" in x for x in records) else None),
     }
 
 
-def run_5_sets(dataset, samples_per_set=20, num_sets=5, seed=42, fresh=False):
-    claims_file = os.path.join(EVAL_DIR, f"{dataset}_5_runs_claims.jsonl")
+def run_dir(tag=None):
+    """Where a run's files go: evaluation/ for the published run, evaluation/runs/TAG/ for a tagged one."""
+    if not tag:
+        return EVAL_DIR
+    path = os.path.join(EVAL_DIR, "runs", tag)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def run_5_sets(dataset, samples_per_set=20, num_sets=5, seed=42, fresh=False, tag=None):
+    out_dir = run_dir(tag)
+    claims_file = os.path.join(out_dir, f"{dataset}_5_runs_claims.jsonl")
     if fresh and os.path.exists(claims_file):
         os.remove(claims_file)
     done = {}
@@ -129,12 +151,16 @@ def run_5_sets(dataset, samples_per_set=20, num_sets=5, seed=42, fresh=False):
                     continue
                 for attempt in (1, 2):
                     failures_before = get_failure_count()
+                    calls_before = get_call_count()
+                    log_before = len(get_call_log())
+                    details = {} if tag else None
                     t0 = time.perf_counter()
                     try:
-                        prediction, policy, evidence = verify(detector, item)
+                        prediction, policy, evidence = verify(detector, item, details)
                     except Exception as e:
                         prediction, policy, evidence = "error", None, str(e)
                     latency = time.perf_counter() - t0
+                    llm_calls = get_call_count() - calls_before
                     if get_failure_count() == failures_before and prediction != "error":
                         break
                     if attempt == 1:
@@ -145,9 +171,12 @@ def run_5_sets(dataset, samples_per_set=20, num_sets=5, seed=42, fresh=False):
                     return None
                 rec = {
                     "set": set_num, "claim": item["claim"], "gold": LABEL_MAP[item["label"]],
-                    "prediction": prediction, "decision_policy": policy, "latency_sec": latency,
+                    "prediction": prediction, "decision_policy": policy, "latency_sec": latency, "llm_calls": llm_calls,
                     "fact_type": item.get("fact_type"), "evidence": evidence[:300],
                 }
+                if tag:
+                    rec["llm_log"] = get_call_log()[log_before:]
+                    rec["result"] = details.get("result")
                 out.write(json.dumps(rec) + "\n")
                 out.flush()
                 done[(set_num, item["claim"])] = rec
@@ -173,9 +202,10 @@ def run_5_sets(dataset, samples_per_set=20, num_sets=5, seed=42, fresh=False):
     payload = {
         "dataset": dataset, "seed": seed, "samples_per_set": samples_per_set, "num_sets": num_sets,
         "set_results": set_results, "pooled": pooled, "routing": routing,
-        "failures": [r for r in records if r["gold"] != r["prediction"]],
+        "failures": [{k: v for k, v in r.items() if k not in ("result", "llm_log")}
+                     for r in records if r["gold"] != r["prediction"]],
     }
-    out_file = os.path.join(EVAL_DIR, f"{dataset}_5_runs_results.json")
+    out_file = os.path.join(out_dir, f"{dataset}_5_runs_results.json")
     with open(out_file, "w") as f:
         json.dump(payload, f, indent=2)
     print(f"Saved summary to {out_file}")
@@ -189,10 +219,11 @@ if __name__ == "__main__":
     parser.add_argument("--sets", type=int, default=5)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--fresh", action="store_true", help="Discard saved per-claim results and start over")
+    parser.add_argument("--tag", default=None, help="Write the run to evaluation/runs/TAG/ with full per-claim details")
     args = parser.parse_args()
 
     for ds in (["fever", "freshqa"] if args.dataset == "all" else [args.dataset]):
-        if run_5_sets(ds, args.samples_per_set, args.sets, args.seed, args.fresh) is None:
+        if run_5_sets(ds, args.samples_per_set, args.sets, args.seed, args.fresh, args.tag) is None:
             break
 
     # Exit immediately: interpreter shutdown joins every thread-pool worker, and a

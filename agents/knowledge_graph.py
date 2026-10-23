@@ -166,7 +166,7 @@ If the evidence establishes a direct factual relationship connecting '{entity_a}
 If no relationship between them is present in the evidence, output: {{}}
 Output ONLY the JSON object without markdown or commentary."""
 
-        response = generate_response(prompt).strip()
+        response = generate_response(prompt, tier="light").strip()
         if not response:
             return None
         clean_resp = response.replace("```json", "").replace("```", "").strip()
@@ -246,7 +246,7 @@ Example JSON output format:
 ]"""
 
     try:
-        response = generate_response(prompt).strip()
+        response = generate_response(prompt, tier="light").strip()
         if not response:
             clean_resp = "[]"
         else:

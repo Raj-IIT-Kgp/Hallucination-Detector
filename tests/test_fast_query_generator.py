@@ -47,7 +47,7 @@ def test_pronoun_routes_to_llm():
     claim = "He is the current CEO of Apple."
 
     llm_called = []
-    def mock_llm(prompt):
+    def mock_llm(prompt, **kwargs):
         llm_called.append(prompt)
         return '{"queries": ["Tim Cook", "Apple Inc."], "domain": "general", "requires_current_state": true}'
 
@@ -65,7 +65,7 @@ def test_pronoun_routes_to_llm():
 def test_creative_work_routes_to_llm():
     claim = "Off the Wall is an album."
     llm_called = []
-    def mock_llm(prompt):
+    def mock_llm(prompt, **kwargs):
         llm_called.append(prompt)
         return '{"queries": ["Off the Wall (album)"], "domain": "general", "requires_current_state": false}'
 

@@ -56,14 +56,16 @@ def verify_claim(claim, evidence, domain="general", threshold=None):
         with torch.inference_mode():
             outputs = model(**inputs)
 
+        logits = outputs.logits[:, _label_index]
         probabilities = torch.softmax(
-            outputs.logits[:, _label_index],
+            logits,
             dim=1
         )
 
         prediction = torch.argmax(probabilities).item()
         confidence = probabilities[0][prediction].item()
         prob_list = [probabilities[0][i].item() for i in range(len(labels))]
+        logit_list = [round(logits[0][i].item(), 4) for i in range(len(labels))]
 
         # Explicitly synchronize GPU/MPS command buffer before releasing lock
         if device.type == "mps":
@@ -81,7 +83,8 @@ def verify_claim(claim, evidence, domain="general", threshold=None):
     return {
         "label": label,
         "confidence": confidence,
-        "probabilities": prob_list
+        "probabilities": prob_list,
+        "logits": logit_list,
     }
 
 
@@ -110,8 +113,9 @@ def verify_claims_batch(claim, evidence_texts, domain="general", threshold=None)
             with torch.inference_mode():
                 outputs = model(**inputs)
 
+            logits = outputs.logits[:, _label_index][0]
             probabilities = torch.softmax(
-                outputs.logits[:, _label_index],
+                logits.unsqueeze(0),
                 dim=1
             )[0]
 
@@ -124,7 +128,8 @@ def verify_claims_batch(claim, evidence_texts, domain="general", threshold=None)
             results.append({
                 "label": lbl,
                 "confidence": conf,
-                "probabilities": prob_list
+                "probabilities": prob_list,
+                "logits": [round(logits[c].item(), 4) for c in range(len(labels))],
             })
 
         # Explicitly synchronize GPU/MPS command buffer before releasing lock

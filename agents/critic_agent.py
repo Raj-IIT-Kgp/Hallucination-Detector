@@ -1,8 +1,9 @@
 from llm.generator import generate_response
 from concurrent.futures import ThreadPoolExecutor
 
-# Opt-in rule for false-premise benchmarks (FreshQA). Kept out of the default prompts because the
-# default "no hyper-literal skepticism" stance is tuned for FEVER-style paraphrased claims.
+# False-premise rule, appended to the arbiter prompts when strict_premises=True (the
+# HallucinationDetector default, used for every input). It balances the prompts' "no hyper-literal
+# skepticism" rules, which on their own let the arbiter silently correct a wrong name or title.
 _STRICT_PREMISE_RULE = (
     "- False Premises & Misidentified Entities: If the claim refers to an entity by a name, title, date or "
     "attribute that is wrong (e.g. the wrong given name for a known person, or a title they no longer hold), treat the claim as "
@@ -20,7 +21,7 @@ Evidence: "{evidence}"
 
 Provide your compelling argument to prove the claim is SUPPORTED. Be concise but persuasive.
 """
-    return generate_response(prompt).strip()
+    return generate_response(prompt, tier="heavy").strip()
 
 def _prosecution_agent(claim, evidence):
     prompt = f"""
@@ -33,7 +34,7 @@ Evidence: "{evidence}"
 
 Provide your compelling argument to prove the claim is CONTRADICTED. Be concise but persuasive.
 """
-    return generate_response(prompt).strip()
+    return generate_response(prompt, tier="heavy").strip()
 
 def _judge_agent(claim, evidence, defense_arg, prosecution_arg, domain="general", strict_premises=False):
     academic_rule = ""
@@ -76,7 +77,7 @@ CRITICAL DECISION & ABSTENTION RULES:
 
 Reasoning and Verdict:
 """
-    return generate_response(prompt).strip()
+    return generate_response(prompt, tier="heavy").strip()
 
 def _dialectical_agent(claim, evidence, domain="general", strict_premises=False):
     academic_rule = ""
@@ -113,10 +114,25 @@ CRITICAL DECISION & ABSTENTION RULES:
 The LAST line of your response must be exactly:
 VERDICT: SUPPORTED | CONTRADICTED | UNKNOWN
 """
-    return generate_response(prompt).strip()
+    return generate_response(prompt, tier="heavy").strip()
 
 
-def nli_override(claim, evidence, domain="general", mode="dialectical", strict_premises=False):
+def nli_override(claim, evidence, domain="general", mode="dialectical", strict_premises=False,
+                 return_error=False, return_reasoning=False):
+    """
+    Arbitrates a claim against its evidence (see _arbitrate). Returns the label; with
+    return_error=True a (label, error) pair, where error is the LLM failure message when the call
+    itself failed (the label is then a conservative "unknown", not a judgement) and None otherwise;
+    with return_reasoning=True as well, a (label, error, reasoning) triple, reasoning being the
+    arbiter's written argument (None if the call failed).
+    """
+    label, error, reasoning = _arbitrate(claim, evidence, domain=domain, mode=mode, strict_premises=strict_premises)
+    if return_reasoning:
+        return label, error, reasoning
+    return (label, error) if return_error else label
+
+
+def _arbitrate(claim, evidence, domain="general", mode="dialectical", strict_premises=False):
     """
     Arbitrates uncertain or conformal-dispersed claims using adversarial reasoning.
 
@@ -152,17 +168,17 @@ def nli_override(claim, evidence, domain="general", mode="dialectical", strict_p
         verdict_line = next((line for line in reversed(lines) if line.strip().upper().startswith("VERDICT:")), judge_response).upper()
 
         if "SUPPORTED" in verdict_line:
-            return "supported"
+            return "supported", None, judge_response
         elif "CONTRADICTED" in verdict_line:
-            return "contradicted"
+            return "contradicted", None, judge_response
         else:
-            return "unknown"
+            return "unknown", None, judge_response
     except Exception as e:
         print(f"    [Critic Debate] Arbitration failed: {e}. Abstaining conservatively to 'unknown'.")
-        return "unknown"
+        return "unknown", str(e), None
 
 
-def evaluate_absence(claim, entity_query):
+def evaluate_absence(claim, entity_query, return_error=False):
     """
     Evaluates whether the absence of a claim from a comprehensive Wikipedia page
     implies that the claim is false (hallucinated).
@@ -181,11 +197,9 @@ Based on the magnitude of the claim "{claim}", does its absence from Wikipedia p
 OUTPUT ONLY ONE WORD: CONTRADICTED or UNKNOWN.
 """
     try:
-        response = generate_response(prompt).strip().upper()
-        if "CONTRADICTED" in response:
-            return "contradicted"
-        else:
-            return "unknown"
+        response = generate_response(prompt, tier="heavy").strip().upper()
+        label, error = ("contradicted" if "CONTRADICTED" in response else "unknown"), None
     except Exception as e:
         print(f"    [Evaluate Absence] LLM connection failed: {e}. Defaulting to 'unknown'.")
-        return "unknown"
+        label, error = "unknown", str(e)
+    return (label, error) if return_error else label
