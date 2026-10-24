@@ -32,6 +32,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 _EMBEDDING_CACHE_MAX = 20000
 _DDG_CACHE_TTL = 600.0
 _DDG_CACHE_MAX = 512
+# Web search engines (via the ddgs package), queried in parallel; the first to return results is
+# used, since individual engines are frequently blocked or rate-limited.
+_WEB_ENGINES = ("yahoo", "bing", "duckduckgo", "brave", "yandex", "mojeek")
+_WEB_ENGINE_TIMEOUT = 5.0   # per engine
+_WEB_DEADLINE = 5.0         # for the whole web search: the cap of a Wikipedia page fetch
 
 # ── Persistent requests.Session with connection pool for Wikipedia HTTP/1.1 Keep-Alive ──
 _wiki_session = requests.Session()
@@ -233,7 +238,7 @@ class WebRetriever:
         return list(paragraphs_tuple)
 
     def _fetch_ddg(self, query):
-        """Fetches DuckDuckGo results for a single query with backend='api' and strict 4.0s timeout."""
+        """Web search for a single query: the first of _WEB_ENGINES to return results within _WEB_DEADLINE."""
         paragraphs = []
         try:
             if isinstance(query, list):
@@ -247,27 +252,26 @@ class WebRetriever:
             if cached and time.monotonic() - cached[0] < _DDG_CACHE_TTL:
                 return [dict(p) for p in cached[1]]
 
-            def _search():
+            def _search(engine):
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
-                    # Try 'yahoo,duckduckgo' backends (fastest, avoids Cloudflare HTTP/2 resets)
-                    try:
-                        return list(DDGS(timeout=2.5).text(query_str, backend="yahoo,duckduckgo", max_results=3))
-                    except Exception:
-                        try:
-                            return list(DDGS(timeout=2.0).text(query_str, backend="yahoo", max_results=3))
-                        except Exception:
-                            return []
+                    return list(DDGS(timeout=_WEB_ENGINE_TIMEOUT).text(query_str, backend=engine, max_results=3))
 
-            executor = ThreadPoolExecutor(max_workers=1)
+            ddg_results = []
+            executor = ThreadPoolExecutor(max_workers=len(_WEB_ENGINES))
+            futures = [executor.submit(_search, engine) for engine in _WEB_ENGINES]
             try:
-                fut = executor.submit(_search)
-                ddg_results = fut.result(timeout=3.0)
-            except Exception:
-                executor.shutdown(wait=False, cancel_futures=True)
-                return paragraphs
-            else:
-                executor.shutdown(wait=False)
+                for fut in as_completed(futures, timeout=_WEB_DEADLINE):
+                    try:
+                        ddg_results = fut.result()
+                    except Exception:
+                        continue
+                    if ddg_results:
+                        break
+            except TimeoutError:
+                pass
+            # engines still running finish in the background, bounded by their own timeout
+            executor.shutdown(wait=False, cancel_futures=True)
 
             if ddg_results:
                 for res in ddg_results:

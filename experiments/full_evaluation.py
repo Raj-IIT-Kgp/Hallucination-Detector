@@ -297,7 +297,7 @@ def write_report(tag, report):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--tag", default="current-pipeline")
+    parser.add_argument("--tag", default="wikidata-kg")
     parser.add_argument("--skip-run", action="store_true", help="Only analyse the records already saved")
     parser.add_argument("--no-shadow", action="store_true", help="Make no LLM calls for the recalibration estimate")
     args = parser.parse_args()

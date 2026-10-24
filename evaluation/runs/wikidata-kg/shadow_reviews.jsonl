@@ -47,3 +47,30 @@
 {"dataset": "freshqa", "claim": "The video game Disco Elysium takes place in the city of Revachol.", "label": "supported"}
 {"dataset": "freshqa", "claim": "ChatGPT was launched in 2021.", "label": "contradicted"}
 {"dataset": "freshqa", "claim": "358 total Nazca geoglyphs have been discovered so far.", "label": "supported"}
+{"dataset": "fever", "claim": "On June 1, 2007, Knocked Up was released.", "label": "supported"}
+{"dataset": "fever", "claim": "Buffy Summers appears in a recorded work.", "label": "supported"}
+{"dataset": "fever", "claim": "The Hanford Site hosts the Pacific Northwest National Laboratory, managed by the Department of Energy's Office of Science.", "label": "supported"}
+{"dataset": "fever", "claim": "Tamerlan Tsarnaev had a brother.", "label": "supported"}
+{"dataset": "fever", "claim": "Peter Dinklage acts in Underdog.", "label": "supported"}
+{"dataset": "fever", "claim": "Sophia Bush appeared in a teen romantic comedy.", "label": "supported"}
+{"dataset": "fever", "claim": "The Bahamas is a landlocked state.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Polar bears depend on the Arctic Ocean as their main food source.", "label": "supported"}
+{"dataset": "fever", "claim": "The Republic of Macedonia is in Asia.", "label": "contradicted"}
+{"dataset": "fever", "claim": "The Greek language is spoken in Greece.", "label": "supported"}
+{"dataset": "fever", "claim": "Jayasudha was uncast from Daag.", "label": "unknown"}
+{"dataset": "fever", "claim": "Ripon College's student body stood at a number.", "label": "supported"}
+{"dataset": "fever", "claim": "Matthew Gray Gubler is a citizen of the United States of America.", "label": "supported"}
+{"dataset": "fever", "claim": "Ian Brennan directs.", "label": "supported"}
+{"dataset": "fever", "claim": "Middle-earth is a real place.", "label": "supported"}
+{"dataset": "freshqa", "claim": "The University of Konstanz is located in the German state of Baden-W\u00fcrttemberg.", "label": "supported"}
+{"dataset": "freshqa", "claim": "The Great Pyramid of Giza is not one of the New 7 Wonders of the World.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Walt Disney Animation Studios' 60th animated film is being released this year.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "The funeral for Pope Leo XIV was held.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Joe Biden announced his second presidential campaign in 2023.", "label": "supported"}
+{"dataset": "freshqa", "claim": "The USA will host the most matches at the FIFA World Cup 2026.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Typhoon Haiyan made its first eye landfall in the municipality of Guiuan, Eastern Samar.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Women cannot attend universities in Afghanistan.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Novak Djokovic lost in a specific round at the 2022 Australian Open.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "A FIFA World Cup will be hosted next year.", "label": "supported"}
+{"dataset": "freshqa", "claim": "The province that borders Shanghai to the north is Jiangsu.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Venus has a smallest moon.", "label": "contradicted"}

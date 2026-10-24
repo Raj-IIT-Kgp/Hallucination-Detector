@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=47">
+    <link rel="stylesheet" href="/static/style.css?v=52">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
@@ -41,7 +41,7 @@
         <section id="view-verify" class="view active">
             <div class="intro">
                 <h1>Check an AI answer for hallucinations</h1>
-                <p>Each statement is split into atomic claims, checked against live Wikipedia and web evidence with an NLI model, wrapped in a conformal prediction set with a 90% coverage guarantee, and escalated to a knowledge graph and an LLM arbiter only when the evidence is ambiguous.</p>
+                <p>Each statement is split into atomic claims, checked against live Wikipedia and web evidence with an NLI model, wrapped in a conformal prediction set calibrated for 90% coverage, and escalated to a knowledge graph and an LLM arbiter only when the evidence is ambiguous.</p>
             </div>
 
             <div class="card input-card">
@@ -54,7 +54,7 @@
                         <span class="switch-track"><span class="switch-thumb"></span></span>
                         <span class="switch-text">
                             <span class="switch-title">Deep scan</span>
-                            <span class="switch-caption">Always build the knowledge graph</span>
+                            <span class="switch-caption">Build the arbiter's knowledge graph for every claim</span>
                         </span>
                     </label>
                     <div class="input-actions">
@@ -187,16 +187,17 @@
             <div id="kgSection" class="card hidden">
                 <div class="card-head">
                     <div>
-                        <h2>Knowledge graph</h2>
+                        <h2>Knowledge graph · Wikidata</h2>
                         <span class="muted" id="kgCaption"></span>
                     </div>
                     <div class="legend">
-                        <span><span class="legend-line solid"></span>Provenance-verified relation</span>
-                        <span><span class="legend-line dashed"></span>Extracted relation</span>
+                        <span><span class="legend-line claim"></span>Claim as stated (verdict colour)</span>
+                        <span><span class="legend-line record"></span>Wikidata value for the claim's property</span>
+                        <span><span class="legend-line context"></span>Other Wikidata statement</span>
                     </div>
                 </div>
                 <div class="kg-wrap" id="kgWrap"><svg id="kgSvg"></svg></div>
-                <p class="hint">Drag nodes to rearrange · hover for details · click a node to open its source.</p>
+                <p class="hint">Every node is a Wikidata entity or value and every grey or blue edge a Wikidata statement; the dashed edge is the claim. Escalated claims give these statements to the LLM arbiter; other verdicts do not use them. Drag nodes to rearrange · hover for details · click a node or statement to open it.</p>
             </div>
         </section>
 
@@ -251,7 +252,7 @@
         <section id="view-method" class="view">
             <div class="intro">
                 <h1>How the pipeline decides</h1>
-                <p>A cascade: cheap, calibrated checks settle most claims; the expensive knowledge-graph and LLM stages run only when the evidence is ambiguous. On FEVER, 82 of 100 claims are settled by the NLI model without any arbitration call, and 98% of those verdicts are correct.</p>
+                <p>A cascade: cheap, calibrated checks settle most claims; the expensive knowledge-graph and LLM stages run only when the evidence is ambiguous. On FEVER, 86 of 100 claims are settled by the NLI model without any arbitration call, and 97% of those verdicts are correct.</p>
             </div>
             <div class="card cascade-card">
                 <div class="card-head">
@@ -298,6 +299,6 @@
 
     <div id="vizTip" class="viz-tip" role="tooltip"></div>
 
-    <script src="/static/app.js?v=53"></script>
+    <script src="/static/app.js?v=70"></script>
 </body>
 </html>

@@ -310,6 +310,9 @@ kbd {
 .s-warning-bg { background: var(--warning); }
 .legend-line { width: 22px; height: 0; border-top: 2px solid var(--accent); display: inline-block; }
 .legend-line.dashed { border-top: 2px dashed var(--ink-3); }
+.legend-line.claim { border-top: 2px dashed var(--ink-2); }
+.legend-line.record { border-top: 2px solid var(--accent); }
+.legend-line.context { border-top: 2px solid var(--ink-3); opacity: 0.6; }
 
 /* ---------- overall verdict ---------- */
 .overall { border-left: 4px solid var(--grid); }
@@ -607,18 +610,38 @@ mark.resolved {
 @media (max-width: 860px) { .debate { grid-template-columns: 1fr; } }
 
 /* ---------- knowledge graph ---------- */
-.kg-wrap { width: 100%; height: 400px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); overflow: hidden; }
+.kg-wrap { width: 100%; height: 480px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); overflow: hidden; }
 .kg-wrap svg { width: 100%; height: 100%; display: block; }
 .kg-node circle { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; transition: stroke-width 0.15s; }
+.kg-node rect { fill: var(--surface); stroke: var(--border-strong); stroke-width: 1.5; transition: stroke-width 0.15s; }
+.kg-node.item rect { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.2; stroke-opacity: 0.6; }
+.kg-node.claimed rect { fill: var(--surface); stroke-dasharray: 4 3; stroke-width: 2; }
+.kg-node.claimed.supported rect { stroke: var(--good); }
+.kg-node.claimed.contradicted rect { stroke: var(--critical); }
+.kg-node.claimed.unknown rect { stroke: var(--warning); }
 .kg-node text { fill: var(--ink); font-size: 10.5px; font-weight: 600; pointer-events: none; }
-.kg-node:hover circle, .kg-node.hl circle { stroke-width: 3.5; }
-.kg-link { stroke: var(--ink-3); stroke-width: 1.5; stroke-dasharray: 4 3; opacity: 0.7; }
-.kg-link.verified { stroke: var(--accent); stroke-dasharray: none; stroke-width: 2; opacity: 1; }
+.kg-node.value text, .kg-node.claimed text { font-weight: 500; }
+.kg-node:hover circle, .kg-node:hover rect { stroke-width: 3.5; }
+.kg-link { fill: none; stroke: var(--ink-3); stroke-width: 1.4; opacity: 0.55; }
+.kg-link.link { opacity: 0.85; stroke-width: 1.8; }
+.kg-link.record { stroke: var(--accent); stroke-width: 2.2; opacity: 1; }
+.kg-link.claim { stroke-width: 2.6; stroke-dasharray: 6 4; opacity: 1; }
+.kg-link.claim.supported, .kg-link.record.agrees.supported { stroke: var(--good); }
+.kg-link.claim.contradicted, .kg-link.record.agrees.contradicted { stroke: var(--critical); }
+.kg-link.claim.unknown, .kg-link.record.agrees.unknown { stroke: var(--warning); }
+.kg-link.record.agrees { stroke-width: 3; }
 .kg-link.hl { stroke-width: 3.5; opacity: 1; }
-.kg-link-hit { stroke: transparent; stroke-width: 18; cursor: pointer; }
+.kg-link-hit { fill: none; stroke: transparent; stroke-width: 18; }
 .kg-elabel { fill: var(--ink-2); font-size: 9.5px; paint-order: stroke; stroke: var(--surface-2); stroke-width: 4px; pointer-events: none; }
+.kg-elabel.claim { fill: var(--ink); font-weight: 600; }
+.kg-elabel.context, .kg-elabel.quiet { opacity: 0; transition: opacity 0.12s; }
+.kg-elabel.show { opacity: 1; fill: var(--ink); }
 .kg-arrow { fill: var(--ink-3); }
-.kg-arrow-v { fill: var(--accent); }
+.kg-arrow.record { fill: var(--accent); }
+.kg-arrow.supported { fill: var(--good); }
+.kg-arrow.contradicted { fill: var(--critical); }
+.kg-arrow.unknown { fill: var(--warning); }
+.wd-line { margin-top: 8px; }
 
 /* ---------- tooltip ---------- */
 .viz-tip {
@@ -809,6 +832,7 @@ table.data tr.pooled td { font-weight: 700; border-bottom: 0; }
     .docs-body { padding: 20px 18px; }
 }
 @media (max-width: 560px) {
+    .kg-wrap { height: 600px; }
     .topbar-inner { flex-wrap: wrap; }
     .tabs { order: 3; width: 100%; }
     .tab { flex: 1; }

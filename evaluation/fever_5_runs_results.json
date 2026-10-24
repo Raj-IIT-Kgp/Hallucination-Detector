@@ -3,42 +3,43 @@
   "seed": 42,
   "samples_per_set": 20,
   "num_sets": 5,
+  "llm_routing": "primary",
   "set_results": [
     {
       "set": "Set 1",
       "evaluated_claims": 20,
-      "correct_claims": 20,
-      "accuracy": 1.0,
+      "correct_claims": 19,
+      "accuracy": 0.95,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
       "tp": 10,
       "fp": 0,
       "fn": 0,
-      "tn": 10,
-      "unknown": 0,
-      "mean_latency_sec": 9.037055116705597,
+      "tn": 9,
+      "unknown": 1,
+      "mean_latency_sec": 9.022340872860514,
       "p50_latency_sec": 7.539165417198092,
-      "p90_latency_sec": 21.776995041873306,
-      "mean_llm_calls": 1.25
+      "p90_latency_sec": 14.304887915961444,
+      "mean_llm_calls": 0.9
     },
     {
       "set": "Set 2",
       "evaluated_claims": 20,
-      "correct_claims": 18,
-      "accuracy": 0.9,
-      "precision": 0.8333333333333334,
+      "correct_claims": 19,
+      "accuracy": 0.95,
+      "precision": 0.9090909090909091,
       "recall": 1.0,
-      "f1": 0.9090909090909091,
+      "f1": 0.9523809523809523,
       "tp": 10,
-      "fp": 2,
+      "fp": 1,
       "fn": 0,
-      "tn": 8,
+      "tn": 9,
       "unknown": 0,
-      "mean_latency_sec": 8.143867137446069,
+      "mean_latency_sec": 8.555779108358546,
       "p50_latency_sec": 8.029880875255913,
-      "p90_latency_sec": 12.244291457813233,
-      "mean_llm_calls": 1.25
+      "p90_latency_sec": 14.676659000106156,
+      "mean_llm_calls": 1.2
     },
     {
       "set": "Set 3",
@@ -53,10 +54,10 @@
       "fn": 1,
       "tn": 9,
       "unknown": 0,
-      "mean_latency_sec": 9.688953635492362,
-      "p50_latency_sec": 8.50997795816511,
-      "p90_latency_sec": 16.234430791810155,
-      "mean_llm_calls": 1.3
+      "mean_latency_sec": 8.759430366777815,
+      "p50_latency_sec": 8.499405291862786,
+      "p90_latency_sec": 13.526081750169396,
+      "mean_llm_calls": 0.85
     },
     {
       "set": "Set 4",
@@ -71,10 +72,10 @@
       "fn": 1,
       "tn": 10,
       "unknown": 1,
-      "mean_latency_sec": 9.178850400005468,
+      "mean_latency_sec": 9.92407089578919,
       "p50_latency_sec": 8.359840707853436,
-      "p90_latency_sec": 15.274017124902457,
-      "mean_llm_calls": 1.15
+      "p90_latency_sec": 17.320317124947906,
+      "mean_llm_calls": 1.1
     },
     {
       "set": "Set 5",
@@ -99,28 +100,39 @@
     "evaluated_claims": 100,
     "correct_claims": 95,
     "accuracy": 0.95,
-    "precision": 0.9411764705882353,
+    "precision": 0.96,
     "recall": 0.96,
-    "f1": 0.9504950495049505,
+    "f1": 0.96,
     "tp": 48,
-    "fp": 3,
+    "fp": 2,
     "fn": 2,
     "tn": 47,
-    "unknown": 1,
-    "mean_latency_sec": 8.595002939607948,
+    "unknown": 2,
+    "mean_latency_sec": 8.637581930435262,
     "p50_latency_sec": 8.029880875255913,
     "p90_latency_sec": 12.101342791225761,
-    "mean_llm_calls": 1.16,
+    "mean_llm_calls": 0.98,
     "standard_error": 0.021794494717703377,
     "ci_lower_95": 0.9072827903533014,
     "ci_upper_95": 0.9927172096466985
   },
   "routing": {
-    "multi_agent_debate": 13,
-    "conformal_singleton": 82,
+    "multi_agent_debate": 9,
+    "conformal_singleton": 86,
     "contradiction_arbitration": 5
   },
   "failures": [
+    {
+      "set": 1,
+      "claim": "Brian Michael Bendis began teaching English at the University of Oregon in fall of 2013.",
+      "gold": "supported",
+      "prediction": "unknown",
+      "decision_policy": "multi_agent_debate",
+      "latency_sec": 29.69300025003031,
+      "llm_calls": 3,
+      "fact_type": null,
+      "evidence": "Evidence 1: Brian Michael Bendis was born on August 18, 1967, in Cleveland, Ohio to a Jewish-American family. Bendis grew up in University Heights where, despite rebelling against a religious upbringing, he attended the Hebrew Academy of Cleveland, a private, modern Orthodox religious school for boy"
+    },
     {
       "set": 2,
       "claim": "Diana, Princess of Wales was renowned as Lady Diana Spencer.",
@@ -133,26 +145,15 @@
       "evidence": "Evidence 1: Diana, Princess of Wales (born Diana Frances Spencer; 1 July 1961 \u2013 31 August 1997), was a member of the British royal family. She was the first wife of Charles III (then Prince of Wales) and mother of Princes William and Harry. Her activism and glamour made her an international icon and"
     },
     {
-      "set": 2,
-      "claim": "Shane Black is an American producer and actor.",
-      "gold": "supported",
-      "prediction": "contradicted",
-      "decision_policy": "multi_agent_debate",
-      "latency_sec": 12.244291457813233,
-      "llm_calls": 3,
-      "fact_type": null,
-      "evidence": "Evidence 1: Shane Black (born December 16, 1961) is an American screenwriter, film director, and actor, known for his distinctive style of action and action comedy films. He originated the Lethal Weapon franchise, and has also written such films as The Monster Squad (1987), The Last Boy Scout (1991)"
-    },
-    {
       "set": 3,
       "claim": "Middle-earth is a real place.",
       "gold": "contradicted",
       "prediction": "supported",
-      "decision_policy": "multi_agent_debate",
-      "latency_sec": 20.15518550015986,
-      "llm_calls": 3,
+      "decision_policy": "conformal_singleton",
+      "latency_sec": 8.530573500320315,
+      "llm_calls": 0,
       "fact_type": null,
-      "evidence": "EPISTEMIC CONTRADICTION: Retrieved sources provide conflicting information regarding this claim.\n\nEvidence 1: John R. R. Tolkien was an English poet, writer, and philologist who became popular for his classic fantasy works such as \"The Silmarillion,\" \"The Lord of the Rings,\" and \"The Hobbit.\" His st"
+      "evidence": "Evidence 1: I hope the, evidently long but undefined gap in time between the Fall of Barad-d\u00fbr and our Days is sufficient for 'literary credibility', even for readers acquainted with what is known as 'pre-history'. I have, I suppose, constructed an imaginary time, but kept my feet on my own mother-e"
     },
     {
       "set": 3,
@@ -176,6 +177,5 @@
       "fact_type": null,
       "evidence": "Evidence 1: Its library has about 30,000 volumes. The campus of the University of Greenland, hosting Statistics Greenland and the main holdings of the Public and National Library of Greenland, is at the district's northern end, near the road to Nuuk Airport. The National Library of Greenland in Nuuk"
     }
-  ],
-  "llm_routing": "primary"
+  ]
 }

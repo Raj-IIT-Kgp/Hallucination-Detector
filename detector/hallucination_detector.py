@@ -1,7 +1,6 @@
 from agents.claim_extractor import extract_claims, extract_claims_with_route
-from agents.query_generator import generate_queries, rewrite_queries
-from agents.entity_linker import extract_entities
-from agents.knowledge_graph import KnowledgeGraph
+from agents.query_generator import generate_queries, rewrite_queries, fallback_queries
+from agents import wikidata_graph
 from verification.nli_verifier import verify_claim, verify_claims_batch
 from detector.report_generator import generate_report
 from agents.critic_agent import nli_override, evaluate_absence
@@ -31,6 +30,8 @@ _ECHO_OVERLAP = 0.8
 _MIN_RESIDUAL_TOKENS = 8
 # Bound on cached (claim, snippet) NLI results held by one detector instance
 _NLI_CACHE_MAX = 5000
+# Longest a claim waits for its Wikidata graph (the arbiter's evidence, or the stream's display)
+_WIKIDATA_WAIT_SEC = 20
 
 _WORD_RE = re.compile(r"\w+")
 _SENT_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
@@ -93,6 +94,9 @@ class HallucinationDetector:
         self.min_contra_snippets = min_contra_snippets
         self.strip_claim_echoes = strip_claim_echoes
         self.strict_premises = strict_premises
+        # Wikidata graph shown in the web stream (VERIFACT_WIKIDATA=0 turns the display off; escalated
+        # claims still give their Wikidata statements to the arbiter)
+        self.wikidata_enabled = os.environ.get("VERIFACT_WIKIDATA", "1") != "0"
         # Per-(claim, snippet) NLI results: query-rewrite retries re-retrieve many of the same
         # paragraphs, which would otherwise be re-scored by the ~1s/batch cross-encoder.
         self._nli_cache = {}
@@ -186,7 +190,7 @@ class HallucinationDetector:
         Decisive support settles a claim directly, as does a contradiction corroborated by at least
         min_contra_snippets decisive snippets with no decisive support. A lone or contested decisive
         contradiction keeps its NLI posterior but sets needs_arbitration, so the caller has the LLM
-        arbiter review it (one call, no KG construction).
+        arbiter review it (one call, without the Wikidata evidence).
         """
         corroborate = self.min_contra_snippets is not None
 
@@ -253,25 +257,37 @@ class HallucinationDetector:
         (MPS kernel compilation, lazy model and tokenizer loading). Nothing is cached and no
         network or LLM call is made, so later results are unaffected.
         """
-        from agents.knowledge_graph import _get_encoder
+        from agents.wikidata_graph import _get_encoder
         from nltk.tokenize import sent_tokenize
         verify_claims_batch("The sky is blue.", ["The sky appears blue because of Rayleigh scattering."])
         self.retriever.encoder.encode(["warm-up"], show_progress_bar=False)
         _get_encoder().encode(["warm-up"], show_progress_bar=False)
         sent_tokenize("Warm-up sentence one. Warm-up sentence two.")
 
-    def _verify_claim_full(self, claim, answer, domain, search_queries, requires_current=False,
-                           progress=None, force_kg=False, defer_display=False, trace=None):
+    @staticmethod
+    def _rewrite(claim, evidence_text, search_queries, entities, reason, emit):
         """
-        Verifies one claim. Returns (verification, evidence_text, source_url, graph_json, display_task).
+        New queries for the second retrieval pass: the LLM rewrite, or, if it returns none (the
+        call failed or its reply had no queries), fallback_queries, so the second pass still runs.
+        """
+        new_queries = rewrite_queries(claim, evidence_text, search_queries)
+        route = "llm"
+        if not new_queries:
+            new_queries = [q for q in fallback_queries(claim, entities) if q not in search_queries]
+            route = "fallback"
+        emit("Queries rewritten", "rewrite", {"kind": "rewrite", "reason": reason, "queries": new_queries, "route": route})
+        return new_queries
+
+    def _verify_claim_full(self, claim, answer, domain, search_queries, requires_current=False,
+                           progress=None, force_kg=False, trace=None, wikidata_future=None):
+        """
+        Verifies one claim. Returns (verification, evidence_text, source_url, graph_json).
 
         progress(message, stage, data) receives stage events for the streaming UI; data, when given, holds
         the numbers computed at that step, which are also appended to trace (stored in the result as
-        verification["trace"]) so the UI can show the computation. force_kg builds the
-        Knowledge Graph even when the claim is not escalated (the UI's Deep Scan). With
-        defer_display, the display-only graph edge (which can never change the verdict) is returned
-        as display_task, a callable producing the enriched graph, instead of being computed before
-        the result; otherwise display_task is None.
+        verification["trace"]) so the UI can show the computation. force_kg adds the Wikidata
+        evidence even when the claim is not escalated (the UI's Deep Scan). wikidata_future, when
+        given, is the claim's Wikidata graph being built in the background.
         """
         progress = progress or (lambda message, stage, data=None: None)
         trace = trace if trace is not None else []
@@ -281,6 +297,7 @@ class HallucinationDetector:
                 trace.append(data)
             progress(message, stage, data)
 
+        initial_queries = list(search_queries)   # the entities named by query generation, before any rewrite
         max_retries = 1
         retry_count = 0
         accumulated_evidence = []
@@ -319,8 +336,8 @@ class HallucinationDetector:
                 if retry_count == 0:
                     print(f"    No evidence found. Triggering Self-Reflective Retrieval to rewrite queries...")
                     emit("No evidence found. Triggering Self-Reflective Retrieval to rewrite queries...", "rewrite")
-                    new_queries = rewrite_queries(claim, "No evidence returned.", search_queries)
-                    emit("Queries rewritten", "rewrite", {"kind": "rewrite", "reason": "no evidence", "queries": new_queries or []})
+                    new_queries = self._rewrite(claim, "No evidence returned.", search_queries, initial_queries,
+                                                "no evidence", emit)
                     if new_queries:
                         search_queries = new_queries
                         retry_count += 1
@@ -348,7 +365,7 @@ class HallucinationDetector:
                      {"kind": "absence", "label": absence_label, "error": llm_error})
                 verification["trace"] = trace
                 return (verification, "No evidence found. LLM Absence Evaluation: " + absence_label, None,
-                        {"nodes": [], "edges": []}, None)
+                        {"nodes": [], "edges": []})
 
             evidence_text = "\n\n".join([f"Evidence {i+1}: {e['text']}" for i, e in enumerate(evidence)])
             if requires_current:
@@ -400,39 +417,42 @@ class HallucinationDetector:
             if verification["label"] == "unknown" and retry_count == 0:
                 print(f"    NLI uncertain ({conf_res['conformal_set']}). Triggering Self-Reflective Retrieval to rewrite queries...")
                 emit(f"NLI uncertain ({conf_res['conformal_set']}) — triggering Self-Reflective Retrieval to rewrite queries...", "rewrite")
-                new_queries = rewrite_queries(claim, evidence_text, search_queries)
-                emit("Queries rewritten", "rewrite", {"kind": "rewrite", "reason": "uncertain verdict", "queries": new_queries or []})
+                new_queries = self._rewrite(claim, evidence_text, search_queries, initial_queries,
+                                            "uncertain verdict", emit)
                 if new_queries:
                     search_queries = new_queries
                     retry_count += 1
                     continue
 
             graph_json = {"nodes": [], "edges": []}
-            display_task = None
             if is_escalation or force_kg:
-                emit("Conformal escalation triggered — building Knowledge Graph for multi-hop reasoning..." if is_escalation
-                     else "Deep Scan active — forcing Knowledge Graph generation...", "kg")
-                entities = search_queries if (search_queries and search_queries != [claim]) else extract_entities(claim, context=answer)
-                if entities:
-                    cached_pages = self.retriever.get_page_cache() if hasattr(self.retriever, "get_page_cache") else None
-                    kg = KnowledgeGraph()
-                    kg.build(entities, claim=claim, cached_pages=cached_pages, evidence=evidence_text)
-                    graph_json = kg.get_graph_json()
-                    emit(f"Knowledge Graph built with {len(graph_json['nodes'])} nodes. Traversing for evidence...", "kg")
-                    kg_evidence = kg.get_multi_hop_evidence(claim, k=3)
-                    emit("Knowledge graph evidence ranked", "kg", {
-                        "kind": "kg", "entities": list(entities), "nodes": len(graph_json["nodes"]),
-                        "edges": len(graph_json.get("edges", [])),
-                        "verified_edges": sum(1 for e in graph_json.get("edges", []) if e.get("verified")),
-                        "added": [{"node": e["node"], "text": e["text"][:200]} for e in kg_evidence],
-                    })
-                    if kg_evidence:
-                        kg_text = "\n\n".join([f"KG Evidence [{e['node']}]: {e['text']}" for e in kg_evidence])
-                        evidence_text = evidence_text + "\n\n" + kg_text
-                        source_url = source_url + ", " + ", ".join(list(set([e["url"] for e in kg_evidence])))
+                # Knowledge-graph evidence for the arbiter: the claim's Wikidata statements. The graph
+                # was started after query generation, so it is usually ready; the claim's verdict
+                # waits for it at most _WIKIDATA_WAIT_SEC.
+                emit("Conformal escalation triggered — adding Wikidata statements for the arbiter..." if is_escalation
+                     else "Deep Scan active — adding Wikidata statements...", "kg")
+                error = None
+                try:
+                    future = wikidata_future or wikidata_graph.start(claim, initial_queries)
+                    graph_json = future.result(timeout=_WIKIDATA_WAIT_SEC)
+                except Exception as e:
+                    error = str(e)[:200]
+                    graph_json = {"source": "wikidata", "nodes": [], "edges": [], "error": error}
+                wd_text = wikidata_graph.as_evidence(graph_json)
+                lines = [l for l in wd_text.split("\n\n") if l.startswith("Wikidata Evidence [")]
+                emit(f"Wikidata: {len(lines)} statement{'' if len(lines) == 1 else 's'} added to the evidence", "kg", {
+                    "kind": "kg", "source": "wikidata", "entities": initial_queries,
+                    "nodes": len(graph_json.get("nodes", [])), "statements": len(lines),
+                    "unresolved": graph_json.get("unresolved", []), "error": error, "added_lines": lines,
+                })
+                if wd_text:
+                    evidence_text = evidence_text + "\n\n" + wd_text
+                    subject = graph_json.get("subject")
+                    if subject:
+                        source_url = source_url + ", " + f"https://www.wikidata.org/wiki/{subject}"
 
             if is_escalation:
-                # Directly route to Multi-Agent Debate with augmented KG evidence,
+                # Directly route to Multi-Agent Debate with the Wikidata evidence added,
                 # bypassing redundant NLI cross-encoder evaluation on diluted concatenated text
                 emit("Invoking Multi-Agent Debate for final logic override...", "arbiter")
                 llm_label, llm_error, reasoning = nli_override(claim, evidence_text, domain=domain, mode=self.debate_mode,
@@ -446,19 +466,10 @@ class HallucinationDetector:
                 emit(f"Debate completed: Final verdict '{llm_label.upper()}'", "arbiter",
                      {"kind": "arbiter", "mode": "escalation", "label": llm_label, "error": llm_error,
                       "reasoning": (reasoning or "")[:6000]})
-
-                # If the debate concluded SUPPORTED and the graph had nodes without edges, link the
-                # two primary nodes with the relationship stated in the evidence. Display only: it runs
-                # after the verdict and cannot change it, so the streaming UI defers it.
-                if llm_label == "supported" and graph_json.get("nodes") and len(graph_json["nodes"]) >= 2 and not graph_json.get("edges"):
-                    display_task = self._display_edge_task(kg, graph_json, claim, evidence_text)
-                    if not defer_display:
-                        graph_json = display_task()
-                        display_task = None
             elif needs_arbitration:
                 # Lightweight review of an uncorroborated or contested contradiction: one LLM call over
-                # the evidence already in hand, skipping KG construction (the expensive step)
-                emit("Reviewing uncorroborated contradiction (no KG)...", "arbiter")
+                # the evidence already in hand, without the knowledge-graph evidence of full escalation
+                emit("Reviewing uncorroborated contradiction...", "arbiter")
                 verification["label"], llm_error, reasoning = nli_override(claim, evidence_text, domain=domain, mode=self.debate_mode,
                                                                            strict_premises=self.strict_premises, return_reasoning=True)
                 if llm_error:
@@ -470,31 +481,22 @@ class HallucinationDetector:
                       "reasoning": (reasoning or "")[:6000]})
 
             verification["trace"] = trace
-            return verification, evidence_text, source_url, graph_json, display_task
+            return verification, evidence_text, source_url, graph_json
 
-    @staticmethod
-    def _display_edge_task(kg, graph_json, claim, evidence_text):
-        """Returns a callable that adds the evidence-stated edge between the two primary nodes."""
-        def run():
-            n1 = graph_json["nodes"][0]["id"]
-            n2 = graph_json["nodes"][1]["id"]
-            from agents.knowledge_graph import _extract_direct_relationship_from_evidence
-            direct = _extract_direct_relationship_from_evidence(n1, n2, claim, evidence_text)
-            if not direct:
-                return graph_json
-            kg.add_grounded_edge(direct["source"], direct["target"], direct["relationship"], quote=direct["quote"], verified=direct["verified"])
-            return kg.get_graph_json()
-        return run
-
-    def _process_claim(self, claim, answer, progress=None, force_kg=False, defer_display=False):
+    def _process_claim(self, claim, answer, progress=None, force_kg=False, on_wikidata=None):
         """
-        Processes a single claim end-to-end. Designed to be called from a thread pool
-        so that multiple claims can be processed concurrently.
-        Returns the result dict, plus the deferred display task when defer_display is set.
+        Processes a single claim end-to-end and returns its result. Designed to be called from a
+        thread pool so that multiple claims can be processed concurrently.
+        The claim's Wikidata graph is started in the background as soon as its entities are known
+        (the arbiter's evidence if the claim is escalated); on_wikidata(future) receives it (the web
+        stream shows it after the verdict).
         """
         emit = progress or (lambda message, stage, data=None: None)
         emit("Generating search queries...", "queries")
         query_info = generate_queries(claim, context=answer)
+        wikidata_future = wikidata_graph.start(claim, query_info["queries"])
+        if on_wikidata and self.wikidata_enabled:
+            on_wikidata(wikidata_future)
         search_queries = query_info["queries"]
         domain = query_info["domain"]
         requires_current = query_info.get("requires_current_state", False)
@@ -504,9 +506,9 @@ class HallucinationDetector:
 
         print(f"Generated search queries: {search_queries} for claim: '{claim}' (Domain: {domain}, Temporal: {requires_current})")
 
-        verification, evidence_text, source_url, graph_json, display_task = self._verify_claim_full(
+        verification, evidence_text, source_url, graph_json = self._verify_claim_full(
             claim, answer, domain, search_queries, requires_current,
-            progress=progress, force_kg=force_kg, defer_display=defer_display, trace=trace
+            progress=progress, force_kg=force_kg, trace=trace, wikidata_future=wikidata_future
         )
 
         result = {
@@ -517,7 +519,7 @@ class HallucinationDetector:
             "graph": graph_json,
             "correction": None
         }
-        return (result, display_task) if defer_display else result
+        return result
 
     @staticmethod
     def _failed_result(claim, error):
@@ -576,10 +578,13 @@ class HallucinationDetector:
           {"status": "claims", "claims": [...], "decomposition"}    after decomposition (route taken)
           {"status": "progress", "message", "stage", "claim_index"}  per pipeline stage
           {"status": "claim_result", "index", "result"}              as soon as a claim is verified
-          {"status": "claim_graph", "index", "graph"}                display-only graph enrichment
+          {"status": "claim_wikidata", "index", "graph", "error"}    the claim's Wikidata graph
           {"status": "done", "report", "final_text"}
         Claims are verified concurrently with the same per-claim code as analyze(), so verdicts are
         identical; events from different claims interleave and carry claim_index.
+        The Wikidata graph (agents/wikidata_graph.py) is built in the background from the claim's
+        entities while the claim is verified and sent after the verdict; an escalated claim's
+        arbiter has already read its statements.
         """
         import json
         import queue
@@ -604,20 +609,22 @@ class HallucinationDetector:
                 if data is not None:
                     event["data"] = data
                 events.put(event)
+            graph_future = []
             try:
-                result, display_task = self._process_claim(claim, answer, progress=progress,
-                                                           force_kg=force_kg, defer_display=True)
+                result = self._process_claim(claim, answer, progress=progress, force_kg=force_kg,
+                                             on_wikidata=graph_future.append)
             except Exception as e:
                 print(f"[HallucinationDetector] Claim {i} failed: {e}")
-                result, display_task = self._failed_result(claim, e), None
+                result = self._failed_result(claim, e)
             results[i] = result
             events.put({"status": "claim_result", "index": i, "result": result})
-            if display_task:
+            if graph_future:
                 try:
-                    result["graph"] = display_task()
-                    events.put({"status": "claim_graph", "index": i, "graph": result["graph"]})
+                    graph = graph_future[0].result(timeout=_WIKIDATA_WAIT_SEC)
+                    events.put({"status": "claim_wikidata", "index": i, "graph": graph})
                 except Exception as e:
-                    print(f"[HallucinationDetector] Display edge for claim {i} failed: {e}")
+                    print(f"[HallucinationDetector] Wikidata graph for claim {i} failed: {e}")
+                    events.put({"status": "claim_wikidata", "index": i, "graph": None, "error": str(e)[:200]})
             events.put(finished)
 
         with ThreadPoolExecutor(max_workers=max(1, min(len(claims), 5))) as executor:

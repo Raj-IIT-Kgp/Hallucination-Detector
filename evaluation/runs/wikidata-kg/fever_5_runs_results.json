@@ -3,6 +3,7 @@
   "seed": 42,
   "samples_per_set": 20,
   "num_sets": 5,
+  "llm_routing": "primary",
   "set_results": [
     {
       "set": "Set 1",
@@ -17,10 +18,10 @@
       "fn": 0,
       "tn": 9,
       "unknown": 1,
-      "mean_latency_sec": 20.46252904573921,
-      "p50_latency_sec": 14.424825833179057,
-      "p90_latency_sec": 44.13508891593665,
-      "mean_llm_calls": 1.45
+      "mean_latency_sec": 9.022340872860514,
+      "p50_latency_sec": 7.539165417198092,
+      "p90_latency_sec": 14.304887915961444,
+      "mean_llm_calls": 0.9
     },
     {
       "set": "Set 2",
@@ -35,28 +36,28 @@
       "fn": 0,
       "tn": 9,
       "unknown": 0,
-      "mean_latency_sec": 14.769748091767543,
-      "p50_latency_sec": 11.309509958140552,
-      "p90_latency_sec": 40.86317704198882,
-      "mean_llm_calls": 1.55
+      "mean_latency_sec": 8.555779108358546,
+      "p50_latency_sec": 8.029880875255913,
+      "p90_latency_sec": 14.676659000106156,
+      "mean_llm_calls": 1.2
     },
     {
       "set": "Set 3",
       "evaluated_claims": 20,
       "correct_claims": 18,
       "accuracy": 0.9,
-      "precision": 1.0,
+      "precision": 0.9,
       "recall": 0.9,
-      "f1": 0.9473684210526316,
+      "f1": 0.9,
       "tp": 9,
-      "fp": 0,
+      "fp": 1,
       "fn": 1,
       "tn": 9,
-      "unknown": 1,
-      "mean_latency_sec": 10.891835927031934,
-      "p50_latency_sec": 9.3585892082192,
-      "p90_latency_sec": 18.92904637521133,
-      "mean_llm_calls": 1.05
+      "unknown": 0,
+      "mean_latency_sec": 8.759430366777815,
+      "p50_latency_sec": 8.499405291862786,
+      "p90_latency_sec": 13.526081750169396,
+      "mean_llm_calls": 0.85
     },
     {
       "set": "Set 4",
@@ -71,10 +72,10 @@
       "fn": 1,
       "tn": 10,
       "unknown": 1,
-      "mean_latency_sec": 16.060795712377875,
-      "p50_latency_sec": 10.880074915941805,
-      "p90_latency_sec": 34.773569041863084,
-      "mean_llm_calls": 1.65
+      "mean_latency_sec": 9.92407089578919,
+      "p50_latency_sec": 8.359840707853436,
+      "p90_latency_sec": 17.320317124947906,
+      "mean_llm_calls": 1.1
     },
     {
       "set": "Set 5",
@@ -89,59 +90,59 @@
       "fn": 0,
       "tn": 10,
       "unknown": 0,
-      "mean_latency_sec": 12.837430354137904,
-      "p50_latency_sec": 10.483810750301927,
-      "p90_latency_sec": 26.91870737494901,
-      "mean_llm_calls": 0.9
+      "mean_latency_sec": 6.9262884083902465,
+      "p50_latency_sec": 6.942901375237852,
+      "p90_latency_sec": 9.865543333813548,
+      "mean_llm_calls": 0.85
     }
   ],
   "pooled": {
     "evaluated_claims": 100,
     "correct_claims": 95,
     "accuracy": 0.95,
-    "precision": 0.9795918367346939,
+    "precision": 0.96,
     "recall": 0.96,
-    "f1": 0.9696969696969697,
+    "f1": 0.96,
     "tp": 48,
-    "fp": 1,
+    "fp": 2,
     "fn": 2,
     "tn": 47,
-    "unknown": 3,
-    "mean_latency_sec": 15.004467826210893,
-    "p50_latency_sec": 11.300216166768223,
-    "p90_latency_sec": 32.208889500238,
-    "mean_llm_calls": 1.32,
+    "unknown": 2,
+    "mean_latency_sec": 8.637581930435262,
+    "p50_latency_sec": 8.029880875255913,
+    "p90_latency_sec": 12.101342791225761,
+    "mean_llm_calls": 0.98,
     "standard_error": 0.021794494717703377,
     "ci_lower_95": 0.9072827903533014,
     "ci_upper_95": 0.9927172096466985
   },
   "routing": {
-    "multi_agent_debate": 14,
-    "conformal_singleton": 78,
-    "contradiction_arbitration": 8
+    "multi_agent_debate": 9,
+    "conformal_singleton": 86,
+    "contradiction_arbitration": 5
   },
   "failures": [
     {
       "set": 1,
-      "claim": "2016 Tour de France was won by a rider.",
+      "claim": "Brian Michael Bendis began teaching English at the University of Oregon in fall of 2013.",
       "gold": "supported",
       "prediction": "unknown",
-      "decision_policy": "contradiction_arbitration",
-      "latency_sec": 17.14616679120809,
-      "llm_calls": 2,
+      "decision_policy": "multi_agent_debate",
+      "latency_sec": 29.69300025003031,
+      "llm_calls": 3,
       "fact_type": null,
-      "evidence": "Evidence 1: Pinot finished as the best young rider. The team classification was won by Ag2r\u2013La Mondiale and Alessandro De Marchi (Cannondale) was given the award for the most combative rider. Kittel and Nibali won the most stages, with four each. Following criticism by the professional women's pelot"
+      "evidence": "Evidence 1: Brian Michael Bendis was born on August 18, 1967, in Cleveland, Ohio to a Jewish-American family. Bendis grew up in University Heights where, despite rebelling against a religious upbringing, he attended the Hebrew Academy of Cleveland, a private, modern Orthodox religious school for boy"
     },
     {
       "set": 2,
-      "claim": "Underdog features the voice talents of Amy Adams.",
+      "claim": "Diana, Princess of Wales was renowned as Lady Diana Spencer.",
       "gold": "supported",
       "prediction": "contradicted",
       "decision_policy": "conformal_singleton",
-      "latency_sec": 24.56350954109803,
-      "llm_calls": 2,
+      "latency_sec": 9.088238999713212,
+      "llm_calls": 1,
       "fact_type": null,
-      "evidence": "Evidence 1: She identified with her character's ability to find the best in people, and described her collaboration with Streep and Hoffman as a \"master class\" in acting. Amy Biancolli of the Houston Chronicle wrote that Adams \"sparks with distressed compassion\", and Ann Hornaday believed that she \""
+      "evidence": "Evidence 1: Diana, Princess of Wales (born Diana Frances Spencer; 1 July 1961 \u2013 31 August 1997), was a member of the British royal family. She was the first wife of Charles III (then Prince of Wales) and mother of Princes William and Harry. Her activism and glamour made her an international icon and"
     },
     {
       "set": 3,
@@ -149,21 +150,21 @@
       "gold": "contradicted",
       "prediction": "supported",
       "decision_policy": "conformal_singleton",
-      "latency_sec": 7.454150667414069,
+      "latency_sec": 8.530573500320315,
       "llm_calls": 0,
       "fact_type": null,
       "evidence": "Evidence 1: I hope the, evidently long but undefined gap in time between the Fall of Barad-d\u00fbr and our Days is sufficient for 'literary credibility', even for readers acquainted with what is known as 'pre-history'. I have, I suppose, constructed an imaginary time, but kept my feet on my own mother-e"
     },
     {
       "set": 3,
-      "claim": "Caroline Kennedy is Ambassador to Japan.",
+      "claim": "Warner Bros. released Avenged Sevenfold.",
       "gold": "supported",
-      "prediction": "unknown",
-      "decision_policy": "contradiction_arbitration",
-      "latency_sec": 17.09675387479365,
-      "llm_calls": 3,
+      "prediction": "contradicted",
+      "decision_policy": "conformal_singleton",
+      "latency_sec": 8.71809508278966,
+      "llm_calls": 1,
       "fact_type": null,
-      "evidence": "[SYSTEM TIMESTAMP: 2026-10-23]\nEvidence 1: The ambassador of the United States of America to Japan (Japanese: \u99d0\u65e5\u672c\u56fd\u30a2\u30e1\u30ea\u30ab\u5408\u8846\u56fd\u5927\u4f7f, Hepburn: Ch\u016b Nihonkoku Amerika Gassh\u016bkoku Taishi) is the ambassador from the United States of America to Japan. The United States maintains an embassy in Tokyo, with consulate"
+      "evidence": "Evidence 1: and Hopeless Records. Recorded in the middle of 2007, it was the band's first studio album to be solely self-produced.\n\nEvidence 2: Aug 4, 2026 \u00b7 Avenged Sevenfold continues to tour and release new material under its own imprint. The band\u2019s decision follows a history of navigating label "
     },
     {
       "set": 4,
@@ -171,7 +172,7 @@
       "gold": "contradicted",
       "prediction": "unknown",
       "decision_policy": "contradiction_arbitration",
-      "latency_sec": 10.880074915941805,
+      "latency_sec": 9.925218874588609,
       "llm_calls": 1,
       "fact_type": null,
       "evidence": "Evidence 1: Its library has about 30,000 volumes. The campus of the University of Greenland, hosting Statistics Greenland and the main holdings of the Public and National Library of Greenland, is at the district's northern end, near the road to Nuuk Airport. The National Library of Greenland in Nuuk"

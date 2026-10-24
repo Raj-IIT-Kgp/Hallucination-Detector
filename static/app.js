@@ -129,6 +129,7 @@ const run = {
     text: '',             // the input text
     decompRoute: null,    // how the text was decomposed: fast_path | llm | fallback (null: not sent)
     sentOwner: [],        // per claim: index of the input sentence it came from
+    wikidata: [],         // per claim: its Wikidata graph, when it has arrived
     globalState: {},      // extract and report, which run once per input
     start: 0,
     timer: null,
@@ -223,6 +224,8 @@ function resetRun() {
     run.replay = null;
     run.decompRoute = null;
     run.sentOwner = [];
+    run.wikidata = [];
+    graphData = null;
     run.logCount = 0;
     $('replayNote').classList.add('hidden');
     $('timelineSection').classList.add('hidden');
@@ -475,8 +478,6 @@ function claimDetailsHtml(result, { hoodIndex = null } = {}) {
             <div class="ev-text">${escapeHtml(e.text.length > 600 ? e.text.slice(0, 600) + '…' : e.text)}</div>
         </div>`;
     }).join('');
-    const graph = result.graph || {};
-    const nNodes = (graph.nodes || []).length, nEdges = (graph.edges || []).length;
 
     return `
         ${verdictPathHtml(v)}
@@ -486,7 +487,7 @@ function claimDetailsHtml(result, { hoodIndex = null } = {}) {
                 ${llmDown ? `<div class="ev-note" style="margin-bottom:8px"><strong>The LLM step could not run</strong> (${escapeHtml(llmErrorReason(v.llm_unavailable))}), so the verdict was left Uncertain instead of guessed.${nliLabel && probs.length === 3 ? ` Before review, the NLI model leaned <strong>${VERDICT[nliLabel].text}</strong> (${pct(Math.max(...probs), 0)}).` : ''} Try again in a minute.</div>` : ''}
                 <p class="decision">${llmDown && policy.needed ? policy.needed : policy.text(set.map(s => VERDICT[s] ? VERDICT[s].text : s).join(', '))}</p>
                 ${overridden ? `<p class="decision" style="margin-top:8px">The arbiter <strong>overrode</strong> the NLI model, which leaned <strong>${VERDICT[nliLabel].text}</strong>.</p>` : ''}
-                ${nNodes ? `<p class="decision" style="margin-top:8px">Knowledge graph: ${nNodes} entit${nNodes === 1 ? 'y' : 'ies'}, ${nEdges} relation${nEdges === 1 ? '' : 's'} (shown below).</p>` : ''}
+                ${hoodIndex != null ? wikidataSummaryHtml(run.wikidata[hoodIndex], result) : ''}
             </div>
             <div class="panel">
                 <div class="panel-title"><span>NLI probabilities${overridden ? ' (before arbitration)' : ''}</span><span>sum to 1</span></div>
@@ -761,10 +762,12 @@ function handleEvent(data, text) {
         $('runClaim').textContent = `· ${verifiedCount()} of ${run.claims.length} verified`;
         const v = VERDICT[data.result.verification.label] || VERDICT.unknown;
         logEvent(`Claim ${i + 1}: ${v.text}`, ms);
-    } else if (data.status === 'claim_graph') {
-        // display-only graph enrichment that arrives after the verdict
+    } else if (data.status === 'claim_wikidata') {
+        // the claim's Wikidata graph, sent after its verdict
+        run.wikidata[data.index] = data.graph || { error: data.error || 'unavailable' };
         const r = run.results[data.index];
-        if (r) fillClaim(data.index, { ...r, graph: data.graph }, { quiet: true });
+        if (r) fillClaim(data.index, r, { quiet: true });
+        renderMainGraph();
     } else if (data.status === 'done') {
         const claims = data.report.claims || [];
         if (!run.claims.length && claims.length) { initClaims(claims.map(c => c.claim)); initHood(run.claims); }   // older server without per-claim events
@@ -994,18 +997,19 @@ const HOOD_RENDER = {
         return hoodStep('→', 'Routing', escapeHtml(NEXT[st.next] || st.next), `
             <div class="hood-math">${tex(`\\text{escalate} = \\underbrace{[\\hat y = \\text{unk}]}_{${tf(t1)}} \\lor \\underbrace{[|\\mathcal C| > 1]}_{${tf(t2)}} \\lor \\underbrace{[\\text{unk} \\in \\mathcal C]}_{${tf(t3)}} \\lor \\underbrace{[\\text{shared role} \\land \\hat y = \\text{con}]}_{${tf(t4)}} = ${tf(st.escalate)}`)}</div>
             <p class="hood-note">${st.next === 'review' ? 'Not escalated, but the evidence rule flagged a lone or contested contradiction, so the LLM reviews it (no knowledge graph).' :
-                st.next === 'rewrite' ? 'The verdict is uncertain on the first pass, so the LLM rewrites the queries and retrieval runs again.' :
-                st.next === 'escalate' ? 'The set is ambiguous: the knowledge graph adds multi-hop evidence and the LLM arbiter decides.' :
+                st.next === 'rewrite' ? 'The verdict is uncertain on the first pass, so the LLM rewrites the queries (or, if it returns none, the claim without its entity names is searched) and retrieval runs again.' :
+                st.next === 'escalate' ? 'The set is ambiguous: Wikidata statements from the knowledge graph are added and the LLM arbiter decides.' :
                 'A single confident label: the NLI verdict is final and no LLM is called.'}</p>`);
     },
 
     rewrite: st => hoodStep('↺', 'Self-reflective query rewrite', `after ${escapeHtml(st.reason)}`, `
         <div class="hood-chipline">${(st.queries || []).map(q => `<span class="q-chip">${escapeHtml(q)}</span>`).join('') || '<span class="muted">no new queries</span>'}</div>
+        ${st.route === 'fallback' ? '<p class="hood-note">The LLM returned no queries, so the second pass searches what the claim says about its entities (the claim without their names).</p>' : ''}
         <p class="hood-note">Evidence from both passes is pooled, so a worse second search cannot discard what the first one found.</p>`),
 
-    kg: st => hoodStep('G', 'Knowledge graph', `${st.nodes} entit${st.nodes === 1 ? 'y' : 'ies'} · ${st.edges} relation${st.edges === 1 ? '' : 's'} (${st.verified_edges} verified)`, `
-        <p class="hood-note">Relations are kept as evidence only if their quote is found verbatim in a source (provenance check). Added to the arbiter's evidence by similarity to the claim:</p>
-        ${(st.added || []).map(a => `<div class="ev kg"><span class="ev-label">${escapeHtml(a.node)}</span>${escapeHtml(a.text)}…</div>`).join('') || '<p class="muted">Nothing relevant enough was added.</p>'}`),
+    kg: st => hoodStep('G', 'Knowledge graph: Wikidata statements', `${st.statements || 0} statement${st.statements === 1 ? '' : 's'} for the arbiter`, `
+        <p class="hood-note">The claim's entities (${(st.entities || []).map(e => `“${escapeHtml(e)}”`).join(', ') || 'none'}) were looked up in Wikidata; the statements below were added to the arbiter's evidence, each with its number of references.${(st.unresolved || []).length ? ` Not found in Wikidata: ${st.unresolved.map(e => `“${escapeHtml(e)}”`).join(', ')}.` : ''}${st.error ? ` Wikidata could not be reached (${escapeHtml(st.error)}), so the arbiter decided on the retrieved evidence alone.` : ''}</p>
+        ${(st.added_lines || []).map(l => { const m = l.match(/^Wikidata Evidence \[([^\]]*)\]: (.*)$/); return `<div class="ev kg"><span class="ev-label">${escapeHtml(m ? m[1] : 'Wikidata')}</span>${escapeHtml(m ? m[2] : l)}</div>`; }).join('') || '<p class="muted">No Wikidata statement was found for this claim.</p>'}`),
 
     arbiter: st => {
         const head = st.mode === 'review' ? 'LLM review' : 'LLM arbiter';
@@ -1322,98 +1326,246 @@ function renderTimeline() {
     $('timelineCaption').textContent = `${(end / 1000).toFixed(1)} s in total${run.replay ? ' (original timing of the recorded run)' : ''}`;
 }
 
-// ---- knowledge graph -----------------------------------------------------
+// ---- knowledge graph (Wikidata) --------------------------------------------
 
 let graphData = null;
 
+// Edge kinds, strongest first: a statement shown for several claims keeps its strongest role
+const EDGE_RANK = { claim: 0, record: 1, link: 2, context: 3 };
+const WD_STATUS = {
+    agrees: 'agrees with the claim',
+    differs: 'differs from the claim',
+    not_listed: 'claimed value not listed',
+    not_in_wikidata: 'no such statement in Wikidata',
+    unclear: 'claimed value not identified',
+};
+
+// Merges the claims' Wikidata graphs: an entity shared by several claims is drawn once
 function renderMainGraph() {
     const nodes = new Map(), edges = new Map();
-    run.results.filter(Boolean).forEach(r => {
-        ((r.graph || {}).nodes || []).forEach(n => { if (!nodes.has(n.id)) nodes.set(n.id, { ...n }); });
-        ((r.graph || {}).edges || []).forEach(e => {
-            const key = [e.source, e.target].sort().join('||');
-            if (!edges.has(key)) edges.set(key, { ...e });
+    (run.wikidata || []).forEach((g, i) => {
+        if (!g || !g.nodes) return;
+        g.nodes.forEach(n => {
+            if (!nodes.has(n.id)) nodes.set(n.id, { ...n, claims: [] });
+            const node = nodes.get(n.id);
+            if (n.kind === 'entity' && node.kind !== 'entity') Object.assign(node, { ...n, claims: node.claims });   // a claim's own entity wins
+            node.claims.push(i);
+        });
+        g.edges.forEach(e => {
+            const key = e.kind === 'claim' ? `claim|${i}|${e.source}|${e.target}` : `${e.source}|${e.target}|${e.pid}`;
+            const prev = edges.get(key);
+            const edge = { ...e, claim: i };
+            if (!prev || EDGE_RANK[e.kind] < EDGE_RANK[prev.kind] || (e.agrees && !prev.agrees)) edges.set(key, edge);
         });
     });
     const nodeList = [...nodes.values()];
     const edgeList = [...edges.values()].filter(e => nodes.has(e.source) && nodes.has(e.target));
-    if (!nodeList.length) return;
+    if (!nodeList.length) { $('kgSection').classList.add('hidden'); graphData = null; return; }
     $('kgSection').classList.remove('hidden');
-    $('kgCaption').textContent = `${nodeList.length} entit${nodeList.length === 1 ? 'y' : 'ies'} · ${edgeList.length} relation${edgeList.length === 1 ? '' : 's'}`;
+    const nEnt = nodeList.filter(n => n.kind === 'entity' || n.kind === 'item').length;
+    const nStat = edgeList.filter(e => e.kind !== 'claim').length;
+    $('kgCaption').textContent = `${nEnt} entit${nEnt === 1 ? 'y' : 'ies'} · ${nStat} Wikidata statement${nStat === 1 ? '' : 's'}` +
+        (run.claims.length > 1 ? ` · ${run.claims.length} claims` : '');
     graphData = { nodes: nodeList, edges: edgeList };
     drawGraph(graphData);
 }
 
+function nodeSize(d) {
+    const label = d.label || d.id;
+    if (d.kind === 'entity') return { w: 60, h: 60, r: 30, text: label.length > 15 ? label.slice(0, 14) + '…' : label };
+    const text = label.length > 22 ? label.slice(0, 21) + '…' : label;
+    const w = Math.max(56, text.length * 6.4 + 18);
+    return { w, h: 26, r: w / 2, text };
+}
+
+// Point where the segment from the node's centre towards (tx, ty) leaves its shape
+function boundary(d, tx, ty) {
+    const dx = tx - d.x, dy = ty - d.y, len = Math.hypot(dx, dy) || 1;
+    if (d.kind === 'entity') return [d.x + dx / len * 31, d.y + dy / len * 31];
+    const sx = (d.size.w / 2 + 1) / (Math.abs(dx) || 1e-6), sy = (d.size.h / 2 + 1) / (Math.abs(dy) || 1e-6);
+    const t = Math.min(sx, sy, 1);
+    return [d.x + dx * t, d.y + dy * t];
+}
+
+function edgeClass(d) {
+    if (d.kind === 'claim') return `kg-link claim ${claimLabel(d.claim)}`;
+    if (d.kind === 'record') return `kg-link record${d.agrees ? ` agrees ${claimLabel(d.claim)}` : ''}`;
+    return `kg-link ${d.kind}`;
+}
+
+function edgeMarker(d) {
+    if (d.kind === 'claim') return `url(#kg-arrow-${claimLabel(d.claim)})`;
+    if (d.kind === 'record') return d.agrees ? `url(#kg-arrow-${claimLabel(d.claim)})` : 'url(#kg-arrow-record)';
+    return 'url(#kg-arrow-context)';
+}
+
 function drawGraph({ nodes, edges }) {
     const wrap = $('kgWrap');
-    const width = wrap.clientWidth || 800, height = wrap.clientHeight || 400;
+    const width = wrap.clientWidth || 800, height = wrap.clientHeight || 480;
     const svg = d3.select('#kgSvg').attr('viewBox', `0 0 ${width} ${height}`);
     svg.selectAll('*').remove();
+    nodes.forEach(n => { n.size = nodeSize(n); });
 
-    const defs = svg.append('defs');
-    [['arrow', 'kg-arrow'], ['arrow-v', 'kg-arrow-v']].forEach(([id, cls]) => {
-        defs.append('marker').attr('id', id).attr('viewBox', '0 -5 10 10').attr('refX', 30).attr('refY', 0)
-            .attr('orient', 'auto').attr('markerWidth', 6).attr('markerHeight', 6)
-            .append('path').attr('d', 'M0,-5L10,0L0,5').attr('class', cls);
+    // Parallel edges between the same two nodes are curved apart: offset k of n for each pair
+    const pairs = new Map();
+    edges.forEach(e => {
+        const key = [e.source.id || e.source, e.target.id || e.target].sort().join('||');
+        if (!pairs.has(key)) pairs.set(key, []);
+        pairs.get(key).push(e);
+    });
+    pairs.forEach(list => {
+        list.forEach((e, k) => { e.bend = (k - (list.length - 1) / 2) * 34; });
+        // Of parallel edges only the most important is labelled; the others show their label on hover
+        const lead = list.reduce((a, b) => EDGE_RANK[b.kind] < EDGE_RANK[a.kind] ? b : a);
+        list.forEach(e => { e.quiet = e !== lead; });
     });
 
+    const defs = svg.append('defs');
+    ['context', 'record', 'supported', 'contradicted', 'unknown'].forEach(k => {
+        defs.append('marker').attr('id', `kg-arrow-${k}`).attr('viewBox', '0 -5 10 10').attr('refX', 9).attr('refY', 0)
+            .attr('orient', 'auto').attr('markerWidth', 6).attr('markerHeight', 6)
+            .append('path').attr('d', 'M0,-5L10,0L0,5').attr('class', `kg-arrow ${k}`);
+    });
+
+    const bounds = () => nodes.forEach(d => {
+        d.x = Math.max(d.size.w / 2 + 4, Math.min(width - d.size.w / 2 - 4, d.x));
+        d.y = Math.max(d.size.h / 2 + 4, Math.min(height - d.size.h / 2 - 4, d.y));
+    });
     const sim = d3.forceSimulation(nodes)
-        .force('link', d3.forceLink(edges).id(d => d.id).distance(150))
-        .force('charge', d3.forceManyBody().strength(-420))
+        .force('link', d3.forceLink(edges).id(d => d.id)
+            .distance(d => d.kind === 'claim' || d.kind === 'record' ? 120 : 135).strength(0.6))
+        .force('charge', d3.forceManyBody().strength(-520))
         .force('center', d3.forceCenter(width / 2, height / 2))
-        .force('collide', d3.forceCollide(48))
-        .force('x', d3.forceX(width / 2).strength(0.04))
-        .force('y', d3.forceY(height / 2).strength(0.08));
+        // Spacing tuned offline on the demo graphs: no overlaps, at least ~55 px between entity circles
+        .force('collide', d3.forceCollide(d => d.kind === 'entity' ? d.size.r + 28 : d.size.w * 0.5 + 12).iterations(2))
+        .force('x', d3.forceX(width / 2).strength(0.05))
+        .force('y', d3.forceY(height / 2).strength(0.1))
+        .stop();
+    // Settle the layout before drawing, so the graph appears in place and the same data always looks the same.
+    // Nodes are kept inside the frame after each step (inside a force, the velocity would carry them out).
+    for (let i = 0; i < 320; i++) { sim.tick(); bounds(); }
 
     const edgeHtml = d => {
         const s = d.source.label || d.source.id, t = d.target.label || d.target.id;
-        return `<div class="tt-title">${escapeHtml(s)} → ${escapeHtml(t)}</div>
-            <div>${escapeHtml(d.relationship || 'related to')}</div>
-            <div class="tt-row"><span>${d.verified ? '✓ Provenance-verified' : 'Extracted, not verified'}</span></div>
-            ${d.quote ? `<div class="tt-quote">“${escapeHtml(d.quote)}”</div>` : ''}`;
+        let role;
+        if (d.kind === 'claim') {
+            const g = run.wikidata[d.claim] || {};
+            const status = g.match ? WD_STATUS[g.match.status] : '';
+            role = `<div class="tt-row"><span>As stated in claim ${d.claim + 1} · verdict ${VERDICT[claimLabel(d.claim)].text}</span></div>
+                ${status ? `<div class="tt-row"><span>Wikidata: ${escapeHtml(status)}</span></div>` : ''}`;
+        } else {
+            role = `<div class="tt-row"><span>Wikidata statement${d.kind === 'record' ? ' for the claim\'s property' : ''}${d.agrees ? ' · agrees with the claim' : ''}</span></div>
+                <div class="tt-row"><span>${d.refs ? `${d.refs} reference${d.refs === 1 ? '' : 's'} in Wikidata` : 'no reference in Wikidata'}</span></div>
+                ${d.url ? '<div class="tt-row"><span>Click to open the statement ↗</span></div>' : ''}`;
+        }
+        return `<div class="tt-title">${escapeHtml(s)} → ${escapeHtml(t)}</div><div>${escapeHtml(d.relationship || '')}</div>${role}`;
     };
 
     const linkG = svg.append('g');
-    const link = linkG.selectAll('line.kg-link').data(edges).enter().append('line')
-        .attr('class', d => `kg-link${d.verified ? ' verified' : ''}`)
-        .attr('marker-end', d => `url(#${d.verified ? 'arrow-v' : 'arrow'})`);
-    const hit = linkG.selectAll('line.kg-link-hit').data(edges).enter().append('line').attr('class', 'kg-link-hit')
-        .on('mouseenter', (e, d) => { link.classed('hl', l => l === d); showTip(edgeHtml(d), e); })
+    const link = linkG.selectAll('path.kg-link').data(edges).enter().append('path')
+        .attr('class', edgeClass).attr('marker-end', edgeMarker);
+    const hit = linkG.selectAll('path.kg-link-hit').data(edges).enter().append('path').attr('class', 'kg-link-hit')
+        .style('cursor', d => d.url ? 'pointer' : 'default')
+        .on('click', (e, d) => { if (d.url) window.open(d.url, '_blank', 'noopener'); })
+        .on('mouseenter', (e, d) => { link.classed('hl', l => l === d); elabel.classed('show', l => l === d); showTip(edgeHtml(d), e); })
         .on('mousemove', moveTip)
-        .on('mouseleave', () => { link.classed('hl', false); hideTip(); });
+        .on('mouseleave', () => { link.classed('hl', false); elabel.classed('show', false); hideTip(); });
+    // Labels on the claim's own edges; context labels appear on hover
     const elabel = svg.append('g').selectAll('text').data(edges).enter().append('text')
-        .attr('class', 'kg-elabel').attr('text-anchor', 'middle')
-        .text(d => { const r = d.relationship || ''; return r.length > 28 ? r.slice(0, 27) + '…' : r; });
+        .attr('class', d => `kg-elabel ${d.kind}${d.quiet ? ' quiet' : ''}`).attr('text-anchor', 'middle')
+        .text(d => { const r = (d.kind === 'claim' ? 'claimed: ' : '') + (d.relationship || ''); return r.length > 30 ? r.slice(0, 29) + '…' : r; });
 
-    const node = svg.append('g').selectAll('g').data(nodes).enter().append('g').attr('class', 'kg-node')
-        .style('cursor', 'pointer')
+    const node = svg.append('g').selectAll('g').data(nodes).enter().append('g')
+        .attr('class', d => `kg-node ${d.kind}${d.kind === 'claimed' ? ` ${claimLabel(d.claims[0])}` : ''}`)
+        .style('cursor', d => d.url ? 'pointer' : 'grab')
         .call(d3.drag()
             .on('start', (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
             .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
             .on('end', (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }))
-        .on('click', (e, d) => { if (d.url && d.url !== '#') window.open(d.url, '_blank', 'noopener'); })
+        .on('click', (e, d) => { if (!e.defaultPrevented && d.url) window.open(d.url, '_blank', 'noopener'); })
         .on('mouseenter', (e, d) => {
-            link.classed('hl', l => l.source.id === d.id || l.target.id === d.id);
+            const touches = l => l.source.id === d.id || l.target.id === d.id;
+            link.classed('hl', touches);
+            elabel.classed('show', touches);
+            const kind = d.kind === 'claimed' ? 'Value as stated in the claim' : d.kind === 'value' ? 'Value recorded in Wikidata' : `Wikidata entity ${escapeHtml(d.qid || '')}`;
             showTip(`<div class="tt-title">${escapeHtml(d.label || d.id)}</div>
-                <div>${escapeHtml((d.summary_snippet || 'Entity').slice(0, 260))}</div>
-                ${d.url && d.url !== '#' ? '<div class="tt-row" style="margin-top:4px"><span>Click to open source ↗</span></div>' : ''}`, e);
+                ${d.summary_snippet ? `<div>${escapeHtml(d.summary_snippet.slice(0, 200))}</div>` : ''}
+                <div class="tt-row"><span>${kind}</span></div>
+                ${d.url ? `<div class="tt-row"><span>Click to open ${/wikipedia/.test(d.url) ? 'its Wikipedia article' : 'it in Wikidata'} ↗</span></div>` : ''}`, e);
         })
         .on('mousemove', moveTip)
-        .on('mouseleave', () => { link.classed('hl', false); hideTip(); });
-    node.append('circle').attr('r', 26);
-    node.append('text').attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-        .text(d => { const l = d.label || d.id; return l.length > 13 ? l.slice(0, 12) + '…' : l; });
+        .on('mouseleave', () => { link.classed('hl', false); elabel.classed('show', false); hideTip(); });
+    node.filter(d => d.kind === 'entity').append('circle').attr('r', 30);
+    node.filter(d => d.kind !== 'entity').append('rect')
+        .attr('x', d => -d.size.w / 2).attr('y', d => -d.size.h / 2).attr('width', d => d.size.w).attr('height', d => d.size.h)
+        .attr('rx', 13);
+    node.append('text').attr('text-anchor', 'middle').attr('dominant-baseline', 'middle').text(d => d.size.text);
 
-    const clampX = x => Math.max(30, Math.min(width - 30, x));
-    const clampY = y => Math.max(30, Math.min(height - 30, y));
-    sim.on('tick', () => {
-        nodes.forEach(d => { d.x = clampX(d.x); d.y = clampY(d.y); });
-        [link, hit].forEach(sel => sel
-            .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
-            .attr('x2', d => d.target.x).attr('y2', d => d.target.y));
-        elabel.attr('x', d => (d.source.x + d.target.x) / 2).attr('y', d => (d.source.y + d.target.y) / 2 - 4);
+    // Edge geometry: a quadratic curve bent by d.bend, trimmed to the node outlines
+    const geometry = d => {
+        const sx = d.source.x, sy = d.source.y, tx = d.target.x, ty = d.target.y;
+        const len = Math.hypot(tx - sx, ty - sy) || 1;
+        const cx = (sx + tx) / 2 - (ty - sy) / len * d.bend, cy = (sy + ty) / 2 + (tx - sx) / len * d.bend;
+        const [x1, y1] = boundary(d.source, cx, cy), [x2, y2] = boundary(d.target, cx, cy);
+        return { x1, y1, cx, cy, x2, y2 };
+    };
+    const at = (g, t) => [(1 - t) ** 2 * g.x1 + 2 * (1 - t) * t * g.cx + t ** 2 * g.x2,
+                          (1 - t) ** 2 * g.y1 + 2 * (1 - t) * t * g.cy + t ** 2 * g.y2];
+    const render = () => {
+        const geo = new Map(edges.map(d => [d, geometry(d)]));
+        const path = d => { const g = geo.get(d); return `M${g.x1},${g.y1} Q${g.cx},${g.cy} ${g.x2},${g.y2}`; };
+        link.attr('d', path);
+        hit.attr('d', path);
+        // Labels sit nearer the value end, so those of a busy entity do not pile up at its centre;
+        // a label that would cover one already placed tries other points along its edge
+        const placed = nodes.map(n => [n.x - n.size.w / 2, n.y - n.size.h / 2, n.x + n.size.w / 2, n.y + n.size.h / 2]);
+        elabel.each(function (d) {
+            const visible = d.kind !== 'context' && !d.quiet;
+            const half = this.textContent.length * 2.9 + 3;
+            let best = null;
+            for (const t of [0.6, 0.45, 0.72, 0.35, 0.8, 0.52, 0.66, 0.4]) {
+                const [x, y] = at(geo.get(d), t);
+                const box = [x - half, y - 15, x + half, y - 2];
+                best = best || box;
+                if (!visible || !placed.some(p => box[0] < p[2] && p[0] < box[2] && box[1] < p[3] && p[1] < box[3])) { best = box; break; }
+            }
+            if (visible) placed.push(best);
+            this.setAttribute('x', (best[0] + best[2]) / 2);
+            this.setAttribute('y', best[3] - 3);
+        });
         node.attr('transform', d => `translate(${d.x},${d.y})`);
-    });
+    };
+    render();
+    sim.on('tick', () => { bounds(); render(); });
+}
+
+// One sentence on what Wikidata records for a claim (claim card), and whether its verdict used it
+function wikidataSummaryHtml(g, result) {
+    if (!g) return '';
+    const trace = ((result || {}).verification || {}).trace || [];
+    const used = trace.some(st => st.kind === 'kg' && st.source === 'wikidata' && st.statements);
+    const note = `<span class="muted"> ${used ? 'These statements were part of the evidence the LLM arbiter read.' : 'This verdict did not use Wikidata: only escalated claims give it to the arbiter.'}</span>`;
+    if (g.error) return `<p class="decision wd-line">Wikidata could not be reached, so this claim has no graph.${note}</p>`;
+    if (!g.nodes || !g.nodes.length) {
+        const names = (g.unresolved || []).map(n => `“${escapeHtml(n)}”`).join(', ');
+        return `<p class="decision wd-line">No Wikidata entity matches ${names || 'this claim'}, so it has no graph.${note}</p>`;
+    }
+    const subject = (g.nodes.find(n => n.id === g.subject) || {}).label || '';
+    const m = g.match || {};
+    const vals = (m.recorded || []).map(v => `<strong>${escapeHtml(v)}</strong>`).join(', ');
+    const more = m.total_recorded > (m.recorded || []).length ? ` (${m.recorded.length} of ${m.total_recorded} shown)` : '';
+    const prop = escapeHtml(m.property || '');
+    const claimed = m.claimed ? `<strong>${escapeHtml(m.claimed)}</strong>` : '';
+    let text;
+    switch (m.status) {
+        case 'agrees': text = `Wikidata records the ${prop} of ${escapeHtml(subject)} as <strong>${escapeHtml(m.agreeing)}</strong>, which agrees with the claim.`; break;
+        case 'differs': text = `Wikidata records the ${prop} of ${escapeHtml(subject)} as ${vals}; the claim states ${claimed}.`; break;
+        case 'not_listed': text = `Wikidata lists ${prop}: ${vals}${more}; ${claimed} is not among them.`; break;
+        case 'unclear': text = `Wikidata records ${prop}: ${vals}${more}.`; break;
+        case 'not_in_wikidata': text = `Wikidata has no ${prop} statement for ${escapeHtml(subject)}.`; break;
+        default: text = `No Wikidata property matches what this claim states; the graph shows the facts about ${escapeHtml(subject)} closest to it.`;
+    }
+    return `<p class="decision wd-line">${text}${note}</p>`;
 }
 
 // ================================================================ BENCHMARKS
@@ -1540,23 +1692,20 @@ function benchCard(key, d) {
     </div>`;
 }
 
-// Measured latency per claim: the full run, and the current settings on the first set of claims
+// Measured latency per claim of the published run
 function latencyHtml(d) {
     const l = d.latency;
     if (!l || !l.full_run) return '';
     const sec = x => `${x.toFixed(1)} s`;
-    const row = (name, m, cls = '') => m ? `<tr class="${cls}"><td>${name}</td><td>${sec(m.mean)}</td><td>${sec(m.p50)}</td><td>${sec(m.p90)}</td></tr>` : '';
+    const m = l.full_run;
     return `<div class="bench-block">
         <h3>Latency per claim (measured)</h3>
         <table class="data">
             <thead><tr><th></th><th>Mean</th><th>Median</th><th>90th pct.</th></tr></thead>
             <tbody>
-                ${row(`Current settings · ${l.current_settings ? l.current_settings.claims : ''} claims (Set 1)`, l.current_settings, 'pooled')}
-                ${row(`Same ${l.same_claims_full_run ? l.same_claims_full_run.claims : ''} claims in the full run`, l.same_claims_full_run)}
-                ${row(l.current_settings ? `Full run · ${l.full_run.claims} claims` : `Current settings · ${l.full_run.claims} claims`, l.full_run, l.current_settings ? '' : 'pooled')}
+                <tr class="pooled"><td>Current settings · ${m.claims} claims</td><td>${sec(m.mean)}</td><td>${sec(m.p50)}</td><td>${sec(m.p90)}</td></tr>
             </tbody>
         </table>
-        ${l.current_settings ? '<p class="hint">Current settings send every LLM call to gemini-3.5-flash-lite first; the full run sent supporting calls to the slower gemini-3.1-flash-lite (Docs, §3.4).</p>' : ''}
     </div>`;
 }
 
@@ -1768,19 +1917,21 @@ const METHOD = [
     ['Query generation', 'always', 'Each claim becomes entity-focused search queries, a domain tag and a flag for time-sensitive claims; simple claims use a rule-based fast path with no LLM call.'],
     ['Evidence retrieval and re-ranking', 'always', 'Wikipedia, web search and arXiv are queried in parallel; paragraphs are re-ranked by a hybrid lexical and semantic score, and web sentences that merely quote the claim are removed.'],
     ['NLI evidence scoring', 'always', 'A BART-large-MNLI cross-encoder scores every snippet. Decisive support settles a claim; a contradiction is accepted directly only when at least two decisive snippets agree.'],
-    ['Conformal prediction set', 'always', 'Split conformal prediction, calibrated on 100 FEVER claims, turns the NLI posterior into a label set with ≥ 90% coverage. A single-label set is accepted; a multi-label set triggers escalation.'],
-    ['Self-reflective query rewrite', 'only if uncertain', 'When the evidence is inconclusive, the LLM rewrites the queries once and retrieval runs again.'],
-    ['Knowledge-graph multi-hop', 'only if escalated', 'Entities are linked into a graph whose edges are kept only when a source sentence attests them (provenance check), adding multi-hop evidence.'],
+    ['Conformal prediction set', 'always', 'Split conformal prediction, calibrated on 100 FEVER claims, turns the NLI posterior into a label set with nominal 90% coverage (83.5% measured on live evidence). A single-label set is accepted; a multi-label set triggers escalation.'],
+    ['Self-reflective query rewrite', 'only if uncertain', 'When the evidence is inconclusive, the LLM rewrites the queries once (if it returns none, the claim without its entity names is searched) and retrieval runs again.'],
+    ['Knowledge graph (Wikidata)', 'only if escalated', 'The claim\'s entities are looked up in Wikidata, and their recorded statements (what the entity is, dates, places, awards, …) are added to the arbiter\'s evidence, with no LLM call.'],
     ['LLM arbiter', 'only if escalated or contested', 'A dialectical prompt argues for and against the claim, then judges against the raw evidence. It also reviews lone or contested contradictions, which are unreliable on their own.'],
     ['Report', 'always', 'Per-claim verdicts, conformal sets, p-values, evidence and sources are aggregated; one contradicted claim makes the whole answer a hallucination.'],
+    ['Graph view', 'always', 'The same Wikidata lookup, started alongside verification, is drawn with the claim next to what Wikidata records for the matching property.'],
 ];
 
 // Mirrors §5 of pipeline.md
 const LIMITS = [
-    ['Missing specific facts', 'When the evidence does not contain the specific number, date or ranking a claim asserts, the arbiter abstains: 9 of the 22 errors across both benchmarks are such abstentions.'],
-    ['NLI blind spots', 'The NLI model does not reason about time ("currently"), mishandles negations and accepts near-matching names; a decisive snippet settles a claim without LLM review, so these errors reach the output (4 of the 17 FreshQA errors).'],
-    ['Drifting labels', 'Even slow-changing FreshQA answers go out of date: on 4 of the 17 FreshQA errors, current evidence contradicts the gold answer (e.g. Lewandowski has left Barcelona).'],
-    ['Scope of the conformal guarantee', 'The conformal layer is calibrated on FEVER claims with gold evidence; on the pipeline\'s own retrieved evidence its measured coverage is 85%, below 90%, so the prediction set acts as a calibrated escalation trigger. Recalibrating restores coverage but escalates many more claims without improving accuracy.'],
+    ['Missing specific facts', 'When the evidence does not contain the specific number, date or ranking a claim asserts, the arbiter abstains: 9 of the 23 errors across both benchmarks are such abstentions.'],
+    ['NLI blind spots', 'The NLI model does not reason about time ("currently"), mishandles negations and accepts near-matching names; a decisive snippet settles a claim without LLM review, so these errors reach the output (5 of the 18 FreshQA errors).'],
+    ['Drifting labels', 'Even slow-changing FreshQA answers go out of date: on 5 of the 18 FreshQA errors, current evidence contradicts the gold answer (e.g. Lewandowski has left Barcelona).'],
+    ['Scope of the conformal guarantee', 'The conformal layer is calibrated on FEVER claims with gold evidence; on the pipeline\'s own retrieved evidence its measured coverage is 83.5%, below 90%, so the prediction set acts as a calibrated escalation trigger. Recalibrating restores coverage but escalates many more claims for about the same accuracy.'],
+    ['Echo filter on short claims', 'Web sentences containing 80% of the claim\'s words are removed as quotes of it; on a short claim an independent paraphrase can be removed too, as for one true claim that then ended Uncertain.'],
     ['Dependence on a hosted LLM', 'Rate limits are absorbed by switching Gemini models, but another model may judge a borderline claim differently, and the arbiter abstains if every model fails.'],
     ['Evaluation size and repeatability', '100 claims per benchmark give ±4 (FEVER) and ±7 (FreshQA) point confidence intervals, and live retrieval and a non-deterministic LLM mean a re-run can differ slightly.'],
 ];

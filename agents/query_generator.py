@@ -272,3 +272,22 @@ Output:
         
     return []
 
+
+
+def fallback_queries(claim, entities):
+    """
+    Queries made without an LLM, for when the rewrite returns none: what the claim says about its
+    entities, i.e. the claim with their names removed, which finds
+    pages on the property itself (rankings, lists, events) rather than on the entity again. If
+    too little is left, the claim itself.
+    """
+    text = claim.strip().rstrip(".").strip()
+    for name in sorted(entities or [], key=len, reverse=True):
+        words = [re.escape(w) for w in str(name).split()]
+        if words:
+            text = re.sub(r"\b" + r"\W+".join(words) + r"\b", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"^\W*(?:(?:is|was|are|were|has|have|had|be|been|the|a|an)\b\W*)*", "", text.strip(),
+                  flags=re.IGNORECASE)
+    text = re.sub(r"\s+", " ", text).strip(" ,;:'\"")
+    content = [w for w in re.findall(r"\w+", text.lower()) if w not in _STOPWORDS and len(w) > 2]
+    return [text] if len(content) >= 2 else [claim.strip()]

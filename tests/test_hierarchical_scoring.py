@@ -3,7 +3,6 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from detector.hallucination_detector import HallucinationDetector
-from agents.knowledge_graph import _fetch_wikipedia_summary
 
 class SeanPennMockRetriever:
     def search(self, queries, claim=None, domain="general", k=3):
@@ -53,17 +52,7 @@ def test_mount_rushmore_contradiction_fix():
     assert ver["label"] == "supported", f"Expected supported, got {ver['label']}"
     print("[PASS] Mount Rushmore correctly identified as SUPPORTED!")
 
-def test_global_warming_disambiguation_fix():
-    print("\n--- Test 3: Global Warming Disambiguation Semantic Reranking ---")
-    claim = "The abandonment of populated areas due to rising sea levels is caused by Global warming."
-    page_data = _fetch_wikipedia_summary("Global Warning", context_claim=claim)
-    assert page_data is not None, "Failed to fetch summary"
-    print(f"Resolved Wikipedia Title: '{page_data['title']}'")
-    assert "Jon Oliva" not in page_data["title"], "Disambiguation should avoid rock album!"
-    print("[PASS] Global Warming disambiguated without falling into rock album trap!")
-
 if __name__ == "__main__":
     test_sean_penn_dilution_fix()
     test_mount_rushmore_contradiction_fix()
-    test_global_warming_disambiguation_fix()
     print("\n[ALL FIX VERIFICATIONS PASSED SUCCESSFULLY!]")

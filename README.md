@@ -4,10 +4,10 @@ VeriFact checks a text, typically an answer written by a language model, for hal
 
 | Benchmark (100 claims, five sets of 20) | Accuracy (95% CI) | Precision | Recall | F1 |
 | :--- | :--- | :--- | :--- | :--- |
-| FEVER | 95.0% [90.7%, 99.3%] | 0.94 | 0.96 | 0.95 |
-| FreshQA (never- and slow-changing) | 83.0% [75.6%, 90.4%] | 0.91 | 0.86 | 0.89 |
+| FEVER | 95.0% [90.7%, 99.3%] | 0.96 | 0.96 | 0.96 |
+| FreshQA (never- and slow-changing) | 82.0% [74.5%, 89.5%] | 0.91 | 0.82 | 0.86 |
 
-Mean latency per claim, measured with the current settings: **8.6 s** on FEVER and **12.8 s** on FreshQA.
+Mean latency per claim: **8.6 s** on FEVER and **12.2 s** on FreshQA.
 
 **The full method, mathematics, evaluation and limitations are documented in [`pipeline.md`](pipeline.md).**
 
@@ -34,13 +34,13 @@ HF_HUB_OFFLINE=0 python server.py
 
 Then open <http://localhost:8080>. Later runs can use `python server.py`.
 
-The server runs in production mode by default (waitress, bound to `127.0.0.1`). `VERIFACT_DEBUG=1 python server.py` starts Flask's development server with auto-reload instead; do not expose that one on a network. Other settings: `VERIFACT_HOST`, `VERIFACT_PORT`, `VERIFACT_MAX_CHARS` (input limit, default 4000), `VERIFACT_RATE_LIMIT` and `VERIFACT_RATE_WINDOW_SEC` (live checks per client, default 12 per 10 minutes), `VERIFACT_MAX_CONCURRENT` (live checks at once, default 3). `GET /api/health` reports the server's status.
+The server runs in production mode by default (waitress, bound to `127.0.0.1`). `VERIFACT_DEBUG=1 python server.py` starts Flask's development server with auto-reload instead; do not expose that one on a network. Other settings: `VERIFACT_HOST`, `VERIFACT_PORT`, `VERIFACT_MAX_CHARS` (input limit, default 4000), `VERIFACT_RATE_LIMIT` and `VERIFACT_RATE_WINDOW_SEC` (live checks per client, default 12 per 10 minutes), `VERIFACT_MAX_CONCURRENT` (live checks at once, default 3), `VERIFACT_CACHE_TTL_SEC` (how long a live run is kept for replay, default 86400 = 24 h), `VERIFACT_WIKIDATA=0` (turn off the Wikidata graph). `GET /api/health` reports the server's status.
 
 **Recorded runs.** A completed live check is recorded; the same input then replays instantly, with no API calls, and is clearly marked as a replay with a *Run live instead* button. The example inputs' recordings are kept in `demo_runs/` (committed, no expiry), so a demo works offline; other inputs are kept for 24 hours in `run_cache/`.
 
 ## Web interface
 
-- **Verify**: paste text and watch each claim go through the pipeline live, with its verdict, the NLI reading of every evidence snippet (and which one decided), the conformal set, a stage timeline and the knowledge graph.
+- **Verify**: paste text and watch each claim go through the pipeline live, with its verdict, the NLI reading of every evidence snippet (and which one decided), the conformal set, a stage timeline, and a knowledge graph from Wikidata that sets each claim next to what Wikidata records (escalated claims also give these statements to the LLM arbiter).
 - **Benchmarks**: the FEVER and FreshQA five-set results.
 - **Method**: the pipeline stages and known limitations.
 - **Docs**: `pipeline.md`, rendered.
@@ -60,14 +60,14 @@ The five-set evaluation makes several hundred LLM calls; if the API quota runs o
 
 | Path | Contents |
 | :--- | :--- |
-| `agents/` | claim extraction, query generation, entity linking, knowledge graph, LLM arbiter |
+| `agents/` | claim extraction, query generation, Wikidata knowledge graph, LLM arbiter |
 | `retrieval/` | Wikipedia, web and arXiv retrieval; hybrid re-ranking |
 | `verification/` | NLI model |
 | `statistical_layer/` | split conformal prediction |
 | `detector/` | the pipeline that connects the stages, and the report |
 | `llm/` | Gemini and Ollama clients |
 | `evaluation/` | benchmark loaders, runners and result files |
-| `experiments/` | conformal calibration and ablations |
+| `experiments/` | conformal calibration and the full evaluation report |
 | `static/`, `server.py`, `run_cache.py` | web interface, server and recorded runs |
 | `demo_runs/` | recorded runs of the example inputs |
 | `tests/` | test scripts, each run directly, e.g. `python tests/test_hierarchical_scoring.py` |

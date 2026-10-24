@@ -3,7 +3,7 @@ import os
 import time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agents.query_generator import generate_queries
+from agents.query_generator import generate_queries, fallback_queries
 import agents.query_generator as qg_module
 
 def test_fast_path_with_long_context():
@@ -93,9 +93,49 @@ def test_alphanumeric_entity_extraction():
     finally:
         qg_module.generate_response = original_gen
 
+def test_fallback_queries_search_the_relation():
+    """Without the LLM rewrite, the second pass searches what the claim says about its entities."""
+    assert fallback_queries("shahrukh khan is the richest actor in the world", ["Shahrukh Khan"]) == ["richest actor in the world"]
+    assert fallback_queries("The Eiffel Tower was completed in 1889", ["Eiffel Tower"]) == ["completed in 1889"]
+    # too little left after removing the names: the claim itself
+    assert fallback_queries("Tim Cook is the CEO of Apple", ["Tim Cook", "Apple"]) == ["Tim Cook is the CEO of Apple"]
+    print("PASS: fallback queries")
+
+
+def test_failed_rewrite_still_runs_second_pass():
+    """An empty LLM rewrite falls back to the claim's relation, and a claim with no evidence at all
+    returns the four values the caller unpacks."""
+    import detector.hallucination_detector as hd
+
+    class Retriever:
+        def __init__(self):
+            self.calls = []
+        def search(self, queries, claim=None, domain="general", k=3):
+            self.calls.append(list(queries))
+            return []
+
+    original = (hd.rewrite_queries, hd.evaluate_absence)
+    hd.rewrite_queries = lambda *a, **kw: []
+    hd.evaluate_absence = lambda *a, **kw: ("unknown", None)
+    try:
+        retriever = Retriever()
+        det = hd.HallucinationDetector(retriever)
+        verification, evidence, sources, graph = det._verify_claim_full(
+            "shahrukh khan is the richest actor in the world", "", "general", ["Shahrukh Khan"])
+    finally:
+        hd.rewrite_queries, hd.evaluate_absence = original
+    assert retriever.calls == [["Shahrukh Khan"], ["richest actor in the world"]]
+    step = next(s for s in verification["trace"] if s["kind"] == "rewrite")
+    assert step["route"] == "fallback"
+    assert verification["final_decision_policy"] == "absence_heuristic" and graph == {"nodes": [], "edges": []}
+    print("PASS: failed rewrite falls back, no-evidence path returns four values")
+
+
 if __name__ == "__main__":
     test_fast_path_with_long_context()
     test_pronoun_routes_to_llm()
     test_creative_work_routes_to_llm()
     test_alphanumeric_entity_extraction()
+    test_fallback_queries_search_the_relation()
+    test_failed_rewrite_still_runs_second_pass()
     print("All fast-path query generator tests passed!")

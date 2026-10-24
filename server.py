@@ -178,38 +178,20 @@ def benchmarks():
             with open(path) as f:
                 results[name] = json.load(f)
             results[name]["route_outcomes"] = _route_outcomes(name)
-            results[name]["latency"] = _latency(name, results[name].get("llm_routing"))
+            results[name]["latency"] = _latency(name)
     return jsonify(results)
 
 
-def _latency(name, routing=None):
-    """
-    Measured latency per claim of the published run. If that run used other LLM routing than the
-    current default ("primary"), also the current settings' run on the first set
-    (evaluation/runs/default-latency/), with the same claims' latency in the published run.
-    """
-    def load(path):
-        if not os.path.exists(path):
-            return []
-        with open(path) as f:
-            return [json.loads(line) for line in f if line.strip()]
-
-    def summary(values):
-        values = sorted(values)
-        n = len(values)
-        return {"claims": n, "mean": sum(values) / n, "p50": values[n // 2], "p90": values[min(n - 1, int(0.9 * n))]} if n else None
-
-    full = load(os.path.join(BASE_DIR, "evaluation", f"{name}_5_runs_claims.jsonl"))
-    current = [] if routing == "primary" else load(
-        os.path.join(BASE_DIR, "evaluation", "runs", "default-latency", f"{name}_5_runs_claims.jsonl"))
-    # matched on (set, claim): FEVER repeats a few claim texts in different sets
-    by_claim = {(r["set"], r["claim"]): r for r in full}
-    same = [by_claim[(r["set"], r["claim"])]["latency_sec"] for r in current if (r["set"], r["claim"]) in by_claim]
-    return {
-        "full_run": summary([r["latency_sec"] for r in full]),
-        "current_settings": summary([r["latency_sec"] for r in current]),
-        "same_claims_full_run": summary(same),
-    }
+def _latency(name):
+    """Measured latency per claim of the published run."""
+    path = os.path.join(BASE_DIR, "evaluation", f"{name}_5_runs_claims.jsonl")
+    if not os.path.exists(path):
+        return {"full_run": None}
+    with open(path) as f:
+        values = sorted(json.loads(line)["latency_sec"] for line in f if line.strip())
+    n = len(values)
+    return {"full_run": {"claims": n, "mean": sum(values) / n, "p50": values[n // 2],
+                         "p90": values[min(n - 1, int(0.9 * n))]} if n else None}
 
 
 def _route_outcomes(name):
