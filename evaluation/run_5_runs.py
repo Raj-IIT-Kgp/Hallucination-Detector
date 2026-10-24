@@ -201,6 +201,7 @@ def run_5_sets(dataset, samples_per_set=20, num_sets=5, seed=42, fresh=False, ta
 
     payload = {
         "dataset": dataset, "seed": seed, "samples_per_set": samples_per_set, "num_sets": num_sets,
+        "llm_routing": os.environ.get("LLM_ROUTING", "primary"),
         "set_results": set_results, "pooled": pooled, "routing": routing,
         "failures": [{k: v for k, v in r.items() if k not in ("result", "llm_log")}
                      for r in records if r["gold"] != r["prediction"]],

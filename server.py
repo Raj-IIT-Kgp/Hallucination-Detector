@@ -45,6 +45,8 @@ SAMPLES = [
      "text": "The James Webb Space Telescope was launched in December 2021. It orbits the Sun near the second Lagrange point. It was built by the European Space Agency alone."},
     {"label": "False premise",
      "text": "Hikaru Nakamura became the World Chess Champion."},
+    {"label": "Unverifiable claim",
+     "text": "Marie Curie's favourite colour was green."},
 ]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -176,14 +178,15 @@ def benchmarks():
             with open(path) as f:
                 results[name] = json.load(f)
             results[name]["route_outcomes"] = _route_outcomes(name)
-            results[name]["latency"] = _latency(name)
+            results[name]["latency"] = _latency(name, results[name].get("llm_routing"))
     return jsonify(results)
 
 
-def _latency(name):
+def _latency(name, routing=None):
     """
-    Measured latency per claim: the full five-set run, and the run of the current default settings
-    on the first set (evaluation/runs/default-latency/), with the same claims' latency in the full run.
+    Measured latency per claim of the published run. If that run used other LLM routing than the
+    current default ("primary"), also the current settings' run on the first set
+    (evaluation/runs/default-latency/), with the same claims' latency in the published run.
     """
     def load(path):
         if not os.path.exists(path):
@@ -197,7 +200,8 @@ def _latency(name):
         return {"claims": n, "mean": sum(values) / n, "p50": values[n // 2], "p90": values[min(n - 1, int(0.9 * n))]} if n else None
 
     full = load(os.path.join(BASE_DIR, "evaluation", f"{name}_5_runs_claims.jsonl"))
-    current = load(os.path.join(BASE_DIR, "evaluation", "runs", "default-latency", f"{name}_5_runs_claims.jsonl"))
+    current = [] if routing == "primary" else load(
+        os.path.join(BASE_DIR, "evaluation", "runs", "default-latency", f"{name}_5_runs_claims.jsonl"))
     # matched on (set, claim): FEVER repeats a few claim texts in different sets
     by_claim = {(r["set"], r["claim"]): r for r in full}
     same = [by_claim[(r["set"], r["claim"])]["latency_sec"] for r in current if (r["set"], r["claim"]) in by_claim]
@@ -220,6 +224,26 @@ def _route_outcomes(name):
                 route["claims"] += 1
                 route["correct"] += record.get("gold") == record.get("prediction")
     return outcomes
+
+
+@app.route("/api/calibration")
+def calibration():
+    """The conformal calibration scores behind q_hat, for the calibration plot of the Under-the-hood view."""
+    cv = detector.conformal_verifier
+    return jsonify({"alpha": cv.alpha, "q_hat": cv.q_hat, "n": len(cv.calibrated_scores),
+                    "scores": [float(s) for s in cv.calibrated_scores]})
+
+
+@app.route("/api/benchmark_claims/<name>")
+def benchmark_claims(name):
+    """Per-claim records of the five-set run (verdict, evidence, computation trace), for the claim explorer."""
+    if name not in ("fever", "freshqa"):
+        return _error("Unknown benchmark.", 404)
+    path = os.path.join(BASE_DIR, "evaluation", f"{name}_5_runs_claims.jsonl")
+    if not os.path.exists(path):
+        return jsonify([])
+    with open(path) as f:
+        return jsonify([json.loads(line) for line in f if line.strip()])
 
 
 @app.route("/api/docs")

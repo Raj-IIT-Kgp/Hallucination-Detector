@@ -1,4 +1,4 @@
-from agents.claim_extractor import extract_claims
+from agents.claim_extractor import extract_claims, extract_claims_with_route
 from agents.query_generator import generate_queries, rewrite_queries
 from agents.entity_linker import extract_entities
 from agents.knowledge_graph import KnowledgeGraph
@@ -573,7 +573,7 @@ class HallucinationDetector:
     def analyze_stream(self, answer, force_kg=False):
         """
         Streaming version of analyze() for the web UI, as newline-delimited JSON events:
-          {"status": "claims", "claims": [...]}                     after decomposition
+          {"status": "claims", "claims": [...], "decomposition"}    after decomposition (route taken)
           {"status": "progress", "message", "stage", "claim_index"}  per pipeline stage
           {"status": "claim_result", "index", "result"}              as soon as a claim is verified
           {"status": "claim_graph", "index", "graph"}                display-only graph enrichment
@@ -588,11 +588,11 @@ class HallucinationDetector:
             return json.dumps(payload) + "\n"
 
         yield event({"status": "progress", "message": "Extracting claims...", "stage": "extract", "claim_index": None})
-        claims = extract_claims(answer)
+        claims, route = extract_claims_with_route(answer)
         if not claims:
             yield event({"status": "done", "report": generate_report([]), "final_text": answer})
             return
-        yield event({"status": "claims", "claims": claims})
+        yield event({"status": "claims", "claims": claims, "decomposition": {"route": route}})
 
         events = queue.Queue()
         results = [None] * len(claims)

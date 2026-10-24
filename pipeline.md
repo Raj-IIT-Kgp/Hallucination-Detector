@@ -6,10 +6,10 @@ This document explains, step by step, how the detector decides whether a stateme
 
 | Benchmark | Accuracy (95% CI) | Precision | Recall | F1 | Settled by the NLI verdict | Mean latency |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| FEVER | 95.0% [90.7%, 99.3%] | 0.98 | 0.96 | 0.97 | 78 of 100 | 15.0 s |
-| FreshQA (never- and slow-changing) | 87.0% [80.4%, 93.6%] | 0.88 | 0.92 | 0.90 | 54 of 100 | 21.4 s |
+| FEVER | 95.0% [90.7%, 99.3%] | 0.94 | 0.96 | 0.95 | 82 of 100 | 8.6 s |
+| FreshQA (never- and slow-changing) | 83.0% [75.6%, 90.4%] | 0.91 | 0.86 | 0.89 | 54 of 100 | 12.8 s |
 
-Latency in the table is from that run; with the current default LLM routing it was measured at 8.8 s (FEVER) and 11.0 s (FreshQA) on the first 20 claims of each benchmark, which took 20.5 s and 15.6 s in that run (§3.4). Precision, recall and F1 refer to the hallucination class. Claims settled by the NLI verdict alone are correct 95% of the time, and the LLM arbiter, used on the rest, fixed 30 NLI verdicts and broke 3 (§2.9). The main weaknesses (false premises, time-dependent and negated claims, and the conditions of the conformal guarantee) are discussed in Section 5.
+Both benchmarks were measured with the current settings. Precision, recall and F1 refer to the hallucination class. Claims settled by the NLI verdict alone are correct 94% of the time, and the LLM arbiter, used on the rest, fixed 22 NLI verdicts and broke 5 (§2.9). The main weaknesses (false premises, time-dependent and negated claims, and the conditions of the conformal guarantee) are discussed in Section 5.
 
 **Contents**
 
@@ -294,25 +294,16 @@ $$
 
 On conflict the verdict is set to `UNKNOWN` with uniform probabilities $(0.33, 0.34, 0.33)$, and the evidence text is prefixed with an *EPISTEMIC CONTRADICTION* note so the LLM arbiter knows the sources disagree. (This is disagreement between *sources*; uncertainty of the *model* is handled by the conformal layer, §2.6.)
 
-**Step 2 — Decisive snippets with corroborated contradictions.** Support and contradiction are not equally reliable. MNLI-trained models often assign a confident *contradiction* to a snippet that is merely adjacent to the claim, because they learned that a premise describing a different situation contradicts the hypothesis. Example: the true claim *"EMNLP is in Budapest, Hungary this year"* was "refuted" with $`\hat{\pi}_{\text{con}} > 0.9`$ by a paper abstract mentioning EMNLP but never its venue. On 105 development claims collected from earlier benchmark runs, the number of decisive contradicting snippets turned out to be the strongest available signal of whether a refutation is real:
-
-| Decisive contradicting snippets | Claim actually false | Claim actually true (false refutation) | Share of refutations that were wrong |
-| :--- | :--- | :--- | :--- |
-| 1 | 9 | 12 | 57% |
-| 2 | 9 | 6 | 40% |
-| 3 | 13 | 3 | 19% |
-| decisive support also present | 3 | 3 | 50% |
-
-A single contradicting snippet was wrong more often than right; three agreeing snippets were right 13 times out of 16. The pattern was re-measured on the 200 claims of the current five-set evaluation (§3.3), which played no part in choosing the rule:
+**Step 2 — Decisive snippets with corroborated contradictions.** Support and contradiction are not equally reliable. MNLI-trained models often assign a confident *contradiction* to a snippet that is merely adjacent to the claim, because they learned that a premise describing a different situation contradicts the hypothesis. Example: the true claim *"EMNLP is in Budapest, Hungary this year"* was "refuted" with $`\hat{\pi}_{\text{con}} > 0.9`$ by a paper abstract mentioning EMNLP but never its venue. On the 200 claims of the current evaluation (§3.3), the number of decisive contradicting snippets is the strongest available signal of whether a refutation is real:
 
 | Decisive contradicting snippets | Claims | Claim actually false | Share of refutations that were wrong |
 | :--- | :--- | :--- | :--- |
-| 1 | 25 | 14 | 44% |
-| 2 | 28 | 24 | 14% |
-| 3 or more | 47 | 46 | 2% |
-| decisive support also present | 12 | 3 | 75% |
+| 1 | 30 | 19 | 37% |
+| 2 | 24 | 22 | 8% |
+| 3 or more | 44 | 42 | 5% |
+| decisive support also present | 12 | 5 | 58% |
 
-Lone and contested contradictions remain unreliable, and two agreeing snippets are already far safer, so $m = 2$ is kept. (The embedding similarity between snippet and claim was also tested as a relevance filter and did not separate the two groups: median similarity 0.62 for real refutations vs. 0.60 for false ones.) Let
+A lone contradicting snippet was wrong 37% of the time and a contradiction contested by decisive support 58% of the time, against 8% for two agreeing snippets. Lone and contested contradictions are therefore reviewed by the LLM, and two agreeing snippets are accepted directly, so $m = 2$. Let
 
 $$
 D_{\text{sup}} = \lbrace  i : \hat{y}(e_i) = \text{SUPPORTED},\; \hat{\pi}_{\text{sup}}(e_i) \ge \tau  \rbrace, \qquad D_{\text{con}} = \lbrace  i : \hat{y}(e_i) = \text{CONTRADICTED},\; \hat{\pi}_{\text{con}}(e_i) \ge \tau  \rbrace
@@ -348,7 +339,7 @@ The verdict takes the probability vector of its highest-confidence decisive snip
 
 Step 1: $S = 0.744 < 0.85$, so there is no source conflict. Step 2: $`\lvert D_{\text{con}} \rvert = 2 \ge m`$ and $`D_{\text{sup}} = \varnothing`$, so the verdict is **CONTRADICTED** with $`\hat{\boldsymbol{\pi}} = (0.9994, 0.0005, 0.0001)`$, with no LLM call. Under a "highest confidence wins" rule the same verdict would follow here; the corroboration rule only changes the outcome when a contradiction stands alone or is contested.
 
-**Design rationale and limitations.** The rule is asymmetric on purpose: a decisive *supporting* snippet is rarely wrong, while lone contradictions are wrong more often than right, and a false accusation is the more harmful error (§1.1). Corroborated contradictions — the typical case for genuinely false encyclopedic claims, which several Wikipedia sentences contradict — stay on the fast path, so the extra LLM cost is limited to the ambiguous cases (8 of 100 FEVER and 15 of 100 FreshQA claims in the five-set evaluation, §3.4). The NLI model cannot do arithmetic or date reasoning and ignores words such as *"currently"*; such cases surface as residual errors (§3.5). `HallucinationDetector(min_contra_snippets=None)` restores the original rule (the highest-confidence decisive snippet wins regardless of label) for ablation studies; a randomised check over 20,000 synthetic score configurations confirms it reproduces the original decisions exactly.
+**Design rationale and limitations.** The rule is asymmetric on purpose: a decisive *supporting* snippet is rarely wrong, while lone and contested contradictions are often wrong (37% and 58% of the time, against 8% for two agreeing snippets), and a false accusation is the more harmful error (§1.1). Corroborated contradictions — the typical case for genuinely false encyclopedic claims, which several Wikipedia sentences contradict — stay on the fast path, so the extra LLM cost is limited to the ambiguous cases (5 of 100 FEVER and 22 of 100 FreshQA claims in the current evaluation, §3.4). The NLI model cannot do arithmetic or date reasoning and ignores words such as *"currently"*; such cases surface as residual errors (§3.5). `HallucinationDetector(min_contra_snippets=None)` restores the original rule (the highest-confidence decisive snippet wins regardless of label) for ablation studies; a randomised check over 20,000 synthetic score configurations confirms it reproduces the original decisions exactly.
 
 ### 2.6 Conformal Uncertainty Layer (`statistical_layer/conformal_predictor.py`)
 
@@ -435,14 +426,14 @@ In the second row, $0.62$ and $0.30$ exceed $0.1015$ but $0.08$ does not, so the
 
 At the production level $\alpha = 0.10$ the empirical coverage equals the nominal 90% with only 1.26 labels per set on average, so most claims receive a decisive singleton and only a minority are escalated. For $\alpha \ge 0.20$ the sets are already almost always singletons, so coverage cannot fall further and stays at the raw accuracy of the NLI model on gold evidence (79%). Plots: `experiments/conformal_coverage_plot.png`, `experiments/conformal_set_size_plot.png`.
 
-**Coverage on retrieved evidence** (`experiments/full_evaluation.py`, the 200 claims of the five-set evaluation, §3.3). Here the NLI probabilities are the ones the live pipeline hands to the conformal layer, computed on retrieved snippets. For the recalibration the claims were split into two halves; each half was tested with the $`\hat{q}`$ calibrated on the other (cross-fitting), so no claim was used to calibrate its own threshold:
+**Coverage on retrieved evidence** (`experiments/full_evaluation.py`, the 200 claims of the current evaluation, §3.3). Here the NLI probabilities are the ones the live pipeline hands to the conformal layer, computed on retrieved snippets. For the recalibration the claims were split into two halves; each half was tested with the $`\hat{q}`$ calibrated on the other (cross-fitting), so no claim was used to calibrate its own threshold:
 
 | Threshold | Coverage on retrieved evidence | Wilson 95% CI | Mean set size | Estimated accuracy (FEVER / FreshQA) |
 | :--- | :--- | :--- | :--- | :--- |
-| current, $`\hat{q} = 0.8985`$ (gold-evidence calibration) | 85.0% | [79.4%, 89.3%] | 1.25 | 95% / 87% (measured) |
-| recalibrated on retrieved evidence, $`\hat{q} \approx 0.92`$–$0.99$ | 88.0% | [82.8%, 91.8%] | 1.58 | 93% / 86% (estimated) |
+| current, $`\hat{q} = 0.8985`$ (gold-evidence calibration) | 85.0% | [79.4%, 89.3%] | 1.21 | 95% / 83% (measured) |
+| recalibrated on retrieved evidence, $`\hat{q} \approx 0.98`$–$1.00$ | 90.0% | [85.1%, 93.4%] | 1.73 | 94% / 83% (estimated) |
 
-With the current threshold the coverage on live evidence is measurably below the nominal 90% (the interval lies below it), as the exchangeability argument predicted. Recalibrating restores coverage consistent with 90%, but only with a threshold near 0.98, which admits any label above about 2% probability: 32 more claims would be escalated, and the estimated accuracy is not higher. (For the estimate, claims whose route would change were re-decided: newly escalated claims received one LLM review of their saved evidence, without a Knowledge Graph.) The production threshold is therefore kept at 0.8985, and it is described as what it is in deployment: a calibrated escalation trigger with 85% measured coverage, not a 90% guarantee.
+With the current threshold the coverage on live evidence is measurably below the nominal 90% (the interval lies below it), as the exchangeability argument predicted. Recalibrating restores 90% coverage, but only with a threshold near 0.99, which admits any label above about 1% probability: 50 more claims would be escalated, and the estimated accuracy is not higher. (For the estimate, claims whose route would change were re-decided: newly escalated claims received one LLM review of their saved evidence, without a Knowledge Graph.) The production threshold is therefore kept at 0.8985, and it is described as what it is in deployment: a calibrated escalation trigger with 85% measured coverage, not a 90% guarantee.
 
 ### 2.7 Routing: Query Rewrite, Absence Evaluation and Escalation (`detector/hallucination_detector.py`)
 
@@ -543,15 +534,15 @@ The prompt reserves `UNKNOWN` for evidence that is absent, unrelated, or genuine
 
 **Worked example** (real arbitration, the Pluto claim of §2.7, abridged): *Perspective A:* "the evidence notes ongoing debate … but there is no direct evidence that an astronomer successfully lobbied the IAU in 2021." *Perspective B:* "Evidence 2 states that in 2006 the IAU redefined *planet* to exclude dwarf planets such as Pluto; the KG evidence classifies Pluto as a dwarf planet; there is no mention of any 2021 change." *Perspective C:* "the claim is contradicted by the current classification of Pluto as a dwarf planet." **VERDICT: CONTRADICTED.**
 
-**Measured value** (five-set evaluation, §3.3). The computation trace records the NLI verdict just before arbitration (`UNKNOWN` for a source conflict or an inconclusive joint reading), so the arbiter's effect can be read off for every claim it decided:
+**Measured value** (current evaluation, §3.3). The computation trace records the NLI verdict just before arbitration (`UNKNOWN` for a source conflict or an inconclusive joint reading), so the arbiter's effect can be read off for every claim it decided:
 
 | Benchmark | Claims decided by the LLM | Fixed (NLI wrong, final right) | Broken (NLI right, final wrong) | Both right | Both wrong |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| FEVER | 22 (8 reviews, 14 escalations) | 9 | 1 | 10 | 2 |
-| FreshQA | 46 (15 reviews, 31 escalations) | 21 | 2 | 17 | 6 |
-| **Total** | **68** | **30** | **3** | **27** | **8** |
+| FEVER | 18 (5 reviews, 13 escalations) | 7 | 2 | 8 | 1 |
+| FreshQA | 46 (22 reviews, 24 escalations) | 15 | 3 | 20 | 8 |
+| **Total** | **64** | **22** | **5** | **28** | **9** |
 
-The arbiter corrected 30 verdicts for every 3 it spoiled.
+The arbiter corrected 22 verdicts for every 5 it spoiled.
 
 ### 2.10 Output, Report and User Interface
 
@@ -565,7 +556,19 @@ $$
 
 together with the numbers of supported, contradicted and unknown claims, of escalated claims, and of claims settled by a single-label conformal set.
 
-**Streaming UI.** The Flask server (`/api/analyze_stream`) streams newline-delimited JSON events: the list of extracted claims, one progress event per stage (tagged with the stage name and the claim it belongs to), each claim's result as soon as it is verified, and the final report. Claims are verified concurrently with the same per-claim code as the batch API, so the verdicts are identical; for a two-claim input this cut the response time from 51 s to 19 s. The web page (`static/`) has four tabs. **Verify** shows a live stepper of the pipeline stages, combined over the claims in progress (a stage is active while any claim is in it, with a count of how many claims have reached it; optional stages such as query rewrite, Knowledge Graph and arbiter are marked as skipped when no claim needs them), a small progress bar of each claim's own stages, fills in one card per claim as results arrive (verdict, decision route, NLI posterior, conformal set and p-values, and every evidence snippet with its own NLI reading, the snippet that decided the verdict, and its source), shows a timeline of the time each claim spent in each phase, offers an **Under the hood** view of any claim's computation as it happens (the generated queries; the re-ranking table with cosine similarity, BM25, both ranks and the RRF formula; every snippet's NLI logits and the softmax; the decision-rule quantities S, K, |D_sup|, |D_con| and the branch taken; the conformal scores, q̂, p-values and set; the routing condition term by term; and the LLM arbiter's written defense, prosecution and judgement), all from a per-claim trace that the detector records in `verification["trace"]` without changing any decision, highlights the input text by verdict, and draws the Knowledge Graph with D3.js: hovering a node shows its summary and Wikipedia link, hovering an edge shows its relationship, quote and whether it is verified. **Benchmarks** charts the five-set results of §3.3 from `evaluation/*_5_runs_results.json` (`/api/benchmarks`), including the accuracy of each decision route (§3.4). **Method** animates the cascade, with claims flowing into the three routes in the measured proportions, summarises the stages and lists the known limitations, and **Docs** renders this document (`/api/docs`). For display only, when arbitration concludes `SUPPORTED` on a graph whose nodes have no edges, one extra LLM call extracts the supporting relationship from the evidence so the graph shows it; this happens after the verdict and cannot change it, and the streaming UI sends the verdict first and the extra edge afterwards. A "Deep Scan" option builds the graph for every claim, not only escalated ones.
+**Streaming UI.** The Flask server (`/api/analyze_stream`) streams newline-delimited JSON events: the list of extracted claims with the decomposition route (fast path, LLM, or NLTK fallback), one progress event per stage (tagged with the stage name and the claim it belongs to), each claim's result as soon as it is verified, and the final report. Claims are verified concurrently with the same per-claim code as the batch API, so the verdicts are identical. The web page (`static/`) has four tabs:
+
+- **Verify** shows a live stepper of the pipeline stages, combined over the claims in progress (a stage is active while any claim is in it, with a count of how many claims have reached it; optional stages such as query rewrite, Knowledge Graph and arbiter are marked as skipped when no claim needs them), and then:
+  - an **answer-level verdict**: one contradicted claim flags the whole answer as a hallucination; otherwise the answer is reported as supported, or as partly unverifiable when the detector abstained on some claims;
+  - **From text to claims**: each sentence of the input next to the atomic claims it was decomposed into, coloured by verdict, with the words the decomposition added (resolved pronouns, repeated subjects) underlined. Claims are matched to sentences by content-word overlap in the browser, so no extra LLM call is made;
+  - one card per claim, filled in as results arrive: the claim's **decision path** (NLI reading → conformal set → route → final verdict, noting when the LLM changed the NLI reading), the NLI posterior, the conformal set and p-values, and every evidence snippet with its own NLI reading, the snippet that decided the verdict, and its source;
+  - an **Under the hood** view of any claim's computation as it happens: the sentence the claim was split from and the decomposition route; the generated queries; the re-ranking table with cosine similarity, BM25, both ranks and the RRF formula; every snippet's NLI logits and the softmax; the decision-rule quantities S, K, |D_sup|, |D_con| and the branch taken; the conformal scores, q̂, p-values and set, with a **calibration plot** placing the claim's three non-conformity scores against the histogram of the 100 calibration scores and q̂ (`/api/calibration`); the routing condition term by term; and the LLM arbiter's written defense, prosecution and judgement. All of it comes from a per-claim trace that the detector records in `verification["trace"]` without changing any decision;
+  - a timeline of the time each claim spent in each phase, and the Knowledge Graph drawn with D3.js: hovering a node shows its summary and Wikipedia link, hovering an edge shows its relationship, quote and whether it is verified.
+- **Benchmarks** charts the five-set results of §3.3 from `evaluation/*_5_runs_results.json` (`/api/benchmarks`), including the accuracy of each decision route (§3.4), and has a **claim explorer** over all 200 benchmark claims (`/api/benchmark_claims/<name>`): they can be filtered by outcome (errors or correct), route and text, and each one opens with its evidence and the full computation trace recorded during the benchmark run, so every error in §3.5 can be inspected step by step.
+- **Method** animates the cascade, with claims flowing into the three routes in the measured proportions, summarises the stages and lists the known limitations.
+- **Docs** renders this document (`/api/docs`).
+
+For display only, when arbitration concludes `SUPPORTED` on a graph whose nodes have no edges, one extra LLM call extracts the supporting relationship from the evidence so the graph shows it; this happens after the verdict and cannot change it, and the streaming UI sends the verdict first and the extra edge afterwards. A "Deep Scan" option builds the graph for every claim, not only escalated ones.
 
 **Server.** In production mode the server runs under waitress, bound to localhost; it validates input (at most 4,000 characters), limits live checks per client and in total to protect the LLM quota, reports its state at `/api/health`, adds standard security headers, and logs every request with an ID. Every event carries its time since the request started, and a completed live run that had no LLM failure is recorded; the same input is then replayed from the recording, with its original timestamps and clearly marked as a replay, unless a live run is requested. The example inputs' recordings (`demo_runs/`) do not expire, so the interface can be demonstrated without network access or API quota.
 
@@ -605,14 +608,14 @@ for pass in {1, 2}:                                                 # at most on
 | Lightweight review | 0 or 1 |
 | Full escalation | entity linking 0 or 1, edge extraction 1 (if ≥ 2 nodes), arbitration 1, display edge 0 or 1 |
 
-A claim settled on the fast path with fast-path queries needs **no LLM call at all**. Measured in the five-set evaluation (§3.4): 78 of 100 FEVER and 54 of 100 FreshQA claims were settled by the NLI verdict without any arbitration call, and a claim costs 1.32 LLM calls on average on FEVER and 1.88 on FreshQA: 0.92 when the NLI verdict stands (mostly query generation), 1.91 with a lightweight review, and 3.44 with full escalation.
+A claim settled on the fast path with fast-path queries needs **no LLM call at all**. Measured in the current evaluation (§3.4): 82 of 100 FEVER and 54 of 100 FreshQA claims were settled by the NLI verdict without any arbitration call, and a claim costs 1.16 LLM calls on average on FEVER and 1.87 on FreshQA: 0.89 when the NLI verdict stands (mostly query generation), 1.85 with a lightweight review, and 3.57 with full escalation.
 
 ### 2.12 Execution Details
 
-- **LLM backend (`llm/`).** With `MODEL_PROVIDER=gemini`, two models are used, each serving as the other's fallback (larger Gemini models were dropped: their free-tier daily quota is too small to help). With the default `LLM_ROUTING=primary`, every call goes to `gemini-3.5-flash-lite` and falls back to `gemini-3.1-flash-lite` only when 3.5 is rate-limited, overloaded or out of daily quota: in the five-set evaluation 3.5 answered its calls in 2.9 s on average against 5.2 s for 3.1 (§3.4), so sending work to 3.1 by default made checks slower rather than faster. Because 3.5 is faster, claims finish sooner and calls arrive closer together: during the latency measurement of §3.4 the Gemini console showed 3.5 at 18 requests in one minute against its limit of 15, so under sustained load the per-minute limit, not speed, is what sends calls to 3.1. Each call is also tagged by how demanding its task is, **heavy** for the steps that decide or preserve a verdict (arbitration, absence evaluation, claim decomposition) and **light** for supporting steps (query generation and rewriting, entity linking, Knowledge Graph relations); `LLM_ROUTING=tiered` sends heavy calls to 3.5 and light calls to 3.1, the setup of the five-set results in §3.3, and `LLM_ROUTING=alternate` alternates between the two regardless of task. In every mode, a model that returns HTTP 429, 503 or 504, or times out, is skipped for 45 seconds and the request moves to the next model immediately; a model whose *daily* quota is used up is skipped until the quota resets (midnight Pacific time), so requests go straight to the models that can still answer. If both models fail at once with such a temporary error (a demand spike), the request waits and tries them again, after 2 s and then 5 s, before giving up; when both daily quotas are used up it fails at once, since waiting cannot help. Otherwise a local Ollama model (`qwen2.5:3b`) is used.
+- **LLM backend (`llm/`).** With `MODEL_PROVIDER=gemini`, two models are used, each serving as the other's fallback (larger Gemini models were dropped: their free-tier daily quota is too small to help). With the default `LLM_ROUTING=primary`, every call goes to `gemini-3.5-flash-lite` and falls back to `gemini-3.1-flash-lite` only when 3.5 is rate-limited, overloaded or out of daily quota: in the current evaluation, with every call on 3.5, supporting calls took 1.4 s and arbitration calls 4.0 s on average (§3.4). Because 3.5 is faster, claims finish sooner and calls arrive closer together: during a latency measurement the Gemini console showed 3.5 at 18 requests in one minute against its limit of 15, so under sustained load the per-minute limit, not speed, is what sends calls to 3.1. Each call is also tagged by how demanding its task is, **heavy** for the steps that decide or preserve a verdict (arbitration, absence evaluation, claim decomposition) and **light** for supporting steps (query generation and rewriting, entity linking, Knowledge Graph relations); `LLM_ROUTING=tiered` sends heavy calls to 3.5 and light calls to 3.1, and `LLM_ROUTING=alternate` alternates between the two regardless of task. In every mode, a model that returns HTTP 429, 503 or 504, or times out, is skipped for 45 seconds and the request moves to the next model immediately; a model whose *daily* quota is used up is skipped until the quota resets (midnight Pacific time), so requests go straight to the models that can still answer. If both models fail at once with such a temporary error (a demand spike), the request waits and tries them again, after 2 s and then 5 s, before giving up; when both daily quotas are used up it fails at once, since waiting cannot help. Otherwise a local Ollama model (`qwen2.5:3b`) is used.
 - **Concurrency.** Claims, queries and data sources are processed in thread pools, and all network calls run in parallel. The NLI model and the embedding models are each protected by a lock, because their native code is not safe to call from several threads at once; on Apple GPUs (MPS) the command buffer is synchronised before the NLI lock is released. Embedding models run on the CPU and NLI on the GPU when available (`NLI_DEVICE` overrides the device).
 - **Warm-up.** When the server starts, the NLI model, both embedding models and the NLTK sentence tokenizer are each run once on a dummy input, so the first real request does not pay one-off initialisation (a cold NLI call took 1.18 s against 0.22 s warm). No cache is filled and no LLM is called.
-- **Caching.** Wikipedia searches and parsed pages (LRU caches), paragraph embeddings (keyed by text), DuckDuckGo results (10 minutes, successful lookups only), NLI scores per claim–snippet pair, and Wikipedia summaries for the graph are cached. Every cache returns exactly what recomputation would, so outputs are unchanged; the effect is speed, mainly on query-rewrite retries, which re-retrieve many of the same pages (a repeated search took 3.05 s instead of 6.52 s in a controlled measurement).
+- **Caching.** Wikipedia searches and parsed pages (LRU caches), paragraph embeddings (keyed by text), DuckDuckGo results (10 minutes, successful lookups only), NLI scores per claim–snippet pair, and Wikipedia summaries for the graph are cached. Every cache returns exactly what recomputation would, so outputs are unchanged; the effect is speed, mainly on query-rewrite retries, which re-retrieve many of the same pages.
 
 ---
 
@@ -629,7 +632,7 @@ A claim settled on the fast path with fast-path queries needs **no LLM call at a
 | Normal question + answer, e.g. *"Who is the CEO of Google?" – "Sundar Pichai"* | *"Sundar Pichai is the CEO of Google."* | `SUPPORTS` |
 | False-premise question, e.g. *"When was League of Legends 2 released?"* | the false premise as a claim: *"League of Legends 2 was released."* | `REFUTES` |
 
-FreshQA tests web retrieval, temporal reasoning and false-premise detection. Its gold answers are snapshots dated by the maintainers, so a fast-changing answer can be out of date when the benchmark is run. In an earlier 40-claim run, fast-changing questions scored 38% against 78% for the rest, mostly through such out-of-date labels. All FreshQA runs therefore sample only *never-changing* and *slow-changing* questions (`DEFAULT_FACT_TYPES` in `evaluation/benchmarks/freshqa_dataset.py`; 298 true and 147 false claims).
+FreshQA tests web retrieval, temporal reasoning and false-premise detection. Its gold answers are snapshots dated by the maintainers, so a fast-changing answer can be out of date when the benchmark is run. All FreshQA runs therefore sample only *never-changing* and *slow-changing* questions (`DEFAULT_FACT_TYPES` in `evaluation/benchmarks/freshqa_dataset.py`; 298 true and 147 false claims).
 
 Benchmarks built from synthetic perturbations of a fixed reference text (such as HaluEval) are not used: their "false" claims are often true in the open world that this detector searches, which would penalise correct verdicts.
 
@@ -651,18 +654,18 @@ python evaluation/run_benchmark.py --dataset freshqa --samples 20              #
 
 ### 3.3 Results (Current Pipeline)
 
-All figures below are measured with the current pipeline (the single configuration described in Section 2), with live retrieval and LLM calls (October 2026), by `experiments/full_evaluation.py`, which runs the five-set evaluation with a full record of every claim (verdict, computation trace, evidence and LLM calls) and derives all the results of this section and of §2.5, §2.6 and §2.9 from that one run. LLM calls were routed with `LLM_ROUTING=tiered`: the verdict-deciding calls on `gemini-3.5-flash-lite`, as in the current default, and the supporting calls (query generation, entity linking) on `gemini-3.1-flash-lite`, which the current default also sends to 3.5 (§2.12). No LLM call failed during the run.
+All figures below are measured with the current pipeline (the single configuration described in Section 2), with live retrieval and LLM calls (October 2026), and with the current settings: every LLM call went to `gemini-3.5-flash-lite` first, and all 303 calls of the two benchmarks were answered by it, with no fallback and no failure. Each benchmark was run with a full record of every claim (verdict, computation trace, evidence and LLM calls), and `experiments/full_evaluation.py` derives all the results of this section and of §2.5, §2.6 and §2.9 from those records.
 
 **FEVER: five-set evaluation.** 5 non-overlapping stratified sets of 20 claims (10 `SUPPORTS`, 10 `REFUTES`), seed 42, 100 claims in total (summary in `evaluation/fever_5_runs_results.json`, per-claim records in `evaluation/fever_5_runs_claims.jsonl`):
 
 | Set | Claims | Correct | Accuracy | Precision | Recall | F1 | TP | FP | FN | TN | `UNKNOWN` | Mean latency |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Set 1 | 20 | 19 | 95.00% | 1.00 | 1.00 | 1.00 | 10 | 0 | 0 | 9 | 1 | 20.5 s |
-| Set 2 | 20 | 19 | 95.00% | 0.91 | 1.00 | 0.95 | 10 | 1 | 0 | 9 | 0 | 14.8 s |
-| Set 3 | 20 | 18 | 90.00% | 1.00 | 0.90 | 0.95 | 9 | 0 | 1 | 9 | 1 | 10.9 s |
-| Set 4 | 20 | 19 | 95.00% | 1.00 | 0.90 | 0.95 | 9 | 0 | 1 | 10 | 1 | 16.1 s |
-| Set 5 | 20 | 20 | 100.00% | 1.00 | 1.00 | 1.00 | 10 | 0 | 0 | 10 | 0 | 12.8 s |
-| **Pooled** | **100** | **95** | **95.00%** | **0.98** | **0.96** | **0.97** | 48 | 1 | 2 | 47 | 3 | 15.0 s |
+| Set 1 | 20 | 20 | 100.00% | 1.00 | 1.00 | 1.00 | 10 | 0 | 0 | 10 | 0 | 9.0 s |
+| Set 2 | 20 | 18 | 90.00% | 0.83 | 1.00 | 0.91 | 10 | 2 | 0 | 8 | 0 | 8.1 s |
+| Set 3 | 20 | 18 | 90.00% | 0.90 | 0.90 | 0.90 | 9 | 1 | 1 | 9 | 0 | 9.7 s |
+| Set 4 | 20 | 19 | 95.00% | 1.00 | 0.90 | 0.95 | 9 | 0 | 1 | 10 | 1 | 9.2 s |
+| Set 5 | 20 | 20 | 100.00% | 1.00 | 1.00 | 1.00 | 10 | 0 | 0 | 10 | 0 | 6.9 s |
+| **Pooled** | **100** | **95** | **95.00%** | **0.94** | **0.96** | **0.95** | 48 | 3 | 2 | 47 | 1 | 8.6 s |
 
 Pooled 95% CI (normal approximation, §4.4): [90.7%, 99.3%]. With 20 claims per set, one error moves a set's accuracy by 5 points, so the pooled figure is the one to quote.
 
@@ -670,80 +673,66 @@ Pooled 95% CI (normal approximation, §4.4): [90.7%, 99.3%]. With 20 claims per 
 
 | Set | Claims | Correct | Accuracy | Precision | Recall | F1 | TP | FP | FN | TN | `UNKNOWN` | Mean latency |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| Set 1 | 20 | 17 | 85.00% | 0.90 | 0.90 | 0.90 | 9 | 1 | 1 | 8 | 1 | 15.6 s |
-| Set 2 | 20 | 16 | 80.00% | 0.75 | 0.90 | 0.82 | 9 | 3 | 1 | 7 | 0 | 18.3 s |
-| Set 3 | 20 | 18 | 90.00% | 1.00 | 0.90 | 0.95 | 9 | 0 | 1 | 9 | 1 | 32.1 s |
-| Set 4 | 20 | 16 | 80.00% | 0.82 | 0.90 | 0.86 | 9 | 2 | 1 | 7 | 1 | 22.9 s |
-| Set 5 | 20 | 20 | 100.00% | 1.00 | 1.00 | 1.00 | 10 | 0 | 0 | 10 | 0 | 18.3 s |
-| **Pooled** | **100** | **87** | **87.00%** | **0.88** | **0.92** | **0.90** | 46 | 6 | 4 | 41 | 3 | 21.4 s |
+| Set 1 | 20 | 12 | 60.00% | 0.86 | 0.60 | 0.71 | 6 | 1 | 4 | 6 | 4 | 13.7 s |
+| Set 2 | 20 | 18 | 90.00% | 0.91 | 1.00 | 0.95 | 10 | 1 | 0 | 8 | 1 | 14.9 s |
+| Set 3 | 20 | 19 | 95.00% | 1.00 | 0.90 | 0.95 | 9 | 0 | 1 | 10 | 0 | 12.6 s |
+| Set 4 | 20 | 15 | 75.00% | 0.89 | 0.80 | 0.84 | 8 | 1 | 2 | 7 | 3 | 12.6 s |
+| Set 5 | 20 | 19 | 95.00% | 0.91 | 1.00 | 0.95 | 10 | 1 | 0 | 9 | 0 | 10.1 s |
+| **Pooled** | **100** | **83** | **83.00%** | **0.91** | **0.86** | **0.89** | 43 | 4 | 7 | 40 | 8 | 12.8 s |
 
-Pooled 95% CI (normal approximation, §4.4): [80.4%, 93.6%]. Precision, recall and F1 refer to the `CONTRADICTED` (hallucination) class (definitions in §4.1); `UNKNOWN` counts as an error, and on a false claim as a missed hallucination (FN).
+Pooled 95% CI (normal approximation, §4.4): [75.6%, 90.4%]. Precision, recall and F1 refer to the `CONTRADICTED` (hallucination) class (definitions in §4.1); `UNKNOWN` counts as an error, and on a false claim as a missed hallucination (FN).
 
-**Change from the previous evaluation.** The same 200 claims were evaluated before the LLM routing changed (calls then alternated between the two Flash-Lite models, with two larger models as backups; those results are kept in `evaluation/runs/published-2026-10-22/`). Comparing claim by claim: on FEVER 3 verdicts were fixed and 4 became wrong (96% then, 95% now); on FreshQA 8 were fixed and 6 became wrong (85% then, 87% now). Neither difference is statistically meaningful on 100 claims. The clearer change is in how FreshQA's errors are distributed: with the verdict-deciding calls always on the stronger model, the arbiter commits more often instead of abstaining, so abstentions fell from 7 to 3 and recall rose from 0.82 to 0.92, while precision fell from 0.93 to 0.88.
-
-**FEVER vs FreshQA.** The confidence intervals now overlap ([90.7%, 99.3%] and [80.4%, 93.6%]), so the gap is suggestive rather than conclusive. Recall is similar (0.96 vs 0.92); the difference is in precision (0.98 vs 0.88): FreshQA has 6 false accusations: two are claims whose gold answer is contradicted by current evidence, and the other four are NLI or arbiter errors on negations, time and geography (§3.5).
+**FEVER vs FreshQA.** The confidence intervals ([90.7%, 99.3%] and [75.6%, 90.4%]) just fail to overlap, so FreshQA is harder, though only by a margin this sample can barely resolve. Precision is close (0.94 vs 0.91); the gap is in recall (0.96 vs 0.86) and in abstentions: FreshQA's false premises and claims about the present are more often accepted by the NLI model or left `UNKNOWN` by the arbiter when the evidence does not settle them, and some of its gold answers are contradicted by current evidence (§3.5).
 
 ### 3.4 Latency, Routing and Cost (Current Pipeline)
 
 | Benchmark | Mean latency | Median | 90th percentile | LLM calls per claim |
 | :--- | :--- | :--- | :--- | :--- |
-| FEVER (100 claims, five sets) | 15.0 s | 11.3 s | 32.2 s | 1.32 |
-| FreshQA (100 claims, five sets) | 21.4 s | 16.5 s | 39.7 s | 1.88 |
+| FEVER (100 claims) | 8.6 s | 8.0 s | 12.1 s | 1.16 |
+| FreshQA (100 claims) | 12.8 s | 10.5 s | 21.4 s | 1.87 |
 
 | Benchmark | NLI verdict stands | Lightweight review | Full escalation |
 | :--- | :--- | :--- | :--- |
-| FEVER (100 claims, five sets) | 78 | 8 | 14 |
-| FreshQA (100 claims, five sets) | 54 | 15 | 31 |
+| FEVER (100 claims) | 82 | 5 | 13 |
+| FreshQA (100 claims) | 54 | 22 | 24 |
 
-Accuracy by route, the evidence that the conformal layer sends the right claims to the LLM: the claims settled by the NLI verdict alone are correct 95% of the time across both benchmarks (125 of 132), and the claims it passed on, which are the harder ones, are correct 84% of the time after LLM review (57 of 68).
+Accuracy by route, the evidence that the conformal layer sends the right claims to the LLM: the claims settled by the NLI verdict alone are correct 94% of the time across both benchmarks (128 of 136), and the claims it passed on, which are the harder ones, are correct 78% of the time after LLM review (50 of 64).
 
 | Benchmark | NLI verdict stands | Lightweight review | Full escalation |
 | :--- | :--- | :--- | :--- |
-| FEVER | 76 / 78 (97%) | 5 / 8 (63%) | 14 / 14 (100%) |
-| FreshQA | 49 / 54 (91%) | 14 / 15 (93%) | 24 / 31 (77%) |
+| FEVER | 80 / 82 (98%) | 4 / 5 (80%) | 11 / 13 (85%) |
+| FreshQA | 48 / 54 (89%) | 19 / 22 (86%) | 16 / 24 (67%) |
 
-LLM calls by route (both benchmarks): 0.92 per claim when the NLI verdict stands, 1.91 with a lightweight review, 3.44 with full escalation. Every call was logged with the model that answered it:
+LLM calls by route (both benchmarks): 0.89 per claim when the NLI verdict stands, 1.85 with a lightweight review, 3.57 with full escalation. Every call was logged; all were answered by `gemini-3.5-flash-lite`:
 
-| Model (task tier) | Calls | Mean | Median |
+| Task tier | Calls | Mean | Median |
 | :--- | :--- | :--- | :--- |
-| `gemini-3.5-flash-lite` (heavy: arbitration) | 67 | 2.9 s | 2.7 s |
-| `gemini-3.1-flash-lite` (light: queries, entities, relations) | 204 | 5.2 s | 3.9 s |
-| `gemini-3.5-flash-lite` (light, as fallback) | 48 | 8.4 s | 2.0 s |
-| `gemini-3.1-flash-lite` (heavy, as fallback) | 1 | 28.8 s | 28.8 s |
+| light: query generation and rewriting, entity linking, relations | 239 | 1.4 s | 1.2 s |
+| heavy: arbitration, absence evaluation | 64 | 4.0 s | 2.8 s |
 
-Latency is measured end to end with live Wikipedia, web and Gemini calls on an Apple M1 laptop. It is higher than in the previous evaluation (10.5 s and 16.8 s): `gemini-3.1-flash-lite` was markedly slower than 3.5 during the run, and its query-generation call sits on the critical path of most claims. This measurement is why the default routing now sends every call to 3.5 first (§2.12). Claims settled by the NLI verdict are fastest; fully escalated claims, which add Knowledge Graph construction and arbitration, account for the long tail.
-
-**Latency with the current default** (`python evaluation/run_5_runs.py --dataset all --sets 1 --tag default-latency`: the first set of 20 claims of each benchmark, the same claims as Set 1 above, with every LLM call routed to `gemini-3.5-flash-lite` first). All 59 LLM calls were answered by 3.5, in 1.4 s on average, with no fallback and no failure:
-
-| Benchmark (Set 1, 20 claims) | Mean | Median | 90th percentile | Accuracy | LLM calls per claim |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| FEVER, current default | 8.8 s | 7.6 s | 16.0 s | 19 / 20 | 1.30 |
-| FEVER, same claims in the run above | 20.5 s | 14.4 s | 44.1 s | 19 / 20 | — |
-| FreshQA, current default | 11.0 s | 9.6 s | 20.0 s | 16 / 20 | 1.65 |
-| FreshQA, same claims in the run above | 15.6 s | 12.6 s | 26.2 s | 17 / 20 | — |
-
-Accuracy is unchanged within the noise of 20 claims (one FreshQA claim differs). Part of the speed-up may come from network and server conditions on the day, which differ between runs; the per-call logs attribute most of it to the faster model.
+Latency is measured end to end with live Wikipedia, web and Gemini calls on an Apple M1 laptop. Claims settled by the NLI verdict are fastest; fully escalated claims, which add Knowledge Graph construction and arbitration, account for the long tail.
 
 ### 3.5 Error Analysis
 
-**FEVER (current, five sets, 100 claims).** The 5 errors are 1 false accusation, 1 missed hallucination and 3 abstentions:
+**FEVER (current settings, five sets, 100 claims).** The 5 errors are 3 false accusations, 1 missed hallucination and 1 abstention:
 
-1. **NLI fast-path errors (2).** *"Underdog features the voice talents of Amy Adams"* (true) was settled `CONTRADICTED` because two snippets about her other films contradicted it with high confidence, which met the corroboration rule. *"Middle-earth is a real place"* (false) was settled `SUPPORTED` by a decisive snippet from Tolkien's own commentary on the "literary credibility" of his invented history.
-2. **Abstentions (3).** *"2016 Tour de France was won by a rider"* (true; the evidence covered other years), *"Caroline Kennedy is Ambassador to Japan"* (true, labelled for her 2013–17 term; the evidence listed the office but not her) and *"Nuuk is the largest military center of Greenland"* (false; the evidence described Nuuk's civilian institutions only). In each case a lone or contested contradicting snippet sent the claim to review, and the arbiter, finding no direct statement either way, abstained.
+1. **NLI fast-path errors (2).** *"Diana, Princess of Wales was renowned as Lady Diana Spencer"* (true) was settled `CONTRADICTED` because two snippets giving her full name, Diana Frances Spencer, contradicted the shorter title with high confidence, which met the corroboration rule; *"Warner Bros. released Avenged Sevenfold"* (true) was likewise contradicted by two snippets about the band's releases on other labels.
+2. **Arbiter errors (2).** *"Shane Black is an American producer and actor"* (true) was rejected because the evidence describes him as a screenwriter, director and actor but does not use the word producer; *"Middle-earth is a real place"* (false) met conflicting sources, and the arbiter judged it supported from passages about Tolkien's invented history.
+3. **Abstention (1).** *"Nuuk is the largest military center of Greenland"* (false): the evidence described Nuuk's civilian institutions only, and the arbiter, finding no statement either way, abstained.
 
-**FreshQA (current, five sets, 100 claims, never- and slow-changing).**
+**FreshQA (current settings, five sets, 100 claims, never- and slow-changing).**
 
 | Fact type | Claims | Correct | Wrong | Accuracy |
 | :--- | :--- | :--- | :--- | :--- |
-| never-changing | 52 | 48 | 4 | 92.3% |
-| slow-changing | 48 | 39 | 9 | 81.3% |
+| never-changing | 52 | 43 | 9 | 82.7% |
+| slow-changing | 48 | 40 | 8 | 83.3% |
 
-The 13 errors fall into four groups:
+The 17 errors fall into four groups:
 
-1. **Gold labels contradicted by current evidence (5).** The 2026 evidence states that Lewandowski left Barcelona at the end of the 2025–26 season (claim *"Lewandowski plays for Barcelona"*, labelled true), that the LA Metro has 110 rail stations (labelled: 107), and that OpenAI has released GPT-5.5 (labelled false); *"A FIFA World Cup will be hosted next year"* (labelled false) is true of the 2027 Women's World Cup, and *"Joe Biden announced his second presidential campaign in 2023"* was generated from a false-premise question but is true as stated. In these cases the detector followed the evidence, and even slow-changing labels are drifting out of date.
-2. **NLI fast-path errors (4).** Two negations (*"The Great Pyramid of Giza is not one of the New 7 Wonders"* and *"No humans have landed on Mars yet"*, both true, both settled `CONTRADICTED`), a claim about the present matched to historical evidence (*"The euro is Croatia's current national currency"*, contradicted by snippets about the 1990s economy), and a near-match (a claim that a *cube* number is the sum of two cubes in two ways, supported by evidence about 1729, which is not a cube).
-3. **Abstentions on true claims (3).** The specific fact was not retrieved: Biden's most-visited country, the price of parking at the Big E, and the UMass NLP faculty count.
-4. **Arbiter error (1).** *"The province that borders Shanghai to the north is Jiangsu"* (true): the arbiter read the evidence's description of Shanghai's northern boundary as excluding Jiangsu.
+1. **Abstentions (8: 6 true claims, 2 false).** The evidence covered the topic but not the specific fact, and the arbiter returned `UNKNOWN` rather than guess: the number of episodes of *The Rings of Power* season 1, Biden's most-visited country, the start of the Japanese school year, the year of both Benedict XVI's and Elizabeth II's deaths (only one was in the evidence), the UMass NLP faculty count and France's consecutive World Cup finals (all true); and *"Clint Eastwood has won a Best Actor Academy Award"* and *"Humans have been killed by dinosaurs"* (both false).
+2. **NLI fast-path errors (4).** Settled without LLM review. A negation (*"The Great Pyramid of Giza is not one of the New 7 Wonders"*, true, settled `CONTRADICTED`), two claims about the present matched to past evidence (*"Pele is currently staying in a hospital to receive cancer treatment"*, from 2022 evidence, and *"Walt Disney Animation Studios' 60th animated film is being released this year"*, which is *Encanto*, 2021), and a near-match (*"Donald Trump tweeted in 2022 after his unbanning"*, supported by evidence about his reinstatement, not a tweet).
+3. **Gold labels contradicted by current evidence (4).** The 2026 evidence states that Lewandowski left Barcelona at the end of the 2025–26 season (labelled as still playing there), that the LA Metro has 110 rail stations (labelled: 107) and that a few species have landed on the Moon (labelled false); *"Joe Biden announced his second presidential campaign in 2023"* was generated from a false-premise question but is true as stated. In these cases the detector followed the evidence, and even slow-changing labels are drifting out of date.
+4. **Arbiter error (1).** *"Princeton University is the top-ranked university in the US according to the US News Ranking"* (true): the arbiter read the evidence's dated ranking information as contradicting the present-tense claim.
 
 ---
 
@@ -791,10 +780,10 @@ $$
 
 the harmonic mean of precision and recall, which is high only when both are.
 
-**Worked example** (current pipeline, FEVER five-set evaluation, 100 claims: 50 false and 50 true): 48 false claims were flagged `CONTRADICTED`, 1 was judged `SUPPORTED` and 1 ended `UNKNOWN`; 47 true claims were judged `SUPPORTED`, 1 was flagged `CONTRADICTED` and 2 ended `UNKNOWN`. So $TP = 48$, $FN = 2$, $FP = 1$, $TN = 47$, and the 2 abstentions on true claims count only against accuracy:
+**Worked example** (current pipeline, FEVER five-set evaluation, 100 claims: 50 false and 50 true): 48 false claims were flagged `CONTRADICTED`, 1 was judged `SUPPORTED` and 1 ended `UNKNOWN`; 47 true claims were judged `SUPPORTED` and 3 were flagged `CONTRADICTED`. So $TP = 48$, $FN = 2$, $FP = 3$, $TN = 47$:
 
 $$
-\text{Accuracy} = \frac{48 + 47}{100} = 95.0\\%, \quad \text{Precision} = \frac{48}{48 + 1} = 0.98, \quad \text{Recall} = \frac{48}{48 + 2} = 0.96, \quad F_1 = \frac{2 \times 48}{2 \times 48 + 1 + 2} = 0.97
+\text{Accuracy} = \frac{48 + 47}{100} = 95.0\\%, \quad \text{Precision} = \frac{48}{48 + 3} = 0.94, \quad \text{Recall} = \frac{48}{48 + 2} = 0.96, \quad F_1 = \frac{2 \times 48}{2 \times 48 + 3 + 2} = 0.95
 $$
 
 ### 4.3 Abstentions and Selective Classification
@@ -829,18 +818,17 @@ $$
 
 **Limitations of the method.**
 
-1. **Missing specific facts and false premises.** When the evidence does not state the specific number, date or ranking a claim asserts, or (for a false premise such as *"An animal has landed on the Moon"*) does not state that the event never happened, the arbiter must decide from silence. It now commits more often than it used to (FreshQA abstentions fell from 7 to 3, §3.3), but 6 of the 18 errors across both benchmarks are still abstentions of this kind (§3.5).
-2. **NLI blind spots.** The NLI model does not reason about time (*"this year"*, *"currently"*, planned vs. actual events), mishandles some negations, and accepts near-matching entities (*"World Fischer Random Chess Champion"* read as *"World Chess Champion"*). Because a decisive supporting snippet settles a claim without LLM review (§2.5), these errors reach the output directly: 2 of the 5 FEVER errors and 4 of the 13 FreshQA errors (§3.5).
-3. **Scope of the conformal guarantee.** The conformal layer is calibrated on FEVER claims scored against gold evidence. On the pipeline's own retrieved evidence its measured coverage is 85% [79%, 89%], below the nominal 90%; recalibrating on retrieved evidence restores coverage but escalates many more claims without improving accuracy, so the production threshold is kept and the prediction set is used as a calibrated escalation trigger (§2.6).
+1. **Missing specific facts and false premises.** When the evidence does not state the specific number, date or ranking a claim asserts, or (for a false premise such as *"An animal has landed on the Moon"*) does not state that the event never happened, the arbiter must decide from silence. It abstains rather than guess, so 9 of the 22 errors across both benchmarks are abstentions of this kind (§3.5).
+2. **NLI blind spots.** The NLI model does not reason about time (*"this year"*, *"currently"*, planned vs. actual events), mishandles some negations, and accepts near-matching entities (*"World Fischer Random Chess Champion"* read as *"World Chess Champion"*). Because a decisive supporting snippet settles a claim without LLM review (§2.5), these errors reach the output directly: 2 of the 5 FEVER errors and 4 of the 17 FreshQA errors (§3.5).
+3. **Scope of the conformal guarantee.** The conformal layer is calibrated on FEVER claims scored against gold evidence. On the pipeline's own retrieved evidence its measured coverage is 85.0% [79%, 89%], below the nominal 90%; recalibrating on retrieved evidence restores coverage but escalates many more claims without improving accuracy, so the production threshold is kept and the prediction set is used as a calibrated escalation trigger (§2.6).
 4. **Dependence on an external LLM.** Query generation, query rewriting, entity linking, edge extraction and arbitration call a hosted LLM. Rate limits and quotas are absorbed by switching models (§2.12), but a different model may judge a borderline claim differently, and the arbiter abstains (`UNKNOWN`, flagged as an outage rather than a judgement, §2.9) if every model fails.
-5. **Modest sample sizes.** The corroboration rule (§2.5) was derived from 105 development claims and confirmed on 200 evaluation claims, and the arbiter's effect (§2.9) is measured on the 68 claims it decided; the smaller routes (e.g. 8 FEVER reviews) give indicative rather than precise accuracies.
+5. **Modest sample sizes.** The corroboration rule (§2.5) is measured on the 200 evaluation claims, and the arbiter's effect (§2.9) is measured on the 64 claims it decided; the smaller routes (e.g. 5 FEVER reviews) give indicative rather than precise accuracies.
 
 **Limitations of the evaluation.**
 
 1. **Sample size.** With 100 claims per benchmark the 95% confidence intervals are about ±4 points (FEVER) and ±7 points (FreshQA); differences of a few points between pipeline versions are within noise (§4.4).
 2. **Reproducibility of live runs.** Retrieval uses live Wikipedia and web search, and the LLM is not deterministic, so a re-run on the same claims can differ slightly: search results and Wikipedia pages change, and borderline claims may be routed differently.
-3. **Label quality.** FreshQA gold answers are dated snapshots, and its questions are converted into claims by an LLM, which occasionally produces a claim whose label no longer matches. Fast-changing questions are excluded for this reason (§3.1), but even slow-changing labels drift: 5 of the 13 FreshQA errors in the current evaluation are claims on which current evidence contradicts the gold answer (§3.5).
-4. **Routing of supporting LLM calls.** The reported results sent the supporting calls (query generation, entity linking) to `gemini-3.1-flash-lite`; the current default sends them to `gemini-3.5-flash-lite` as well (§2.12). The verdict-deciding calls are routed identically, so accuracy is expected to be similar, but the supporting calls shape retrieval, so the default configuration has not been measured separately.
+3. **Label quality.** FreshQA gold answers are dated snapshots, and its questions are converted into claims by an LLM, which occasionally produces a claim whose label no longer matches. Fast-changing questions are excluded for this reason (§3.1), but even slow-changing labels drift: 4 of the 17 FreshQA errors in the current evaluation are claims on which current evidence contradicts the gold answer (§3.5).
 
 **Future work.** A non-conformity score better suited to retrieved evidence, so that a 90% guarantee can hold without escalating far more claims (§2.6); routing negated and time-dependent claims to the arbiter, or an NLI model trained on harder data, for the fast-path errors of §3.5; better retrieval for specific numeric facts, the main cause of the remaining abstentions; and a larger evaluation against a frozen evidence snapshot with re-checked labels, so that runs are exactly repeatable.
 
@@ -864,7 +852,7 @@ pip install -r requirements.txt      # versions pinned to those used for the rep
 | :--- | :--- | :--- |
 | `MODEL_PROVIDER` | `gemini` for the hosted Gemini models (used for all reported results), `ollama` for a local `qwen2.5:3b` | `ollama` |
 | `GEMINI_API_KEY` | API key for Gemini | none |
-| `LLM_ROUTING` | `primary`: every call to `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite` as fallback; `tiered`: heavy tasks on 3.5, light tasks on 3.1 (the setup of the reported results); `alternate`: 50/50 between the two | `primary` |
+| `LLM_ROUTING` | `primary`: every call to `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite` as fallback (the setup of the reported results); `tiered`: heavy tasks on 3.5, light tasks on 3.1; `alternate`: 50/50 between the two | `primary` |
 | `NLI_MODEL` | alternative NLI model (requires recalibrating the conformal layer, §2.6) | `facebook/bart-large-mnli` |
 | `NLI_DEVICE` | force the NLI device (`cpu`, `mps`, `cuda`) | automatic |
 | `HF_HUB_OFFLINE` | the code sets `1` (no Hugging Face network calls); set it to `0` for the first run, so the models can be downloaded | `1` |

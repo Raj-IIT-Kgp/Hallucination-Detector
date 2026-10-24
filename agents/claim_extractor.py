@@ -3,14 +3,20 @@ import json
 from llm.generator import generate_response
 
 def extract_claims(answer):
+    return extract_claims_with_route(answer)[0]
+
+
+def extract_claims_with_route(answer):
     """
     Extracts individual claims from a paragraph.
     Upgraded to use an LLM for Atomic Fact Decomposition, breaking complex sentences
     into simple, independent facts.
     Includes an atomic fast-path to eliminate redundant 15-20s LLM calls for single-statement inputs.
+    Returns (claims, route), where route is how the text was decomposed (shown in the UI):
+    "fast_path" (already atomic, no LLM call), "llm", or "fallback" (NLTK sentences after an LLM failure).
     """
     if not answer or not answer.strip():
-        return []
+        return [], None
 
     # Fast-path: If the input is already a single short atomic assertion without clauses, skip redundant LLM call
     try:
@@ -20,7 +26,7 @@ def extract_claims(answer):
             words = s.split()
             complex_markers = [";", "—", "--", ",", " and ", " but ", " although ", " whereas ", " which ", " because ", " while ", " who ", " where ", " that ", " with "]
             if len(words) <= 15 and not any(marker in s.lower() for marker in complex_markers):
-                return [s]
+                return [s], "fast_path"
     except Exception:
         pass
 
@@ -50,7 +56,7 @@ Example: ["Tim Cook replaced Steve Jobs in 2011.", "Tim Cook is the CEO of Apple
             
         claims = json.loads(cleaned.strip())
         if isinstance(claims, list) and len(claims) > 0:
-            return [str(c).strip() for c in claims]
+            return [str(c).strip() for c in claims], "llm"
     except Exception as e:
         print(f"[ClaimExtractor] Failed to decompose facts via LLM. Falling back to NLTK. Error: {e}")
         
@@ -58,4 +64,4 @@ Example: ["Tim Cook replaced Steve Jobs in 2011.", "Tim Cook is the CEO of Apple
     claims = nltk.sent_tokenize(answer)
     claims = [claim.strip() for claim in claims if claim.strip()]
     
-    return claims
+    return claims, "fallback"

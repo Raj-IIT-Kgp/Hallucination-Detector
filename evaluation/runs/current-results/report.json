@@ -1,0 +1,930 @@
+{
+  "tag": "current-results",
+  "datasets": {
+    "fever": {
+      "pooled": {
+        "evaluated_claims": 100,
+        "correct_claims": 95,
+        "accuracy": 0.95,
+        "precision": 0.9411764705882353,
+        "recall": 0.96,
+        "f1": 0.9504950495049505,
+        "tp": 48,
+        "fp": 3,
+        "fn": 2,
+        "tn": 47,
+        "unknown": 1,
+        "mean_latency_sec": 8.595002939607948,
+        "p50_latency_sec": 8.029880875255913,
+        "p90_latency_sec": 12.101342791225761,
+        "mean_llm_calls": 1.16
+      },
+      "published_pooled": {
+        "evaluated_claims": 100,
+        "correct_claims": 95,
+        "accuracy": 0.95,
+        "precision": 0.9411764705882353,
+        "recall": 0.96,
+        "f1": 0.9504950495049505,
+        "tp": 48,
+        "fp": 3,
+        "fn": 2,
+        "tn": 47,
+        "unknown": 1,
+        "mean_latency_sec": 8.595002939607948,
+        "p50_latency_sec": 8.029880875255913,
+        "p90_latency_sec": 12.101342791225761,
+        "mean_llm_calls": 1.16,
+        "standard_error": 0.021794494717703377,
+        "ci_lower_95": 0.9072827903533014,
+        "ci_upper_95": 0.9927172096466985
+      },
+      "route_accuracy": {
+        "multi_agent_debate": {
+          "claims": 13,
+          "correct": 11
+        },
+        "conformal_singleton": {
+          "claims": 82,
+          "correct": 80
+        },
+        "contradiction_arbitration": {
+          "claims": 5,
+          "correct": 4
+        }
+      },
+      "arbiter_effect": {
+        "escalation": {
+          "claims": 13,
+          "fixed": 6,
+          "broken": 1,
+          "both_right": 5,
+          "both_wrong": 1,
+          "llm_unavailable": 0
+        },
+        "review": {
+          "claims": 5,
+          "fixed": 1,
+          "broken": 1,
+          "both_right": 3,
+          "both_wrong": 0,
+          "llm_unavailable": 0
+        }
+      },
+      "changes_vs_published": [],
+      "llm_usage": {
+        "mean_calls_per_claim": 1.16,
+        "mean_calls_by_route": {
+          "multi_agent_debate": 2.923076923076923,
+          "conformal_singleton": 0.8414634146341463,
+          "contradiction_arbitration": 1.8
+        },
+        "latency_by_model_and_tier": {
+          "gemini-3.5-flash-lite (light)": {
+            "calls": 98,
+            "mean_sec": 1.1775918367346938,
+            "p50_sec": 1.112
+          },
+          "gemini-3.5-flash-lite (heavy)": {
+            "calls": 18,
+            "mean_sec": 2.8371666666666666,
+            "p50_sec": 2.664
+          }
+        }
+      }
+    },
+    "freshqa": {
+      "pooled": {
+        "evaluated_claims": 100,
+        "correct_claims": 83,
+        "accuracy": 0.83,
+        "precision": 0.9148936170212766,
+        "recall": 0.86,
+        "f1": 0.8865979381443299,
+        "tp": 43,
+        "fp": 4,
+        "fn": 7,
+        "tn": 40,
+        "unknown": 8,
+        "mean_latency_sec": 12.784581819176674,
+        "p50_latency_sec": 10.534392457921058,
+        "p90_latency_sec": 21.432376709301025,
+        "mean_llm_calls": 1.87
+      },
+      "published_pooled": {
+        "evaluated_claims": 100,
+        "correct_claims": 87,
+        "accuracy": 0.87,
+        "precision": 0.8846153846153846,
+        "recall": 0.92,
+        "f1": 0.9019607843137256,
+        "tp": 46,
+        "fp": 6,
+        "fn": 4,
+        "tn": 41,
+        "unknown": 3,
+        "mean_latency_sec": 21.446472307913936,
+        "p50_latency_sec": 16.543999041896313,
+        "p90_latency_sec": 39.68538804119453,
+        "mean_llm_calls": 1.88,
+        "standard_error": 0.03363034344160047,
+        "ci_lower_95": 0.8040845268544631,
+        "ci_upper_95": 0.9359154731455369
+      },
+      "route_accuracy": {
+        "conformal_singleton": {
+          "claims": 54,
+          "correct": 48
+        },
+        "multi_agent_debate": {
+          "claims": 24,
+          "correct": 16
+        },
+        "contradiction_arbitration": {
+          "claims": 22,
+          "correct": 19
+        }
+      },
+      "arbiter_effect": {
+        "escalation": {
+          "claims": 24,
+          "fixed": 7,
+          "broken": 2,
+          "both_right": 9,
+          "both_wrong": 6,
+          "llm_unavailable": 0
+        },
+        "review": {
+          "claims": 22,
+          "fixed": 8,
+          "broken": 1,
+          "both_right": 11,
+          "both_wrong": 2,
+          "llm_unavailable": 0
+        }
+      },
+      "changes_vs_published": [
+        {
+          "claim": "8 episodes of The Lord of the Rings: The Rings of Power season 1 have been released.",
+          "gold": "supported",
+          "published": "supported",
+          "now": "unknown",
+          "effect": "broke",
+          "route_published": "multi_agent_debate",
+          "route_now": "multi_agent_debate"
+        },
+        {
+          "claim": "Donald Trump tweeted in 2022 after his unbanning from Twitter by Elon Musk.",
+          "gold": "contradicted",
+          "published": "contradicted",
+          "now": "supported",
+          "effect": "broke",
+          "route_published": "multi_agent_debate",
+          "route_now": "conformal_singleton"
+        },
+        {
+          "claim": "Walt Disney Animation Studios' 60th animated film is being released this year.",
+          "gold": "contradicted",
+          "published": "contradicted",
+          "now": "supported",
+          "effect": "broke",
+          "route_published": "multi_agent_debate",
+          "route_now": "conformal_singleton"
+        },
+        {
+          "claim": "The Japanese school year starts in April.",
+          "gold": "supported",
+          "published": "supported",
+          "now": "unknown",
+          "effect": "broke",
+          "route_published": "contradiction_arbitration",
+          "route_now": "multi_agent_debate"
+        },
+        {
+          "claim": "Clint Eastwood has won a Best Actor Academy Award.",
+          "gold": "contradicted",
+          "published": "contradicted",
+          "now": "unknown",
+          "effect": "broke",
+          "route_published": "multi_agent_debate",
+          "route_now": "multi_agent_debate"
+        },
+        {
+          "claim": "There exists a smallest cube number which can be expressed as the sum of two different positive cube numbers in two different ways.",
+          "gold": "contradicted",
+          "published": "supported",
+          "now": "contradicted",
+          "effect": "fixed",
+          "route_published": "conformal_singleton",
+          "route_now": "contradiction_arbitration"
+        },
+        {
+          "claim": "Pope Emeritus Benedict XVI and Queen Elizabeth II both died in 2022.",
+          "gold": "supported",
+          "published": "supported",
+          "now": "unknown",
+          "effect": "broke",
+          "route_published": "multi_agent_debate",
+          "route_now": "contradiction_arbitration"
+        },
+        {
+          "claim": "The euro is Croatia's current national currency.",
+          "gold": "supported",
+          "published": "contradicted",
+          "now": "supported",
+          "effect": "fixed",
+          "route_published": "conformal_singleton",
+          "route_now": "conformal_singleton"
+        },
+        {
+          "claim": "No humans have landed on Mars yet.",
+          "gold": "supported",
+          "published": "contradicted",
+          "now": "supported",
+          "effect": "fixed",
+          "route_published": "conformal_singleton",
+          "route_now": "contradiction_arbitration"
+        },
+        {
+          "claim": "A FIFA World Cup will be hosted next year.",
+          "gold": "contradicted",
+          "published": "supported",
+          "now": "contradicted",
+          "effect": "fixed",
+          "route_published": "multi_agent_debate",
+          "route_now": "multi_agent_debate"
+        },
+        {
+          "claim": "Parking at the Big E costs $10.",
+          "gold": "supported",
+          "published": "unknown",
+          "now": "supported",
+          "effect": "fixed",
+          "route_published": "multi_agent_debate",
+          "route_now": "conformal_singleton"
+        },
+        {
+          "claim": "Pele is currently staying in a hospital to receive cancer treatment.",
+          "gold": "contradicted",
+          "published": "contradicted",
+          "now": "supported",
+          "effect": "broke",
+          "route_published": "multi_agent_debate",
+          "route_now": "conformal_singleton"
+        },
+        {
+          "claim": "An animal has landed on the moon.",
+          "gold": "contradicted",
+          "published": "contradicted",
+          "now": "supported",
+          "effect": "broke",
+          "route_published": "conformal_singleton",
+          "route_now": "conformal_singleton"
+        },
+        {
+          "claim": "The province that borders Shanghai to the north is Jiangsu.",
+          "gold": "supported",
+          "published": "contradicted",
+          "now": "supported",
+          "effect": "fixed",
+          "route_published": "multi_agent_debate",
+          "route_now": "multi_agent_debate"
+        },
+        {
+          "claim": "France is the most recent team to advance to consecutive FIFA World Cup finals.",
+          "gold": "supported",
+          "published": "supported",
+          "now": "unknown",
+          "effect": "broke",
+          "route_published": "multi_agent_debate",
+          "route_now": "multi_agent_debate"
+        },
+        {
+          "claim": "Humans have been killed by dinosaurs.",
+          "gold": "contradicted",
+          "published": "contradicted",
+          "now": "unknown",
+          "effect": "broke",
+          "route_published": "conformal_singleton",
+          "route_now": "contradiction_arbitration"
+        },
+        {
+          "claim": "OpenAI has released GPT-5.5.",
+          "gold": "contradicted",
+          "published": "supported",
+          "now": "contradicted",
+          "effect": "fixed",
+          "route_published": "contradiction_arbitration",
+          "route_now": "contradiction_arbitration"
+        },
+        {
+          "claim": "Princeton University is the top-ranked university in the US according to the US News Ranking.",
+          "gold": "supported",
+          "published": "supported",
+          "now": "contradicted",
+          "effect": "broke",
+          "route_published": "conformal_singleton",
+          "route_now": "multi_agent_debate"
+        }
+      ],
+      "llm_usage": {
+        "mean_calls_per_claim": 1.87,
+        "mean_calls_by_route": {
+          "conformal_singleton": 0.9629629629629629,
+          "multi_agent_debate": 3.9166666666666665,
+          "contradiction_arbitration": 1.8636363636363635
+        },
+        "latency_by_model_and_tier": {
+          "gemini-3.5-flash-lite (light)": {
+            "calls": 141,
+            "mean_sec": 1.5986099290780142,
+            "p50_sec": 1.244
+          },
+          "gemini-3.5-flash-lite (heavy)": {
+            "calls": 46,
+            "mean_sec": 4.380217391304348,
+            "p50_sec": 2.959
+          }
+        }
+      }
+    }
+  },
+  "corroboration": {
+    "3 or more": {
+      "claims": 44,
+      "actually_false": 42,
+      "share_wrong_if_accepted": 0.045454545454545414
+    },
+    "1": {
+      "claims": 30,
+      "actually_false": 19,
+      "share_wrong_if_accepted": 0.3666666666666667
+    },
+    "decisive support also present": {
+      "claims": 12,
+      "actually_false": 5,
+      "share_wrong_if_accepted": 0.5833333333333333
+    },
+    "2": {
+      "claims": 24,
+      "actually_false": 22,
+      "share_wrong_if_accepted": 0.08333333333333337
+    }
+  },
+  "llm_usage": {
+    "mean_calls_per_claim": 1.515,
+    "mean_calls_by_route": {
+      "multi_agent_debate": 3.5675675675675675,
+      "conformal_singleton": 0.8897058823529411,
+      "contradiction_arbitration": 1.8518518518518519
+    },
+    "latency_by_model_and_tier": {
+      "gemini-3.5-flash-lite (light)": {
+        "calls": 239,
+        "mean_sec": 1.4259748953974896,
+        "p50_sec": 1.161
+      },
+      "gemini-3.5-flash-lite (heavy)": {
+        "calls": 64,
+        "mean_sec": 3.946234375,
+        "p50_sec": 2.835
+      }
+    }
+  },
+  "conformal": {
+    "claims": 200,
+    "current_q_hat": 0.898471511900425,
+    "coverage_current_q_hat": 0.85,
+    "coverage_current_q_hat_wilson95": [
+      0.7939430617334484,
+      0.892864734123727
+    ],
+    "mean_set_size_current": 1.205,
+    "q_hat_fold_a": 0.978146106004715,
+    "q_hat_fold_b": 0.9965797576587647,
+    "coverage_cross_fitted": 0.9,
+    "coverage_cross_fitted_wilson95": [
+      0.8505931364369145,
+      0.9343300588284289
+    ],
+    "mean_set_size_cross_fitted": 1.725,
+    "q_hat_all_retrieved": 0.9882043628022075,
+    "per_dataset": {
+      "fever": {
+        "claims": 100,
+        "coverage_current_q_hat": 0.95,
+        "coverage_cross_fitted": 0.98
+      },
+      "freshqa": {
+        "claims": 100,
+        "coverage_current_q_hat": 0.75,
+        "coverage_cross_fitted": 0.82
+      }
+    }
+  },
+  "recalibrated_estimate": {
+    "fever": {
+      "claims": 100,
+      "correct": 94,
+      "route_changes": 26,
+      "newly_escalated": 23,
+      "newly_accepted": 0,
+      "pending": 0,
+      "accuracy": 0.94
+    },
+    "freshqa": {
+      "claims": 100,
+      "correct": 83,
+      "route_changes": 43,
+      "newly_escalated": 27,
+      "newly_accepted": 0,
+      "pending": 0,
+      "accuracy": 0.83
+    }
+  },
+  "recalibration_changes": [
+    {
+      "dataset": "fever",
+      "claim": "Marco Polo was an Asia.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Frozen is a film from 2013.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "An exampled of a folk hero was Bhagat Singh.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Mary of Teck's son did not marry an American socialite.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Rachel Green is a nonfictional character.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "The genre of Colombiana is action.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Diana, Princess of Wales was renowned as Lady Diana Spencer.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Diwali spiritually signifies the victory of light over darkness.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "The Cincinnati Kid stars Steve McQueen.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Lockhead Martin F-35 Lightning II first flew in 2008.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Colin Kaepernick is a person.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Underdog features the voice talents of Amy Adams.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Same Old Love is a song.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Rage Against the Machine broke up in 1999.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "The Chagatai language was completely extinct by the 1700s.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Daggering is a type of dance.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Hot Right Now is a DJ Fresh single.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Mohra received nine nominations from Filmfare.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Billboard Dad is a motion picture.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Bones is a cuisine.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Prescott, Arizona is in northern Yavapai County.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "The Chagatai language was spoken in Asia.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Civilization IV is a game in the turn-based strategy genre.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Frozen is a film from 2013.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Tamerlan Tsarnaev has been to Boston.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Tamerlan Tsarnaev carjacked an SUV.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "COVID-19 was declared endemic by the World Health Organization.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Donald Trump tweeted in 2022 after his unbanning from Twitter by Elon Musk.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The FIFA Ballon d'Or was awarded last year.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "There are 6 games in the Ace Attorney main series.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "California has seceded from the United States.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Lactobacillus bulgaricus is the other bacteria used along with streptococcus thermophilus to make Bulgarian yogurt.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Harry Maguire won the Ballon d'Or.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Pel\u00e9, known as the King of Soccer, died due to multiple organ failure as a complication of colon cancer.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The year 2500 is a leap year with 29 days in February.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Cebuano is the second-largest language edition of Wikipedia according to article count.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Lunar New Year 2023 occurred on January 22, 2023.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The current World's Strongest Man was born in South Africa.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The star of the international series \"It's Me or the Dog\" is married to Van Zeiler.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "A Brazilian president has been elected to a fourth term.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Pope Emeritus Benedict XVI and Queen Elizabeth II both died in 2022.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "unknown -> unknown"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The first successful heart transplant from a pig to a human patient took place in Baltimore.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Russia participated in the FIFA World Cup 2022.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Lionel Messi won his second FIFA World Cup.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The euro is Croatia's current national currency.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "No humans have landed on Mars yet.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Keegan-Michael Key directed a movie in 2022.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "There are nine food allergens that require mandatory labeling in the United States.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Parking at the Big E costs $10.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Hurricane Fiona was the first major hurricane of the 2022 Atlantic hurricane season.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The 8th president of the United States is buried in Kinderhook, New York.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The Monopoly Deal dark blue property set contains two cards.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "An animal has landed on the moon.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Queen Elizabeth II of England was famous for keeping corgis.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Naughty Dog released its first game on the PS1 in 1996.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Humans have been killed by dinosaurs.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "unknown -> unknown"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "OpenAI has released GPT-5.5.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The Pakistani government pushed back the mandated closing time of shopping malls from 9:30pm due to falling electricity prices in January 2023.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Ales are a class of top-fermenting beer.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Blake Lively is the actress whose husband is a partial owner of Mint Mobile.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Nusantara is the name of Indonesia's future capital city.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Louis de Broglie first proposed the idea that all matter exhibits wave-particle duality.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The video game Disco Elysium takes place in the city of Revachol.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "There is no total solar eclipse in the continental US this year.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Benjamin Ruth is a baseball player in the MLB who hit home runs.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "ChatGPT was launched in 2021.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Yokota Air Base is currently the headquarters of United States Forces Japan.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "358 total Nazca geoglyphs have been discovered so far.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The Federal Reserve cut interest rates from August to December 2022.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    }
+  ]
+}

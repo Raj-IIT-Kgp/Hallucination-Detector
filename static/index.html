@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=46">
+    <link rel="stylesheet" href="/static/style.css?v=47">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
@@ -92,21 +92,20 @@
                 </details>
             </div>
 
-            <!-- Under the hood: the computation of one claim, step by step, with the real numbers -->
-            <div id="hoodSection" class="card hood-card hidden">
-                <div class="card-head">
-                    <div>
-                        <h2>Under the hood</h2>
-                        <span class="muted">Every computation for the selected claim, with the actual numbers from this run, as it happens</span>
-                    </div>
-                    <div class="hood-chips" id="hoodChips" role="tablist" aria-label="Claim"></div>
-                </div>
-                <div class="hood-claim" id="hoodClaim"></div>
-                <ol class="hood-steps" id="hoodSteps"></ol>
-            </div>
-
             <!-- Results -->
             <div id="results" class="hidden">
+                <div class="card overall pending" id="overallCard" role="status">
+                    <div class="overall-head">
+                        <span class="overall-icon" id="overallIcon" aria-hidden="true"></span>
+                        <div class="overall-text">
+                            <h2 id="overallTitle">Checking the claims…</h2>
+                            <p id="overallSub"></p>
+                        </div>
+                    </div>
+                    <div class="verdict-bar" id="verdictBar"></div>
+                    <p class="hint" id="verdictCaption"></p>
+                </div>
+
                 <div class="summary-grid">
                     <div class="stat">
                         <span class="stat-label">Claims</span>
@@ -130,25 +129,21 @@
                     </div>
                 </div>
 
+                <!-- The input, sentence by sentence, with the atomic claims each sentence was decomposed into -->
                 <div class="card">
                     <div class="card-head">
-                        <h2>Verdict distribution</h2>
-                        <span class="muted" id="verdictCaption"></span>
-                    </div>
-                    <div class="verdict-bar" id="verdictBar"></div>
-                </div>
-
-                <div class="card">
-                    <div class="card-head">
-                        <h2>Annotated text</h2>
+                        <div>
+                            <h2>From text to claims</h2>
+                            <span class="muted" id="decompCaption"></span>
+                        </div>
                         <div class="legend">
                             <span><span class="legend-swatch s-good-bg"></span>Supported</span>
                             <span><span class="legend-swatch s-critical-bg"></span>Hallucinated</span>
                             <span><span class="legend-swatch s-warning-bg"></span>Uncertain</span>
                         </div>
                     </div>
-                    <p class="annotated" id="annotated"></p>
-                    <p class="hint">Click a highlighted claim to jump to its evidence.</p>
+                    <div class="decomp" id="decomp"></div>
+                    <p class="hint">Each sentence of your text is shown with the atomic claims it was split into; a sentence takes the colour of its worst claim. <mark class="resolved">Underlined words</mark> were added by the decomposition, for example a pronoun replaced by the name it refers to. Click a claim to open its evidence.</p>
                 </div>
             </div>
 
@@ -158,6 +153,19 @@
                     <button class="btn-ghost" id="expandAllBtn">Expand all</button>
                 </div>
                 <div id="claimList" class="claim-list"></div>
+            </div>
+
+            <!-- Under the hood: the computation of one claim, step by step, with the real numbers -->
+            <div id="hoodSection" class="card hood-card hidden">
+                <div class="card-head">
+                    <div>
+                        <h2>Under the hood</h2>
+                        <span class="muted">Every computation for the selected claim, with the actual numbers from this run, as it happens</span>
+                    </div>
+                    <div class="hood-chips" id="hoodChips" role="tablist" aria-label="Claim"></div>
+                </div>
+                <div class="hood-claim" id="hoodClaim"></div>
+                <ol class="hood-steps" id="hoodSteps"></ol>
             </div>
 
             <div id="timelineSection" class="card hidden">
@@ -200,13 +208,50 @@
             </div>
             <div id="benchLoading" class="muted">Loading results…</div>
             <div id="benchGrid" class="bench-grid"></div>
+
+            <!-- Every benchmark claim, with its verdict, evidence and computation trace -->
+            <div id="explorer" class="card explorer-card hidden">
+                <div class="card-head">
+                    <div>
+                        <h2>Claim explorer</h2>
+                        <span class="muted">Every benchmark claim with its gold label, the pipeline's verdict, and the full computation behind it</span>
+                    </div>
+                    <div class="seg-toggle" role="group" aria-label="Benchmark">
+                        <button type="button" class="seg-btn active" data-explore="fever">FEVER</button>
+                        <button type="button" class="seg-btn" data-explore="freshqa">FreshQA</button>
+                    </div>
+                </div>
+                <div class="explorer-controls">
+                    <div class="seg-toggle" role="group" aria-label="Outcome">
+                        <button type="button" class="seg-btn active" data-outcome="all">All</button>
+                        <button type="button" class="seg-btn" data-outcome="errors">Errors</button>
+                        <button type="button" class="seg-btn" data-outcome="correct">Correct</button>
+                    </div>
+                    <select id="exploreRoute" class="select" aria-label="Decision route">
+                        <option value="">Every route</option>
+                        <option value="conformal_singleton">NLI verdict stands</option>
+                        <option value="contradiction_arbitration">LLM review</option>
+                        <option value="multi_agent_debate">Full escalation</option>
+                        <option value="absence_heuristic">Absence check</option>
+                    </select>
+                    <input type="search" id="exploreSearch" class="search" placeholder="Search claims…" aria-label="Search claims">
+                    <span class="muted" id="exploreCount"></span>
+                </div>
+                <div class="table-wrap">
+                    <table class="data explorer-table">
+                        <thead><tr><th>Set</th><th>Claim</th><th>Gold</th><th>Pipeline</th><th>Route</th><th>Latency</th></tr></thead>
+                        <tbody id="exploreBody"></tbody>
+                    </table>
+                </div>
+                <p class="hint">Click a row to see its evidence and every computation step, exactly as recorded during the benchmark run.</p>
+            </div>
         </section>
 
         <!-- ============================== METHOD ============================== -->
         <section id="view-method" class="view">
             <div class="intro">
                 <h1>How the pipeline decides</h1>
-                <p>A cascade: cheap, calibrated checks settle most claims; the expensive knowledge-graph and LLM stages run only when the evidence is ambiguous. On FEVER, 78 of 100 claims are settled by the NLI model without any arbitration call, and 97% of those verdicts are correct.</p>
+                <p>A cascade: cheap, calibrated checks settle most claims; the expensive knowledge-graph and LLM stages run only when the evidence is ambiguous. On FEVER, 82 of 100 claims are settled by the NLI model without any arbitration call, and 98% of those verdicts are correct.</p>
             </div>
             <div class="card cascade-card">
                 <div class="card-head">
@@ -253,6 +298,6 @@
 
     <div id="vizTip" class="viz-tip" role="tooltip"></div>
 
-    <script src="/static/app.js?v=49"></script>
+    <script src="/static/app.js?v=53"></script>
 </body>
 </html>

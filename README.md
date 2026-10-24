@@ -4,10 +4,10 @@ VeriFact checks a text, typically an answer written by a language model, for hal
 
 | Benchmark (100 claims, five sets of 20) | Accuracy (95% CI) | Precision | Recall | F1 |
 | :--- | :--- | :--- | :--- | :--- |
-| FEVER | 95.0% [90.7%, 99.3%] | 0.98 | 0.96 | 0.97 |
-| FreshQA (never- and slow-changing) | 87.0% [80.4%, 93.6%] | 0.88 | 0.92 | 0.90 |
+| FEVER | 95.0% [90.7%, 99.3%] | 0.94 | 0.96 | 0.95 |
+| FreshQA (never- and slow-changing) | 83.0% [75.6%, 90.4%] | 0.91 | 0.86 | 0.89 |
 
-Latency per claim with the current settings (measured on 20 claims per benchmark): **8.8 s** on FEVER and **11.0 s** on FreshQA on average.
+Mean latency per claim, measured with the current settings: **8.6 s** on FEVER and **12.8 s** on FreshQA.
 
 **The full method, mathematics, evaluation and limitations are documented in [`pipeline.md`](pipeline.md).**
 

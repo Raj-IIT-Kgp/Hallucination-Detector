@@ -126,6 +126,9 @@ const run = {
     claimsAt: null,       // time the claims were extracted
     lastMs: 0,            // time of the latest event
     replay: null,         // {recorded_at, duration_sec} when a recorded run is replayed
+    text: '',             // the input text
+    decompRoute: null,    // how the text was decomposed: fast_path | llm | fallback (null: not sent)
+    sentOwner: [],        // per claim: index of the input sentence it came from
     globalState: {},      // extract and report, which run once per input
     start: 0,
     timer: null,
@@ -218,6 +221,8 @@ function resetRun() {
     run.claimsAt = null;
     run.lastMs = 0;
     run.replay = null;
+    run.decompRoute = null;
+    run.sentOwner = [];
     run.logCount = 0;
     $('replayNote').classList.add('hidden');
     $('timelineSection').classList.add('hidden');
@@ -233,7 +238,7 @@ function resetRun() {
     $('claimsSection').classList.add('hidden');
     $('kgSection').classList.add('hidden');
     $('claimList').innerHTML = '';
-    $('annotated').innerHTML = '';
+    $('decomp').innerHTML = '';
     buildStepper();
     setRunMessage('Connecting to the verification pipeline…');
 }
@@ -286,20 +291,7 @@ function initClaims(claims) {
         top.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
     });
 
-    $('annotated').innerHTML = claims.map((c, i) =>
-        `<span class="ann pending" data-i="${i}">${escapeHtml(c)}</span>`).join(' ');
-    $('annotated').querySelectorAll('.ann').forEach(span => {
-        span.addEventListener('click', () => focusClaim(+span.dataset.i));
-        span.addEventListener('mouseenter', e => {
-            const r = run.results[+span.dataset.i];
-            const v = r ? VERDICT[r.verification.label] || VERDICT.unknown : null;
-            showTip(`<div class="tt-title">Claim ${+span.dataset.i + 1}</div>
-                <div class="tt-row"><span>${v ? `${v.icon} ${v.text}` : 'Not verified yet'}</span>
-                ${r ? `<span>${escapeHtml((POLICY[r.verification.final_decision_policy] || {}).tag || '')}</span>` : ''}</div>`, e);
-        });
-        span.addEventListener('mousemove', moveTip);
-        span.addEventListener('mouseleave', hideTip);
-    });
+    renderDecomp();
 
     $('statTotal').textContent = claims.length;
     $('results').classList.remove('hidden');
@@ -326,6 +318,7 @@ function markClaimActive(i) {
     const badge = card.querySelector('.verdict-badge');
     badge.className = 'verdict-badge active';
     badge.innerHTML = '<span class="mini-spinner"></span> Verifying';
+    renderDecomp();
 }
 
 function setClaimStage(i, stageKey) {
@@ -390,11 +383,9 @@ function fillClaim(i, result, { quiet = false } = {}) {
     const v = result.verification || {};
     const label = VERDICT[v.label] ? v.label : 'unknown';
     const verdict = VERDICT[label];
-    const policy = POLICY[v.final_decision_policy] || { tag: v.final_decision_policy || 'NLI', text: () => '' };
+    const policy = POLICY[v.final_decision_policy] || { tag: v.final_decision_policy || 'NLI' };
     const set = v.conformal_set || [];
-    const nliLabel = argmaxLabel(v.probabilities);
     const llmDown = Boolean(v.llm_unavailable);   // the LLM step failed: Uncertain is not a judgement
-    const overridden = v.debate_resolved && !llmDown && nliLabel && nliLabel !== label;
     const elapsed = result._elapsed != null ? `<span class="tag">${result._elapsed.toFixed(1)} s</span>` : '';
 
     card.className = `claim-card ${label}${quiet ? '' : ' reveal'}${card.classList.contains('open') ? ' open' : ''}`;
@@ -405,7 +396,53 @@ function fillClaim(i, result, { quiet = false } = {}) {
         ${set.length ? `<span class="tag">Conformal set {${set.map(s => VERDICT[s] ? VERDICT[s].text : s).join(', ')}}</span>` : ''}
         ${elapsed}`;
 
-    // details
+    const details = card.querySelector('.claim-details');
+    details.innerHTML = claimDetailsHtml(result, { hoodIndex: i });
+    bindClaimDetails(details);
+    const hoodLink = card.querySelector('.hood-link');
+    if (hoodLink) hoodLink.addEventListener('click', e => {
+        e.stopPropagation();
+        selectHoodClaim(i);
+        $('hoodSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    if (card.classList.contains('open')) animateProbBars(card);
+
+    renderDecomp();
+    updateSummary();
+}
+
+// The path a claim took through the cascade: NLI reading → conformal set → route → final verdict
+function verdictPathHtml(v) {
+    const probs = v.probabilities || [];
+    const nliLabel = argmaxLabel(probs);
+    const set = v.conformal_set || [];
+    const label = VERDICT[v.label] ? v.label : 'unknown';
+    const policy = POLICY[v.final_decision_policy] || { tag: v.final_decision_policy || 'NLI' };
+    const changed = v.debate_resolved && !v.llm_unavailable && nliLabel && nliLabel !== label;
+    const setText = set.map(s => VERDICT[s] ? VERDICT[s].text : s).join(', ');
+    const steps = [
+        ['NLI model', nliLabel ? `${VERDICT[nliLabel].text} ${pct(Math.max(...probs), 0)}` : 'no evidence to score', nliLabel || ''],
+        ...(set.length ? [['Conformal set', `{${setText}}`, set.length === 1 ? set[0] : 'multi']] : []),
+        ['Route', policy.tag, 'route'],
+        ['Final verdict', `${VERDICT[label].icon} ${VERDICT[label].text}`, `final ${label}`],
+    ];
+    return `<div class="vpath" aria-label="Decision path">${steps.map(([k, val, cls], n) => `
+        ${n ? '<span class="vpath-arrow" aria-hidden="true">→</span>' : ''}
+        <span class="vpath-step ${cls}"><span class="vpath-k">${k}</span><span class="vpath-v">${escapeHtml(val)}</span></span>`).join('')}
+        ${changed ? `<span class="vpath-note">The LLM changed the NLI reading (${VERDICT[nliLabel].text} → ${VERDICT[label].text})</span>` : ''}
+    </div>`;
+}
+
+// Decision, probabilities and evidence of one verified claim. hoodIndex links to its Under-the-hood view.
+function claimDetailsHtml(result, { hoodIndex = null } = {}) {
+    const v = result.verification || {};
+    const label = VERDICT[v.label] ? v.label : 'unknown';
+    const policy = POLICY[v.final_decision_policy] || { tag: v.final_decision_policy || 'NLI', text: () => '' };
+    const set = v.conformal_set || [];
+    const nliLabel = argmaxLabel(v.probabilities);
+    const llmDown = Boolean(v.llm_unavailable);
+    const overridden = v.debate_resolved && !llmDown && nliLabel && nliLabel !== label;
+
     const probs = v.probabilities || [];
     const probRows = probs.length === 3 ? LABEL_ORDER.map((l, k) => `
         <div class="prob-row">
@@ -441,10 +478,11 @@ function fillClaim(i, result, { quiet = false } = {}) {
     const graph = result.graph || {};
     const nNodes = (graph.nodes || []).length, nEdges = (graph.edges || []).length;
 
-    card.querySelector('.claim-details').innerHTML = `
+    return `
+        ${verdictPathHtml(v)}
         <div class="detail-grid">
             <div class="panel">
-                <div class="panel-title"><span>How it was decided</span><button type="button" class="link-btn hood-link" data-i="${i}">See the computation ↑</button></div>
+                <div class="panel-title"><span>How it was decided</span>${hoodIndex != null ? `<button type="button" class="link-btn hood-link" data-i="${hoodIndex}">See the computation ↓</button>` : ''}</div>
                 ${llmDown ? `<div class="ev-note" style="margin-bottom:8px"><strong>The LLM step could not run</strong> (${escapeHtml(llmErrorReason(v.llm_unavailable))}), so the verdict was left Uncertain instead of guessed.${nliLabel && probs.length === 3 ? ` Before review, the NLI model leaned <strong>${VERDICT[nliLabel].text}</strong> (${pct(Math.max(...probs), 0)}).` : ''} Try again in a minute.</div>` : ''}
                 <p class="decision">${llmDown && policy.needed ? policy.needed : policy.text(set.map(s => VERDICT[s] ? VERDICT[s].text : s).join(', '))}</p>
                 ${overridden ? `<p class="decision" style="margin-top:8px">The arbiter <strong>overrode</strong> the NLI model, which leaned <strong>${VERDICT[nliLabel].text}</strong>.</p>` : ''}
@@ -463,31 +501,23 @@ function fillClaim(i, result, { quiet = false } = {}) {
             <div class="panel-title"><span>Retrieved evidence${scores ? ' · NLI reading of each snippet' : ''}</span><span>${items.length} snippet${items.length === 1 ? '' : 's'}</span></div>
             ${notes.map(n => `<div class="ev-note" style="margin-bottom:8px">${escapeHtml(n)}</div>`).join('')}
             <div class="evidence-list">${evHtml || '<p class="muted">No evidence text.</p>'}</div>
-            ${items.length > shown ? `<button class="more-btn">Show ${items.length - shown} more</button>` : ''}
+            ${items.length > shown ? `<button class="more-btn" data-extra="${items.length - shown}">Show ${items.length - shown} more</button>` : ''}
             <div class="sources">${sourceLinks(result.source_url)}</div>
         </div>`;
-    const more = card.querySelector('.more-btn');
+}
+
+function bindClaimDetails(root) {
+    const more = root.querySelector('.more-btn');
     if (more) more.addEventListener('click', e => {
         e.stopPropagation();
-        card.querySelectorAll('.ev.extra').forEach(x => x.classList.toggle('hidden'));
-        more.textContent = more.textContent.startsWith('Show') ? 'Show fewer' : `Show ${items.length - shown} more`;
+        root.querySelectorAll('.ev.extra').forEach(x => x.classList.toggle('hidden'));
+        more.textContent = more.textContent.startsWith('Show') ? 'Show fewer' : `Show ${more.dataset.extra} more`;
     });
-    const hoodLink = card.querySelector('.hood-link');
-    if (hoodLink) hoodLink.addEventListener('click', e => {
-        e.stopPropagation();
-        selectHoodClaim(i);
-        $('hoodSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-    card.querySelectorAll('.snip-bar').forEach(bar => {
+    root.querySelectorAll('.snip-bar').forEach(bar => {
         bar.addEventListener('mouseenter', e => showTip(bar.dataset.tip, e));
         bar.addEventListener('mousemove', moveTip);
         bar.addEventListener('mouseleave', hideTip);
     });
-    if (card.classList.contains('open')) animateProbBars(card);
-
-    const ann = $('annotated').querySelector(`.ann[data-i="${i}"]`);
-    if (ann) ann.className = `ann ${label}`;
-    updateSummary();
 }
 
 function llmErrorReason(err) {
@@ -530,7 +560,8 @@ function updateSummary() {
     $('statUnknown').textContent = c.unknown;
     $('verdictCaption').textContent = pending
         ? `${done.length} of ${run.claims.length} claims verified`
-        : `Hallucination rate ${pct(run.claims.length ? c.contradicted / run.claims.length : 0, 0)}`;
+        : `Hallucination rate ${pct(run.claims.length ? c.contradicted / run.claims.length : 0, 0)} (contradicted claims / all claims)`;
+    renderOverall(c, pending);
 
     const segs = [...['supported', 'contradicted', 'unknown'].map(l => [l, c[l]]), ['pending', pending]].filter(([, n]) => n > 0);
     const bar = $('verdictBar');
@@ -544,6 +575,131 @@ function updateSummary() {
         seg.addEventListener('mousemove', moveTip);
         seg.addEventListener('mouseleave', hideTip);
     });
+}
+
+// The answer-level verdict: one contradicted claim makes the whole answer a hallucination
+function renderOverall(c, pending) {
+    const n = run.claims.length;
+    const claimsWord = k => `claim${k === 1 ? '' : 's'}`;
+    let state, icon, title, sub;
+    if (c.contradicted) {
+        state = 'contradicted'; icon = '✕';
+        title = `Hallucination detected: ${c.contradicted} of ${n} ${claimsWord(n)} ${c.contradicted === 1 ? 'is' : 'are'} contradicted by evidence`;
+        sub = (pending ? `${pending} ${claimsWord(pending)} still being checked. ` : '') + 'One contradicted claim is enough to flag the whole answer.';
+    } else if (pending) {
+        state = 'pending'; icon = '<span class="mini-spinner"></span>';
+        title = `Checking ${n} ${claimsWord(n)}…`;
+        sub = `${n - pending} of ${n} verified so far, nothing contradicted yet.`;
+    } else if (c.unknown) {
+        state = 'unknown'; icon = '?';
+        title = `No hallucination found, but ${c.unknown} of ${n} ${claimsWord(n)} could not be verified`;
+        sub = 'The evidence was inconclusive, so the detector abstained instead of guessing.';
+    } else {
+        state = 'supported'; icon = '✓';
+        title = n === 1 ? 'No hallucination found: the claim is supported by evidence' : `No hallucination found: all ${n} claims are supported by evidence`;
+        sub = 'Every atomic claim was confirmed by the retrieved evidence.';
+    }
+    $('overallCard').className = `card overall ${state}`;
+    $('overallIcon').innerHTML = icon;
+    $('overallTitle').textContent = title;
+    $('overallSub').textContent = sub;
+}
+
+// ---- from text to claims --------------------------------------------------
+
+const STOPWORDS = new Set(('a an the of in on at to is was were are be been being by for and or but with as from that this ' +
+    'these those it its he she they him her them his their has have had which who whom not no').split(' '));
+const words = t => (String(t).toLowerCase().match(/\w+/g) || []);
+
+function splitSentences(text) {
+    if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+        return [...new Intl.Segmenter('en', { granularity: 'sentence' }).segment(text)].map(x => x.segment.trim()).filter(Boolean);
+    }
+    return text.split(/(?<=[.!?])\s+/).map(x => x.trim()).filter(Boolean);
+}
+
+// Each claim is assigned to the input sentence that contains most of its content words
+function mapClaimsToSentences(sentences, claims) {
+    const sentWords = sentences.map(x => new Set(words(x)));
+    return claims.map(c => {
+        const cw = words(c).filter(w => !STOPWORDS.has(w));
+        let best = 0, bestScore = -1;
+        sentWords.forEach((sw, k) => {
+            const score = cw.length ? cw.filter(w => sw.has(w)).length / cw.length : 0;
+            if (score > bestScore) { best = k; bestScore = score; }
+        });
+        return best;
+    });
+}
+
+// The claim with the words that are not in its source sentence marked (resolved pronouns, added subjects)
+function markAdded(claim, sentence) {
+    const have = new Set(words(sentence));
+    return String(claim).split(/(\w+)/).map((part, k) => k % 2 && !have.has(part.toLowerCase()) && !STOPWORDS.has(part.toLowerCase())
+        ? `<mark class="resolved" title="Not in the original sentence: added by the decomposition">${escapeHtml(part)}</mark>`
+        : escapeHtml(part)).join('').replace(/<\/mark>(\s+)<mark[^>]*>/g, '$1');
+}
+
+const claimLabel = i => {
+    const r = run.results[i];
+    if (r) return VERDICT[r.verification.label] ? r.verification.label : 'unknown';
+    return run.claimStart[i] != null ? 'active' : 'pending';
+};
+
+function decompRoute() {
+    if (run.decompRoute) return run.decompRoute;
+    // recorded runs from before the route was sent: an unchanged single sentence took the fast path
+    return run.claims.length === 1 && run.claims[0].trim() === run.text.trim() ? 'fast_path' : 'llm';
+}
+
+function decompSentences() {
+    const sentences = splitSentences(run.text || run.claims.join(' '));
+    return sentences.length ? sentences : [run.text];
+}
+
+function renderDecomp() {
+    const box = $('decomp');
+    if (!run.claims.length) { box.innerHTML = ''; return; }
+    const sentences = decompSentences();
+    run.sentOwner = mapClaimsToSentences(sentences, run.claims);
+    const rank = ['contradicted', 'unknown', 'active', 'pending', 'supported'];
+    const icon = l => VERDICT[l] ? `<span class="status-icon ${VERDICT[l].cls}">${VERDICT[l].icon}</span>`
+        : l === 'active' ? '<span class="mini-spinner"></span>' : '<span class="dec-wait"></span>';
+
+    box.innerHTML = sentences.map((sent, k) => {
+        const idx = run.claims.map((_, i) => i).filter(i => run.sentOwner[i] === k);
+        const worst = rank.find(l => idx.some(i => claimLabel(i) === l)) || 'none';
+        return `<div class="dec-row">
+            <div class="dec-sent ${idx.length ? worst : 'none'}"><span class="dec-snum">S${k + 1}</span>${escapeHtml(sent)}</div>
+            <div class="dec-arrow" aria-hidden="true">${idx.length ? '→' : ''}</div>
+            <div class="dec-claims">${idx.length ? idx.map(i => `
+                <button type="button" class="dec-claim ${claimLabel(i)}" data-i="${i}">
+                    <span class="dec-num">${i + 1}</span>
+                    <span class="dec-text">${markAdded(run.claims[i], sent)}</span>
+                    ${icon(claimLabel(i))}
+                </button>`).join('') : '<span class="muted">No checkable factual claim</span>'}</div>
+        </div>`;
+    }).join('');
+    box.querySelectorAll('.dec-claim').forEach(b => {
+        b.addEventListener('click', () => focusClaim(+b.dataset.i));
+        b.addEventListener('mouseenter', e => {
+            const r = run.results[+b.dataset.i];
+            const v = r ? VERDICT[r.verification.label] || VERDICT.unknown : null;
+            showTip(`<div class="tt-title">Claim ${+b.dataset.i + 1}</div>
+                <div class="tt-row"><span>${v ? `${v.icon} ${v.text}` : 'Not verified yet'}</span>
+                ${r ? `<span>${escapeHtml((POLICY[r.verification.final_decision_policy] || {}).tag || '')}</span>` : ''}</div>`, e);
+        });
+        b.addEventListener('mousemove', moveTip);
+        b.addEventListener('mouseleave', hideTip);
+    });
+
+    const ns = sentences.length, nc = run.claims.length;
+    const counts = `${ns} sentence${ns === 1 ? '' : 's'} → ${nc} atomic claim${nc === 1 ? '' : 's'}`;
+    $('decompCaption').textContent = {
+        fast_path: `${counts} · fast path: a short sentence with no clauses is already atomic, so no LLM call was made`,
+        llm: `${counts} · decomposed by the LLM, with pronouns resolved and negations kept as written`,
+        fallback: `${counts} · the LLM was unavailable, so the text was split into sentences`,
+    }[decompRoute()] || counts;
 }
 
 // ---- streaming ------------------------------------------------------------
@@ -587,6 +743,7 @@ function handleEvent(data, text) {
         }
         paintStepper();
     } else if (data.status === 'claims') {
+        run.decompRoute = data.decomposition ? data.decomposition.route : null;
         initClaims(data.claims);
         initHood(data.claims);
         run.claimsAt = ms;
@@ -666,6 +823,7 @@ async function verify(live = false) {
     btn.classList.add('loading');
     btn.querySelector('.btn-label').textContent = 'Verifying…';
     resetRun();
+    run.text = text;
     $('runPanel').classList.remove('hidden');
     startTimer();
 
@@ -825,6 +983,8 @@ const HOOD_RENDER = {
             <div class="table-wrap"><table class="data hood-table">
                 <thead><tr><th>Label y</th><th>π<sub>y</sub></th><th>s<sub>y</sub> = 1 − π<sub>y</sub></th><th>vs q̂</th><th>p-value</th><th></th></tr></thead>
                 <tbody>${rows}</tbody></table></div>
+            <div class="calib-plot" data-p="${p.join(',')}" data-q="${q}"></div>
+            <p class="hood-note">Bars: the scores of the ${n} calibration claims, i.e. how surprised the NLI model was by their true label. q̂ is the score that 90% of them stay below, so a label left of the line is no more surprising than a typical true label. Hover a marker for its p-value.</p>
             <div class="hood-math">${count != null ? tex(`p(${LBL[top]}) = \\frac{1 + \\#\\{\\, i : s_i \\ge ${fx(1 - Math.max(...p), 4)} \\,\\}}{n + 1} = \\frac{1 + ${count}}{${n + 1}} = ${fx(pv, 4)}`) : ''}
                 ${tex(`\\mathcal C(X) = \\{ ${(st.set || []).map(l => LBL[l]).join(',\\, ')} \\}`)}</div>`);
     },
@@ -907,8 +1067,11 @@ function renderHood() {
     const i = run.hoodClaim;
     const steps = (run.traces && run.traces[i]) || [];
     $('hoodClaim').innerHTML = `<span class="muted">Claim ${i + 1}:</span> ${escapeHtml(run.claims[i] || '')}`;
-    if (run.hoodShown === 0) $('hoodSteps').innerHTML = '';
     let html = '';
+    if (run.hoodShown === 0) {
+        $('hoodSteps').innerHTML = '';
+        html = decompStepHtml(i);
+    }
     for (let k = run.hoodShown; k < steps.length; k++) {
         const fn = HOOD_RENDER[steps[k].kind];
         if (fn) html += fn(steps[k]);
@@ -932,6 +1095,105 @@ function renderHood() {
             ${msg ? `<p class="hood-note mono">${escapeHtml(msg)}</p>` : ''}</div></li>`);
     }
     requestAnimationFrame(() => $('hoodSteps').querySelectorAll('.hood-step.enter').forEach(x => x.classList.remove('enter')));
+    drawCalibPlots($('hoodSteps'));
+}
+
+// Where the selected claim came from: its sentence of the input, and how it was split off
+function decompStepHtml(i) {
+    const sentences = decompSentences();
+    const k = run.sentOwner[i] ?? 0;
+    const sent = sentences[k] || run.text;
+    const siblings = run.sentOwner.filter(x => x === k).length;
+    const route = decompRoute();
+    const tag = { fast_path: 'fast path · no LLM call', llm: 'LLM · heavy tier', fallback: 'NLTK sentence split (LLM unavailable)' }[route];
+    return hoodStep('D', 'Claim decomposition', tag, `
+        <p class="hood-note">Sentence ${k + 1} of the input${route === 'fast_path' ? ' is a single short sentence without clause markers, so it is already atomic and is verified as it stands' : ''}:</p>
+        <div class="hood-quote">${escapeHtml(sent)}</div>
+        ${route === 'fast_path' ? '' : `<p class="hood-note">became claim ${i + 1}${siblings > 1 ? `, one of ${siblings} atomic claims split from this sentence` : ''}. Underlined words are not in the sentence: the LLM added them to make the claim self-contained.</p>
+        <div class="hood-quote claim">${markAdded(run.claims[i], sent)}</div>`}`);
+}
+
+// ---- conformal calibration plot ----------------------------------------------
+
+let calibPromise = null;
+
+function fetchCalibration() {
+    if (!calibPromise) {
+        calibPromise = fetch('/api/calibration').then(res => {
+            if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+            return res.json();
+        });
+        calibPromise.catch(() => { calibPromise = null; });
+    }
+    return calibPromise;
+}
+
+async function drawCalibPlots(root) {
+    const boxes = [...root.querySelectorAll('.calib-plot:not(.drawn)')];
+    if (!boxes.length) return;
+    let cal;
+    try { cal = await fetchCalibration(); } catch { boxes.forEach(b => b.remove()); return; }
+    boxes.forEach(b => {
+        if (b.classList.contains('drawn')) return;
+        b.classList.add('drawn');
+        b.innerHTML = calibSvg(cal.scores, b.dataset.p.split(',').map(Number), Number(b.dataset.q));
+        b.querySelectorAll('[data-tip]').forEach(el => {
+            el.addEventListener('mouseenter', e => showTip(el.dataset.tip, e));
+            el.addEventListener('mousemove', moveTip);
+            el.addEventListener('mouseleave', hideTip);
+        });
+    });
+}
+
+// Histogram of the calibration non-conformity scores with q̂, and where this claim's three labels fall:
+// a label enters the prediction set when its score s = 1 − π is left of q̂
+function calibSvg(scores, probs, q) {
+    const W = 660, H = 196, m = { l: 14, r: 14, t: 66, b: 34 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const x = v => m.l + Math.max(0, Math.min(1, v)) * iw;
+    const bins = 20, counts = new Array(bins).fill(0);
+    scores.forEach(v => { counts[Math.min(bins - 1, Math.floor(v * bins))] += 1; });
+    const ymax = Math.max(...counts, 1);
+    const y = c => m.t + ih - (c / ymax) * ih;
+    const n = scores.length;
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Calibration scores, the conformal threshold and this claim's label scores">`;
+    svg += `<rect class="calib-zone" x="${x(0)}" y="${m.t}" width="${x(q) - x(0)}" height="${ih}"></rect>`;
+    svg += `<text class="calib-zone-label" x="${(x(0) + x(q)) / 2}" y="${m.t + 13}" text-anchor="middle">enters the set (s ≤ q̂)</text>`;
+    svg += `<text class="calib-zone-label" x="${x(1) - 4}" y="${m.t + 13}" text-anchor="end">excluded</text>`;
+    counts.forEach((c, k) => {
+        if (!c) return;
+        const x0 = x(k / bins) + 1, w = iw / bins - 2;
+        const tip = `<div class="tt-title">Scores ${(k / bins).toFixed(2)}–${((k + 1) / bins).toFixed(2)}</div><div class="tt-row"><span>Calibration claims</span><span>${c} of ${n}</span></div>`;
+        svg += `<rect class="calib-bar" x="${x0}" y="${y(c)}" width="${w}" height="${m.t + ih - y(c)}" rx="2" data-tip="${escapeHtml(tip)}"></rect>`;
+    });
+    svg += `<line class="axis-line" x1="${x(0)}" x2="${x(1)}" y1="${m.t + ih}" y2="${m.t + ih}"></line>`;
+    [0, 0.25, 0.5, 0.75, 1].forEach(t => {
+        svg += `<text class="tick" x="${x(t)}" y="${m.t + ih + 14}" text-anchor="${t === 0 ? 'start' : t === 1 ? 'end' : 'middle'}">${t}</text>`;
+    });
+    svg += `<text class="tick" x="${x(0.5)}" y="${H - 4}" text-anchor="middle">non-conformity score s = 1 − π(label)</text>`;
+    svg += `<line class="calib-q" x1="${x(q)}" x2="${x(q)}" y1="${m.t - 6}" y2="${m.t + ih}"></line>`;
+    svg += `<text class="calib-q-label" x="${x(q) - 4}" y="${m.t + ih - 6}" text-anchor="end">q̂ = ${q.toFixed(3)}</text>`;
+
+    // one row per label above the histogram, so markers at similar scores never overlap
+    LABEL_ORDER.forEach((l, k) => {
+        const sc = 1 - probs[k], cx = x(sc), rowY = 12 + k * 17;
+        const inSet = sc <= q;
+        const pv = (1 + scores.filter(v => v >= sc).length) / (n + 1);
+        const right = cx > m.l + iw * 0.6;
+        const tip = `<div class="tt-title">${VERDICT[l].text}</div>
+            <div class="tt-row"><span>π (NLI probability)</span><span>${probs[k].toFixed(4)}</span></div>
+            <div class="tt-row"><span>s = 1 − π</span><span>${sc.toFixed(4)}</span></div>
+            <div class="tt-row"><span>vs q̂</span><span>${inSet ? '≤' : '>'} ${q.toFixed(4)}</span></div>
+            <div class="tt-row"><span>p-value</span><span>${pv.toFixed(4)}</span></div>
+            <div class="tt-row"><span>${inSet ? '✓ in the prediction set' : 'not in the set'}</span></div>`;
+        svg += `<g class="calib-mark ${l}${inSet ? ' in' : ''}" data-tip="${escapeHtml(tip)}">
+            <line x1="${cx}" x2="${cx}" y1="${rowY}" y2="${m.t + ih}"></line>
+            <circle cx="${cx}" cy="${rowY}" r="5"></circle>
+            <text x="${right ? cx - 9 : cx + 9}" y="${rowY}" dy="0.35em" text-anchor="${right ? 'end' : 'start'}">${VERDICT[l].text} · s = ${sc.toFixed(3)}${inSet ? ' · in set' : ''}</text>
+        </g>`;
+    });
+    return svg + '</svg>';
 }
 
 function hoodEvent(i, data) {
@@ -1203,6 +1465,7 @@ async function loadBenchmarks() {
             bindRouteTips(k, data[k]);
         });
         if (keys.length === 2) $('benchGrid').insertAdjacentHTML('afterend', compareCard(data.fever.pooled, data.freshqa.pooled));
+        loadExplorer();
     } catch (err) {
         $('benchLoading').textContent = `Could not load benchmark results: ${err.message}`;
     }
@@ -1290,7 +1553,7 @@ function latencyHtml(d) {
             <tbody>
                 ${row(`Current settings · ${l.current_settings ? l.current_settings.claims : ''} claims (Set 1)`, l.current_settings, 'pooled')}
                 ${row(`Same ${l.same_claims_full_run ? l.same_claims_full_run.claims : ''} claims in the full run`, l.same_claims_full_run)}
-                ${row(`Full run · ${l.full_run.claims} claims`, l.full_run)}
+                ${row(l.current_settings ? `Full run · ${l.full_run.claims} claims` : `Current settings · ${l.full_run.claims} claims`, l.full_run, l.current_settings ? '' : 'pooled')}
             </tbody>
         </table>
         ${l.current_settings ? '<p class="hint">Current settings send every LLM call to gemini-3.5-flash-lite first; the full run sent supporting calls to the slower gemini-3.1-flash-lite (Docs, §3.4).</p>' : ''}
@@ -1403,6 +1666,101 @@ function compareCard(f, q) {
     </div>`;
 }
 
+// ---- claim explorer ----------------------------------------------------------
+
+const ROUTE_LABEL = {
+    conformal_singleton: 'NLI verdict stands', contradiction_arbitration: 'LLM review',
+    multi_agent_debate: 'Full escalation', absence_heuristic: 'Absence check',
+};
+const explore = { key: 'fever', outcome: 'all', route: '', q: '', open: null, data: {} };
+
+async function loadExplorer() {
+    $('explorer').classList.remove('hidden');
+    const key = explore.key;
+    if (!explore.data[key]) {
+        $('exploreBody').innerHTML = '<tr><td colspan="6" class="muted">Loading claims…</td></tr>';
+        try {
+            const res = await fetch(`/api/benchmark_claims/${key}`);
+            if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+            explore.data[key] = await res.json();
+        } catch (err) {
+            $('exploreBody').innerHTML = `<tr><td colspan="6" class="muted">Could not load the claims: ${escapeHtml(err.message)}</td></tr>`;
+            return;
+        }
+        if (key !== explore.key) return;   // switched benchmark while loading
+    }
+    renderExplorer();
+}
+
+function goldPill(gold) {
+    return gold === 'supported' ? '<span class="gold-pill true">True</span>' : '<span class="gold-pill false">False</span>';
+}
+
+function predPill(label) {
+    const v = VERDICT[label] || VERDICT.unknown;
+    return `<span class="verdict-badge ${VERDICT[label] ? label : 'unknown'}"><span class="status-icon ${v.cls}">${v.icon}</span>${v.text}</span>`;
+}
+
+function renderExplorer() {
+    const rows = explore.data[explore.key] || [];
+    const q = explore.q.trim().toLowerCase();
+    const list = rows.map((r, k) => ({ r, k })).filter(({ r }) => {
+        const ok = r.gold === r.prediction;
+        if (explore.outcome === 'errors' && ok) return false;
+        if (explore.outcome === 'correct' && !ok) return false;
+        if (explore.route && r.decision_policy !== explore.route) return false;
+        return !q || r.claim.toLowerCase().includes(q);
+    });
+    const errors = rows.filter(r => r.gold !== r.prediction).length;
+    $('exploreCount').textContent = `${list.length} of ${rows.length} claims shown · ${errors} errors in this benchmark`;
+    $('exploreBody').innerHTML = list.map(({ r, k }) => {
+        const ok = r.gold === r.prediction;
+        const open = explore.open === k;
+        return `<tr class="ex-row${ok ? '' : ' wrong'}${open ? ' open' : ''}" data-k="${k}" tabindex="0" aria-expanded="${open}">
+                <td>${r.set}</td>
+                <td class="ex-claim">${escapeHtml(r.claim)}${r.fact_type ? ` <span class="tag">${escapeHtml(r.fact_type)}</span>` : ''}</td>
+                <td>${goldPill(r.gold)}</td>
+                <td><span class="ex-pred">${predPill(r.prediction)}<span class="${ok ? 'ex-ok' : 'ex-bad'}" title="${ok ? 'Correct' : 'Wrong'}">${ok ? '✓' : '✕'}</span></span></td>
+                <td>${escapeHtml(ROUTE_LABEL[r.decision_policy] || r.decision_policy || '—')}</td>
+                <td>${Number(r.latency_sec).toFixed(1)} s</td>
+            </tr>${open ? `<tr class="ex-detail"><td colspan="6">${exploreDetailHtml(r)}</td></tr>` : ''}`;
+    }).join('') || '<tr><td colspan="6" class="muted">No claims match these filters.</td></tr>';
+
+    $('exploreBody').querySelectorAll('.ex-row').forEach(tr => {
+        const toggle = () => {
+            const k = +tr.dataset.k;
+            explore.open = explore.open === k ? null : k;
+            renderExplorer();
+        };
+        tr.addEventListener('click', toggle);
+        tr.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+    });
+    const detail = $('exploreBody').querySelector('.ex-detail');
+    if (detail) {
+        bindClaimDetails(detail);
+        animateProbBars(detail);
+        requestAnimationFrame(() => detail.querySelectorAll('.hood-step.enter').forEach(x => x.classList.remove('enter')));
+        drawCalibPlots(detail);
+    }
+}
+
+function exploreDetailHtml(r) {
+    const result = r.result || { claim: r.claim, evidence: r.evidence, verification: { label: r.prediction } };
+    const steps = (result.verification && result.verification.trace) || [];
+    const ok = r.gold === r.prediction;
+    const models = [...new Set((r.llm_log || []).map(c => c.model).filter(Boolean))];
+    const outcome = ok ? '' : `<div class="ev-note ex-error">The claim is <strong>${r.gold === 'supported' ? 'true' : 'false'}</strong>, but the pipeline said
+        <strong>${(VERDICT[r.prediction] || VERDICT.unknown).text}</strong>${r.prediction === 'unknown' ? ' (it abstained)' : r.prediction === 'contradicted' ? ' (a false alarm)' : ' (a missed hallucination)'}.
+        The steps below show where it went wrong.</div>`;
+    return `<div class="ex-body">
+        ${outcome}
+        ${claimDetailsHtml(result)}
+        <h3 class="ex-sub">Computation, step by step</h3>
+        ${steps.length ? `<ol class="hood-steps">${steps.map(st => (HOOD_RENDER[st.kind] || (() => ''))(st)).join('')}</ol>` : '<p class="muted">No computation trace was recorded for this claim.</p>'}
+        <p class="hint">${r.llm_calls} LLM call${r.llm_calls === 1 ? '' : 's'}${models.length ? ` (${escapeHtml(models.join(', '))})` : ''} · ${Number(r.latency_sec).toFixed(1)} s end to end.</p>
+    </div>`;
+}
+
 // ================================================================ METHOD
 
 const METHOD = [
@@ -1413,16 +1771,16 @@ const METHOD = [
     ['Conformal prediction set', 'always', 'Split conformal prediction, calibrated on 100 FEVER claims, turns the NLI posterior into a label set with ≥ 90% coverage. A single-label set is accepted; a multi-label set triggers escalation.'],
     ['Self-reflective query rewrite', 'only if uncertain', 'When the evidence is inconclusive, the LLM rewrites the queries once and retrieval runs again.'],
     ['Knowledge-graph multi-hop', 'only if escalated', 'Entities are linked into a graph whose edges are kept only when a source sentence attests them (provenance check), adding multi-hop evidence.'],
-    ['LLM arbiter', 'only if escalated or contested', 'A dialectical prompt argues for and against the claim, then judges against the raw evidence. It also reviews lone contradictions, which are wrong more often than right.'],
+    ['LLM arbiter', 'only if escalated or contested', 'A dialectical prompt argues for and against the claim, then judges against the raw evidence. It also reviews lone or contested contradictions, which are unreliable on their own.'],
     ['Report', 'always', 'Per-claim verdicts, conformal sets, p-values, evidence and sources are aggregated; one contradicted claim makes the whole answer a hallucination.'],
 ];
 
 // Mirrors §5 of pipeline.md
 const LIMITS = [
-    ['Missing specific facts', 'When the evidence does not contain the specific number, date or ranking a claim asserts, the arbiter abstains: 6 of the 18 errors across both benchmarks are such abstentions.'],
-    ['NLI blind spots', 'The NLI model does not reason about time ("currently"), mishandles negations and accepts near-matching names; a decisive snippet settles a claim without LLM review, so these errors reach the output (4 of the 13 FreshQA errors).'],
-    ['Drifting labels', 'Even slow-changing FreshQA answers go out of date: on 5 of the 13 FreshQA errors, current evidence contradicts the gold answer (e.g. Lewandowski has left Barcelona).'],
-    ['Scope of the conformal guarantee', 'The conformal layer is calibrated on FEVER claims with gold evidence; on the pipeline\'s own retrieved evidence its measured coverage is 85%, not 90%, so the prediction set acts as a calibrated escalation trigger. Recalibrating restores coverage but escalates many more claims without improving accuracy.'],
+    ['Missing specific facts', 'When the evidence does not contain the specific number, date or ranking a claim asserts, the arbiter abstains: 9 of the 22 errors across both benchmarks are such abstentions.'],
+    ['NLI blind spots', 'The NLI model does not reason about time ("currently"), mishandles negations and accepts near-matching names; a decisive snippet settles a claim without LLM review, so these errors reach the output (4 of the 17 FreshQA errors).'],
+    ['Drifting labels', 'Even slow-changing FreshQA answers go out of date: on 4 of the 17 FreshQA errors, current evidence contradicts the gold answer (e.g. Lewandowski has left Barcelona).'],
+    ['Scope of the conformal guarantee', 'The conformal layer is calibrated on FEVER claims with gold evidence; on the pipeline\'s own retrieved evidence its measured coverage is 85%, below 90%, so the prediction set acts as a calibrated escalation trigger. Recalibrating restores coverage but escalates many more claims without improving accuracy.'],
     ['Dependence on a hosted LLM', 'Rate limits are absorbed by switching Gemini models, but another model may judge a borderline claim differently, and the arbiter abstains if every model fails.'],
     ['Evaluation size and repeatability', '100 claims per benchmark give ±4 (FEVER) and ±7 (FreshQA) point confidence intervals, and live retrieval and a non-deterministic LLM mean a re-run can differ slightly.'],
 ];
@@ -1650,6 +2008,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('[data-cascade]').forEach(x => x.classList.toggle('active', x === b));
         loadCascade();
     }));
+    document.querySelectorAll('[data-explore]').forEach(b => b.addEventListener('click', () => {
+        explore.key = b.dataset.explore;
+        explore.open = null;
+        document.querySelectorAll('[data-explore]').forEach(x => x.classList.toggle('active', x === b));
+        loadExplorer();
+    }));
+    document.querySelectorAll('[data-outcome]').forEach(b => b.addEventListener('click', () => {
+        explore.outcome = b.dataset.outcome;
+        document.querySelectorAll('[data-outcome]').forEach(x => x.classList.toggle('active', x === b));
+        renderExplorer();
+    }));
+    $('exploreRoute').addEventListener('change', e => { explore.route = e.target.value; renderExplorer(); });
+    $('exploreSearch').addEventListener('input', e => { explore.q = e.target.value; renderExplorer(); });
     loadSamples();
     $('analyzeBtn').addEventListener('click', () => verify(false));
     $('runLiveBtn').addEventListener('click', () => verify(true));
