@@ -1,5 +1,5 @@
 """
-Statistical tests on the published five-set evaluation, and a selection-bias check of the corroboration rule.
+Statistical tests on the published ten-set evaluation, and a selection-bias check of the corroboration rule.
 
 Everything is derived from the per-claim records (evaluation/<dataset>_5_runs_claims.jsonl, which hold each
 claim's computation trace); no LLM is called unless --shadow is given.
@@ -156,7 +156,7 @@ def corroboration_analysis(rows):
         c = sum(r["v"][m] == r["gold"] and r["v"][PUBLISHED_M] != r["gold"] for r in diff)   # alternative right only
         paired[m] = {"published_right_only": b, "alternative_right_only": c, "mcnemar_exact_p": mcnemar_exact_p(b, c)}
     folds = {
-        "five_sets": crossfit(rows, lambda r: r["set"]),
+        "by_set": crossfit(rows, lambda r: r["set"]),
         "leave_one_out": crossfit(rows, lambda r: r["id"]),
     }
     return {"claims": n, "apparent": apparent, "paired_vs_published": paired, "crossfit": folds}

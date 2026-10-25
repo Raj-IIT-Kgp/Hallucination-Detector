@@ -74,3 +74,74 @@
 {"dataset": "freshqa", "claim": "A FIFA World Cup will be hosted next year.", "label": "supported"}
 {"dataset": "freshqa", "claim": "The province that borders Shanghai to the north is Jiangsu.", "label": "supported"}
 {"dataset": "freshqa", "claim": "Venus has a smallest moon.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Polar bears depend on lakes as their main food source.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Danger UXB is set during the Korean War.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Alexandra Daddario was not born on March 16, 1986.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Victoria (Dance Exponents song) was a single released in 1980.", "label": "contradicted"}
+{"dataset": "fever", "claim": "The Gifted is Swedish.", "label": "contradicted"}
+{"dataset": "fever", "claim": "English people are descended from the grass.", "label": "contradicted"}
+{"dataset": "fever", "claim": "English people are disconnected from the Jutes and Frisians.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Aaron Burr was a department store that went out of business in the eighties.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Seohyun is 45 years old.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Taran Killam is an American writer.", "label": "unknown"}
+{"dataset": "fever", "claim": "Tie Your Mother Down was released in 2007.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Mark Zuckerberg acquired Twitter.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Sam Bankman-Fried pleaded guilty to federal fraud charges after being extradited to the United States.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Mark Zuckerberg graduated from college.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "The New York Jets have lost games to the Chicago Bulls.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Sunderland, Massachusetts is located to the north of Amherst, Massachusetts.", "label": "supported"}
+{"dataset": "freshqa", "claim": "The Democratic Republic of the Congo was the first country to detect a case of mpox in the most recent outbreak.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "The Tenth Crusade took place.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "A Republican was elected Speaker of the House in January 2023 on the ninth ballot.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "The Bills vs. Bengals game on January 2, 2023, resumed play after Damar Hamlin suffered cardiac arrest on the field.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Tom Cruise holds the current world record for holding one's breath underwater while filming Mission Impossible: Rogue Nation.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Brittney Griner is currently serving time in a Russian prison.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "The Fields Medal was awarded to five mathematicians in the same year.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "The UK adopted the Euro.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "The incumbent President defeated his challenger in the latest Brazilian election.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Caroline Kennedy is Ambassador to Japan.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Margaret Thatcher was active in politics.", "label": "supported"}
+{"dataset": "fever", "claim": "Stripes featured a person.", "label": "supported"}
+{"dataset": "fever", "claim": "The Endless River came out in 1995 and is Pink Floyd's fifteenth studio album.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Saturn is the second-largest moon in the Solar System.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Jennifer Lopez created a studio record.", "label": "supported"}
+{"dataset": "fever", "claim": "Fred Armisen is uncreative.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Edison Machine Works was set up to produce other components of the electrical illumination system.", "label": "supported"}
+{"dataset": "fever", "claim": "Chile is a food.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Helmand Province is the location of Lashkargah.", "label": "supported"}
+{"dataset": "fever", "claim": "Aarhus is located on the east coast of the Jutland peninsula.", "label": "supported"}
+{"dataset": "fever", "claim": "The Chrysler Building was the world's tallest building for 8 months.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Aleister Crowley was English.", "label": "supported"}
+{"dataset": "fever", "claim": "Ingushetia was established after Chechen-Ingush ASSR split into two.", "label": "supported"}
+{"dataset": "fever", "claim": "I Kissed a Girl is part of Katy Perry's first studio album.", "label": "contradicted"}
+{"dataset": "fever", "claim": "During 1927 - 1941 Mount Rushmore was created.", "label": "supported"}
+{"dataset": "fever", "claim": "The World Trade Center was destroyed in September.", "label": "supported"}
+{"dataset": "fever", "claim": "Tiber Oil Field is operated by BP.", "label": "supported"}
+{"dataset": "fever", "claim": "Papua was formerly called by another name.", "label": "supported"}
+{"dataset": "fever", "claim": "Pirates of the Caribbean was added to Magic Kingdom.", "label": "supported"}
+{"dataset": "fever", "claim": "Ernest Medina was first acquitted in 1973.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Pele is currently staying in a hospital to receive cancer treatment.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "The minimum hourly wage in Massachusetts is $15.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Saved from the Titanic is the title of the first film about the Titanic disaster.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Pip is the name of the main character in Great Expectations.", "label": "supported"}
+{"dataset": "freshqa", "claim": "The Houston Astros have won two World Series titles.", "label": "supported"}
+{"dataset": "freshqa", "claim": "The USA, Canada, and Mexico are the host countries for the 2026 FIFA World Cup.", "label": "supported"}
+{"dataset": "freshqa", "claim": "BTS released its 11th studio album in 2026.", "label": "unknown"}
+{"dataset": "freshqa", "claim": "The Tesla Model Z came out.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Friedrich Merz is the current German chancellor.", "label": "supported"}
+{"dataset": "freshqa", "claim": "The Hundred Years' War lasted 116 years.", "label": "supported"}
+{"dataset": "freshqa", "claim": "There are days left until the coronation of Charles III and his wife.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Morten Meldal from the University of Copenhagen, Denmark, won the 2022 Nobel Prize in Chemistry.", "label": "supported"}
+{"dataset": "freshqa", "claim": "It took 12 years for the world population to reach 8 billion from 7 billion.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Steven Spielberg directed the movie Jaws.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Vietnam is the country that has a red flag with one yellow star.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Bulgaria is the latest country to adopt the Euro.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Eddie Murphy has won an Oscar.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Canada currently requires arriving travelers to provide proof of COVID vaccination via an app.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "The Tulip mania bubble collapsed in February 1637.", "label": "supported"}
+{"dataset": "freshqa", "claim": "The world's oldest DNA was found in Greenland.", "label": "supported"}
+{"dataset": "freshqa", "claim": "The Association for Computing Machinery (ACM) handles the Turing Award, which is the equivalent of the Nobel Prize for computer science.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Covid-19 has broken 1 billion infections.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Kendrick Lamar released his most recent studio album on November 22, 2024.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Intel went public in 1971.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "There are days left until the next season of Atlanta airs.", "label": "contradicted"}

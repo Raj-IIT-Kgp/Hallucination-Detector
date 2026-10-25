@@ -205,7 +205,7 @@
         <section id="view-benchmarks" class="view">
             <div class="intro">
                 <h1>Benchmark results</h1>
-                <p>Five non-overlapping stratified sets of 20 claims per benchmark (10 true, 10 false; seed 42), run end to end with live retrieval and LLM calls. The positive class is a hallucination; <em>Uncertain</em> counts as an error.</p>
+                <p>Ten non-overlapping stratified sets of 20 claims per benchmark (10 true, 10 false; seed 42), run end to end with live retrieval and LLM calls. The positive class is a hallucination; <em>Uncertain</em> counts as an error.</p>
             </div>
             <div id="benchLoading" class="muted">Loading results…</div>
             <div id="benchGrid" class="bench-grid"></div>
@@ -252,13 +252,13 @@
         <section id="view-method" class="view">
             <div class="intro">
                 <h1>How the pipeline decides</h1>
-                <p>A cascade: cheap, calibrated checks settle most claims; the expensive knowledge-graph and LLM stages run only when the evidence is ambiguous. On FEVER, 86 of 100 claims are settled by the NLI model without any arbitration call, and 97% of those verdicts are correct.</p>
+                <p>A cascade: cheap, calibrated checks settle most claims; the expensive knowledge-graph and LLM stages run only when the evidence is ambiguous. On FEVER, 157 of 200 claims are settled by the NLI model without any arbitration call, and 93% of those verdicts are correct.</p>
             </div>
             <div class="card cascade-card">
                 <div class="card-head">
                     <div>
                         <h2>The cascade in action</h2>
-                        <span class="muted">Each dot is a claim; dots split into the three routes in the proportions measured on 100 benchmark claims</span>
+                        <span class="muted">Each dot is a claim; dots split into the three routes in the proportions measured on 200 benchmark claims</span>
                     </div>
                     <div class="seg-toggle" role="group" aria-label="Benchmark">
                         <button type="button" class="seg-btn active" data-cascade="fever">FEVER</button>
@@ -335,6 +335,6 @@
 
     <div id="vizTip" class="viz-tip" role="tooltip"></div>
 
-    <script src="/static/app.js?v=74"></script>
+    <script src="/static/app.js?v=76"></script>
 </body>
 </html>

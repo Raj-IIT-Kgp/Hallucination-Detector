@@ -2,7 +2,8 @@
 5-set benchmark evaluation for FEVER and FreshQA.
 
 Each benchmark is split into `num_sets` non-overlapping stratified sets of `samples_per_set`
-claims (half SUPPORTS, half REFUTES), drawn with a fixed seed so every run uses the same claims.
+claims (half SUPPORTS, half REFUTES), drawn with a fixed seed so every run uses the same claims. Ten sets
+(200 claims) are the default; the first five are the original 100-claim run and are drawn exactly as before.
 Per-claim results are appended to evaluation/<dataset>_5_runs_claims.jsonl as they finish, so an
 interrupted run resumes where it stopped. A claim whose verification hit an LLM failure (quota,
 timeout) is not scored as an abstention: it is retried once after a pause, and the run stops if
@@ -43,6 +44,7 @@ from llm.generator import get_failure_count, get_call_count, get_call_log
 EVAL_DIR = os.path.dirname(os.path.abspath(__file__))
 LABEL_MAP = {"SUPPORTS": "supported", "REFUTES": "contradicted"}
 LLM_RETRY_PAUSE_SEC = 60
+ORIGINAL_SETS = 5  # the first published run; later sets extend it without changing these
 
 
 def load_items(dataset):
@@ -65,8 +67,23 @@ def make_sets(items, samples_per_set, num_sets, seed):
     rng.shuffle(supported)
     rng.shuffle(refuted)
     sets = []
-    for s in range(num_sets):
+    for s in range(min(num_sets, ORIGINAL_SETS)):
         batch = supported[s * half:(s + 1) * half] + refuted[s * (samples_per_set - half):(s + 1) * (samples_per_set - half)]
+        rng.shuffle(batch)
+        sets.append(batch)
+    # Sets beyond the original five continue down the same shuffled lists but skip any claim text already
+    # drawn (FEVER repeats some claims under several evidence rows), so every added claim is new.
+    used = {x["claim"] for batch in sets for x in batch}
+    pools = [iter(supported[ORIGINAL_SETS * half:]), iter(refuted[ORIGINAL_SETS * (samples_per_set - half):])]
+    for s in range(ORIGINAL_SETS, num_sets):
+        batch = []
+        for pool, size in zip(pools, (half, samples_per_set - half)):
+            for _ in range(size):
+                item = next((x for x in pool if x["claim"] not in used), None)
+                if item is None:
+                    raise ValueError("Not enough distinct samples to construct non-overlapping sets.")
+                used.add(item["claim"])
+                batch.append(item)
         rng.shuffle(batch)
         sets.append(batch)
     return sets
@@ -127,7 +144,7 @@ def run_dir(tag=None):
     return path
 
 
-def run_5_sets(dataset, samples_per_set=20, num_sets=5, seed=42, fresh=False, tag=None):
+def run_5_sets(dataset, samples_per_set=20, num_sets=10, seed=42, fresh=False, tag=None):
     out_dir = run_dir(tag)
     claims_file = os.path.join(out_dir, f"{dataset}_5_runs_claims.jsonl")
     if fresh and os.path.exists(claims_file):
@@ -217,7 +234,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="5-set stratified evaluation on FEVER and/or FreshQA.")
     parser.add_argument("--dataset", choices=["fever", "freshqa", "all"], default="all")
     parser.add_argument("--samples-per-set", type=int, default=20)
-    parser.add_argument("--sets", type=int, default=5)
+    parser.add_argument("--sets", type=int, default=10)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--fresh", action="store_true", help="Discard saved per-claim results and start over")
     parser.add_argument("--tag", default=None, help="Write the run to evaluation/runs/TAG/ with full per-claim details")

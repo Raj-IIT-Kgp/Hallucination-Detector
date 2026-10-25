@@ -4,72 +4,70 @@
 
 | | Accuracy | Precision | Recall | F1 | TP | FP | FN | TN | Unknown | Mean latency | LLM calls/claim |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| now | 95.0% | 0.96 | 0.96 | 0.96 | 48 | 2 | 2 | 47 | 2 | 8.6 s | 0.98 |
-| published | 95.0% | 0.94 | 0.96 | 0.95 | 48 | 3 | 2 | 47 | 1 | 8.6 s | 1.16 |
+| now | 91.0% | 0.95 | 0.89 | 0.92 | 89 | 5 | 11 | 93 | 3 | 8.6 s | 1.04 |
+| published | 91.0% | 0.95 | 0.89 | 0.92 | 89 | 5 | 11 | 93 | 3 | 8.6 s | 1.04 |
 
-Routes: conformal_singleton 83/86, contradiction_arbitration 4/5, multi_agent_debate 8/9
+Routes: conformal_singleton 146/157, contradiction_arbitration 19/21, multi_agent_debate 17/22
 
-Arbiter effect: {"review": {"claims": 5, "fixed": 1, "broken": 1, "both_right": 3, "both_wrong": 0, "llm_unavailable": 0}, "escalation": {"claims": 9, "fixed": 3, "broken": 0, "both_right": 5, "both_wrong": 1, "llm_unavailable": 0}}
+Arbiter effect: {"review": {"claims": 21, "fixed": 3, "broken": 1, "both_right": 16, "both_wrong": 1, "llm_unavailable": 0}, "escalation": {"claims": 22, "fixed": 5, "broken": 3, "both_right": 12, "both_wrong": 2, "llm_unavailable": 0}}
 
-Changed vs published (2):
-- [broke] Brian Michael Bendis began teaching English at the University of Oregon in fall of 2013. (gold supported: supported -> unknown; multi_agent_debate -> multi_agent_debate)
-- [fixed] Shane Black is an American producer and actor. (gold supported: contradicted -> supported; multi_agent_debate -> multi_agent_debate)
+Changed vs published (0):
 
 ## FRESHQA
 
 | | Accuracy | Precision | Recall | F1 | TP | FP | FN | TN | Unknown | Mean latency | LLM calls/claim |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| now | 82.0% | 0.91 | 0.82 | 0.86 | 41 | 4 | 9 | 41 | 7 | 12.2 s | 1.45 |
-| published | 83.0% | 0.91 | 0.86 | 0.89 | 43 | 4 | 7 | 40 | 8 | 12.8 s | 1.87 |
+| now | 83.5% | 0.90 | 0.84 | 0.87 | 84 | 9 | 16 | 83 | 11 | 11.4 s | 1.43 |
+| published | 83.5% | 0.90 | 0.84 | 0.87 | 84 | 9 | 16 | 83 | 11 | 11.4 s | 1.43 |
 
-Routes: conformal_singleton 50/58, contradiction_arbitration 21/25, multi_agent_debate 11/17
+Routes: conformal_singleton 107/123, contradiction_arbitration 32/38, multi_agent_debate 28/39
 
-Arbiter effect: {"review": {"claims": 25, "fixed": 9, "broken": 1, "both_right": 12, "both_wrong": 3, "llm_unavailable": 0}, "escalation": {"claims": 17, "fixed": 4, "broken": 0, "both_right": 7, "both_wrong": 6, "llm_unavailable": 0}}
+Arbiter effect: {"review": {"claims": 38, "fixed": 13, "broken": 2, "both_right": 19, "both_wrong": 4, "llm_unavailable": 0}, "escalation": {"claims": 39, "fixed": 15, "broken": 4, "both_right": 13, "both_wrong": 7, "llm_unavailable": 0}}
 
-Changed vs published (5):
-- [fixed] Clint Eastwood has won a Best Actor Academy Award. (gold contradicted: unknown -> contradicted; multi_agent_debate -> multi_agent_debate)
-- [broke] Novak Djokovic lost in a specific round at the 2022 Australian Open. (gold contradicted: contradicted -> supported; multi_agent_debate -> conformal_singleton)
-- [broke] A FIFA World Cup will be hosted next year. (gold contradicted: contradicted -> supported; multi_agent_debate -> conformal_singleton)
-- [broke] Taylor Swift has been a UNICEF Goodwill Ambassador. (gold contradicted: contradicted -> unknown; multi_agent_debate -> multi_agent_debate)
-- [fixed] France is the most recent team to advance to consecutive FIFA World Cup finals. (gold supported: unknown -> supported; multi_agent_debate -> multi_agent_debate)
+Changed vs published (0):
 
 ## Corroboration rule (both benchmarks)
 
 | Decisive contradicting snippets | Claims | Actually false | Wrong if accepted |
 | :--- | :--- | :--- | :--- |
-| 1 | 32 | 20 | 37.5% |
-| 2 | 25 | 23 | 8.0% |
-| 3 or more | 44 | 42 | 4.5% |
-| decisive support also present | 8 | 2 | 75.0% |
+| 1 | 67 | 47 | 29.9% |
+| 2 | 42 | 37 | 11.9% |
+| 3 or more | 81 | 77 | 4.9% |
+| decisive support also present | 16 | 7 | 56.2% |
 
 ## Conformal layer on retrieved evidence
 
-- claims: 200
-- current q-hat 0.8985: coverage 83.5% (Wilson 95% 77.7%–88.0%), mean set size 1.13
-- cross-fitted q-hat (folds 0.9944 / 0.9941): coverage 90.5% (Wilson 95% 85.6%–93.8%), mean set size 1.80
-- q-hat from all retrieved-evidence claims: 0.9941
+- claims: 400
+- current q-hat 0.8985: coverage 84.2% (Wilson 95% 80.4%–87.5%), mean set size 1.17
+- cross-fitted q-hat (folds 0.9953 / 0.9696): coverage 88.2% (Wilson 95% 84.7%–91.0%), mean set size 1.64
+- q-hat from all retrieved-evidence claims: 0.9906
 
-Estimated accuracy with the recalibrated layer: {"fever": {"claims": 100, "correct": 93, "route_changes": 38, "newly_escalated": 34, "newly_accepted": 0, "pending": 0, "accuracy": 0.93}, "freshqa": {"claims": 100, "correct": 85, "route_changes": 56, "newly_escalated": 37, "newly_accepted": 0, "pending": 0, "accuracy": 0.85}}
+Estimated accuracy with the recalibrated layer: {"fever": {"claims": 200, "correct": 183, "route_changes": 55, "newly_escalated": 47, "newly_accepted": 0, "pending": 0, "accuracy": 0.915}, "freshqa": {"claims": 200, "correct": 169, "route_changes": 78, "newly_escalated": 57, "newly_accepted": 0, "pending": 0, "accuracy": 0.845}}
 
 ## LLM usage
 
 {
-  "mean_calls_per_claim": 1.215,
+  "mean_calls_per_claim": 1.2325,
   "mean_calls_by_route": {
-    "conformal_singleton": 0.8958333333333334,
-    "contradiction_arbitration": 1.8666666666666667,
-    "multi_agent_debate": 2.230769230769231
+    "conformal_singleton": 0.875,
+    "contradiction_arbitration": 1.88135593220339,
+    "multi_agent_debate": 2.2459016393442623
   },
   "latency_by_model_and_tier": {
     "gemini-3.5-flash-lite (light)": {
-      "calls": 187,
-      "mean_sec": 1.5449358288770054,
-      "p50_sec": 1.187
+      "calls": 373,
+      "mean_sec": 1.3096085790884717,
+      "p50_sec": 1.088
     },
     "gemini-3.5-flash-lite (heavy)": {
-      "calls": 56,
-      "mean_sec": 3.604767857142857,
-      "p50_sec": 3.086
+      "calls": 118,
+      "mean_sec": 3.0615677966101695,
+      "p50_sec": 2.731
+    },
+    "gemini-3.1-flash-lite (heavy)": {
+      "calls": 2,
+      "mean_sec": 19.9975,
+      "p50_sec": 29.897
     }
   }
 }

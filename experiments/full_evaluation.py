@@ -1,7 +1,7 @@
 """
 One experiment that re-measures everything pipeline.md reports for the current pipeline.
 
-It runs the five-set evaluation of FEVER and FreshQA (the same 200 claims as the published run:
+It runs the ten-set evaluation of FEVER and FreshQA (the same 400 claims as the published run:
 seed 42) with full per-claim records (verdict, computation trace, evidence, LLM-call log), then
 derives every result from those records:
 
@@ -304,7 +304,7 @@ def main():
 
     if not args.skip_run:
         for ds in DATASETS:
-            if run_5_sets(ds, 20, 5, 42, fresh=False, tag=args.tag) is None:
+            if run_5_sets(ds, 20, 10, 42, fresh=False, tag=args.tag) is None:
                 print("Stopped (LLM quota). Run the same command again to resume.")
                 sys.exit(1)
 

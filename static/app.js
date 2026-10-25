@@ -1609,7 +1609,7 @@ async function loadBenchmarks() {
         $('benchLoading').classList.add('hidden');
         const keys = ['fever', 'freshqa'].filter(k => data[k] && data[k].pooled && data[k].set_results);
         if (!keys.length) {
-            $('benchGrid').innerHTML = '<p class="muted">No five-set results found. Run <code>python evaluation/run_5_runs.py --dataset all</code>.</p>';
+            $('benchGrid').innerHTML = '<p class="muted">No benchmark results found. Run <code>python evaluation/run_5_runs.py --dataset all</code>.</p>';
             return;
         }
         $('benchGrid').innerHTML = keys.map(k => benchCard(k, data[k])).join('');
@@ -1704,7 +1704,7 @@ function latencyHtml(d) {
         <table class="data">
             <thead><tr><th></th><th>Mean</th><th>Median</th><th>90th pct.</th></tr></thead>
             <tbody>
-                <tr class="pooled"><td>Current settings · ${m.claims} claims</td><td>${sec(m.mean)}</td><td>${sec(m.p50)}</td><td>${sec(m.p90)}</td></tr>
+                <tr class="pooled"><td>All sets · ${m.claims} claims</td><td>${sec(m.mean)}</td><td>${sec(m.p50)}</td><td>${sec(m.p90)}</td></tr>
             </tbody>
         </table>
     </div>`;
@@ -1936,7 +1936,7 @@ const METHOD = [
     ['Query generation', 'always', 'Each claim becomes entity-focused search queries, a domain tag and a flag for time-sensitive claims; simple claims use a rule-based fast path with no LLM call.'],
     ['Evidence retrieval and re-ranking', 'always', 'Wikipedia, web search and arXiv are queried in parallel; paragraphs are re-ranked by a hybrid lexical and semantic score, and web sentences that merely quote the claim are removed.'],
     ['NLI evidence scoring', 'always', 'A BART-large-MNLI cross-encoder scores every snippet. Decisive support settles a claim; a contradiction is accepted directly only when at least two decisive snippets agree.'],
-    ['Conformal prediction set', 'always', 'Split conformal prediction, calibrated on 100 FEVER claims, turns the NLI posterior into a label set with nominal 90% coverage (83.5% measured on live evidence). A single-label set is accepted; a multi-label set triggers escalation.'],
+    ['Conformal prediction set', 'always', 'Split conformal prediction, calibrated on 100 FEVER claims, turns the NLI posterior into a label set with nominal 90% coverage (84.2% measured on live evidence). A single-label set is accepted; a multi-label set triggers escalation.'],
     ['Self-reflective query rewrite', 'only if uncertain', 'When the evidence is inconclusive, the LLM rewrites the queries once (if it returns none, the claim without its entity names is searched) and retrieval runs again.'],
     ['Knowledge graph (Wikidata)', 'only if escalated', 'The claim\'s entities are looked up in Wikidata, and their recorded statements (what the entity is, dates, places, awards, …) are added to the arbiter\'s evidence, with no LLM call.'],
     ['LLM arbiter', 'only if escalated or contested', 'A dialectical prompt argues for and against the claim, then judges against the raw evidence. It also reviews lone or contested contradictions, which are unreliable on their own.'],
@@ -1946,13 +1946,13 @@ const METHOD = [
 
 // Mirrors §5 of pipeline.md
 const LIMITS = [
-    ['Missing specific facts', 'When the evidence does not contain the specific number, date or ranking a claim asserts, the arbiter abstains: 9 of the 23 errors across both benchmarks are such abstentions.'],
-    ['NLI blind spots', 'The NLI model does not reason about time ("currently"), mishandles negations and accepts near-matching names; a decisive snippet settles a claim without LLM review, so these errors reach the output (5 of the 18 FreshQA errors).'],
-    ['Drifting labels', 'Even slow-changing FreshQA answers go out of date: on 5 of the 18 FreshQA errors, current evidence contradicts the gold answer (e.g. Lewandowski has left Barcelona).'],
-    ['Scope of the conformal guarantee', 'The conformal layer is calibrated on FEVER claims with gold evidence; on the pipeline\'s own retrieved evidence its measured coverage is 83.5%, below 90%, so the prediction set acts as a calibrated escalation trigger. Recalibrating restores coverage but escalates many more claims for about the same accuracy.'],
+    ['Missing specific facts', 'When the evidence does not contain the specific number, date or ranking a claim asserts, the arbiter abstains: 14 of the 51 errors across both benchmarks are such abstentions.'],
+    ['NLI blind spots', 'The NLI model does not reason about time ("currently"), mishandles negations and accepts near-matching names; a decisive snippet settles a claim without LLM review, so these errors reach the output (13 of the 33 FreshQA errors).'],
+    ['Drifting labels', 'Even slow-changing FreshQA answers go out of date: on 8 of the 33 FreshQA errors, current evidence contradicts the gold answer (e.g. Lewandowski has left Barcelona).'],
+    ['Scope of the conformal guarantee', 'The conformal layer is calibrated on FEVER claims with gold evidence; on the pipeline\'s own retrieved evidence its measured coverage is 84.2%, below 90%, so the prediction set acts as a calibrated escalation trigger. Recalibrating brings coverage close to 90% but escalates many more claims for about the same accuracy.'],
     ['Echo filter on short claims', 'Web sentences containing 80% of the claim\'s words are removed as quotes of it; on a short claim an independent paraphrase can be removed too, as for one true claim that then ended Uncertain.'],
     ['Dependence on a hosted LLM', 'Rate limits are absorbed by switching Gemini models, but another model may judge a borderline claim differently, and the arbiter abstains if every model fails.'],
-    ['Evaluation size and repeatability', '100 claims per benchmark give ±4 (FEVER) and ±7 (FreshQA) point confidence intervals, and live retrieval and a non-deterministic LLM mean a re-run can differ slightly.'],
+    ['Evaluation size and repeatability', '200 claims per benchmark give ±4 (FEVER) and ±5 (FreshQA) point confidence intervals, and live retrieval and a non-deterministic LLM mean a re-run can differ slightly.'],
 ];
 
 // ---- cascade diagram ---------------------------------------------------------
