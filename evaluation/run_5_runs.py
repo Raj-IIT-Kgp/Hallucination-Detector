@@ -1,5 +1,5 @@
 """
-5-set benchmark evaluation for FEVER and FreshQA.
+Ten-set benchmark evaluation for FEVER and FreshQA.
 
 Each benchmark is split into `num_sets` non-overlapping stratified sets of `samples_per_set`
 claims (half SUPPORTS, half REFUTES), drawn with a fixed seed so every run uses the same claims. Ten sets
@@ -231,7 +231,7 @@ def run_5_sets(dataset, samples_per_set=20, num_sets=10, seed=42, fresh=False, t
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="5-set stratified evaluation on FEVER and/or FreshQA.")
+    parser = argparse.ArgumentParser(description="Ten-set stratified evaluation on FEVER and/or FreshQA.")
     parser.add_argument("--dataset", choices=["fever", "freshqa", "all"], default="all")
     parser.add_argument("--samples-per-set", type=int, default=20)
     parser.add_argument("--sets", type=int, default=10)

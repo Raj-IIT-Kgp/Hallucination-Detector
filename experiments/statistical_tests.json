@@ -933,5 +933,176 @@
         }
       }
     }
+  },
+  "halves": {
+    "fever": {
+      "first": [
+        95,
+        100
+      ],
+      "later": [
+        87,
+        100
+      ],
+      "z": 1.9766648444296024,
+      "p_two_proportion": 0.048079527131300044,
+      "p_fisher_exact": 0.0813310480146051
+    },
+    "freshqa": {
+      "first": [
+        82,
+        100
+      ],
+      "later": [
+        85,
+        100
+      ],
+      "z": -0.5715063326824432,
+      "p_two_proportion": 0.5676564688875043,
+      "p_fisher_exact": 0.7036570008579522
+    }
+  },
+  "multiple_testing": {
+    "alpha": 0.05,
+    "tests": {
+      "arbiter_pooled": {
+        "p": 0.00015641720852954677,
+        "holm": 0.0012513376682363742,
+        "bh": 0.0007805023342370987,
+        "significant_raw": true,
+        "significant_holm": true,
+        "significant_bh": true
+      },
+      "arbiter_freshqa": {
+        "p": 0.00019512558355927467,
+        "holm": 0.0013658790849149227,
+        "bh": 0.0007805023342370987,
+        "significant_raw": true,
+        "significant_holm": true,
+        "significant_bh": true
+      },
+      "m2_vs_m1": {
+        "p": 0.007537841796875,
+        "holm": 0.04522705078125,
+        "bh": 0.020100911458333332,
+        "significant_raw": true,
+        "significant_holm": true,
+        "significant_bh": true
+      },
+      "fever_vs_freshqa": {
+        "p": 0.024534248454756033,
+        "holm": 0.12267124227378016,
+        "bh": 0.049068496909512066,
+        "significant_raw": true,
+        "significant_holm": false,
+        "significant_bh": true
+      },
+      "halves_fever": {
+        "p": 0.048079527131300044,
+        "holm": 0.19231810852520018,
+        "bh": 0.07692724341008007,
+        "significant_raw": true,
+        "significant_holm": false,
+        "significant_bh": false
+      },
+      "arbiter_fever": {
+        "p": 0.3876953125,
+        "holm": 1.0,
+        "bh": 0.5169270833333334,
+        "significant_raw": false,
+        "significant_holm": false,
+        "significant_bh": false
+      },
+      "halves_freshqa": {
+        "p": 0.5676564688875043,
+        "holm": 1.0,
+        "bh": 0.6487502501571478,
+        "significant_raw": false,
+        "significant_holm": false,
+        "significant_bh": false
+      },
+      "m2_vs_m3": {
+        "p": 1.0,
+        "holm": 1.0,
+        "bh": 1.0,
+        "significant_raw": false,
+        "significant_holm": false,
+        "significant_bh": false
+      }
+    }
+  },
+  "power": {
+    "alpha": 0.05,
+    "target_power": 0.8,
+    "simulations": 20000,
+    "interval_width": {
+      "fever": {
+        "half_width_3": 354,
+        "half_width_2": 791,
+        "half_width_now": 0.04003988371197795
+      },
+      "freshqa": {
+        "half_width_3": 588,
+        "half_width_2": 1323,
+        "half_width_now": 0.05134557075599776
+      }
+    },
+    "fever_vs_freshqa": {
+      "n_per_group_now": 200,
+      "grid": [
+        {
+          "difference": 0.05,
+          "p1": 0.8975000000000001,
+          "p2": 0.8475,
+          "power_analytic": 0.32198379614409467,
+          "power_simulated": 0.31945,
+          "n_per_group_for_80": 698
+        },
+        {
+          "difference": 0.075,
+          "p1": 0.91,
+          "p2": 0.8350000000000001,
+          "power_analytic": 0.6142970640577099,
+          "power_simulated": 0.6263,
+          "n_per_group_for_80": 310
+        },
+        {
+          "difference": 0.1,
+          "p1": 0.9225000000000001,
+          "p2": 0.8225,
+          "power_analytic": 0.853167087791534,
+          "power_simulated": 0.86155,
+          "n_per_group_for_80": 174
+        }
+      ],
+      "observed": {
+        "p1": 0.91,
+        "p2": 0.835,
+        "n_per_group_for_80": 310,
+        "power_simulated_at_that_n": 0.80855
+      }
+    },
+    "mcnemar": {
+      "arbiter_fever": {
+        "discordant_better": 8,
+        "discordant_worse": 4,
+        "pairs": 43,
+        "psi": 0.27906976744186046,
+        "delta": 0.09302325581395349,
+        "pairs_for_80": 251,
+        "power_simulated_at_that_n": 0.7752,
+        "power_simulated_now": 0.13175
+      },
+      "m3_vs_m2": {
+        "discordant_better": 1,
+        "discordant_worse": 0,
+        "pairs": 400,
+        "psi": 0.0025,
+        "delta": 0.0025,
+        "pairs_for_80": 3138,
+        "power_simulated_at_that_n": 0.79445,
+        "power_simulated_now": 0.0003
+      }
+    }
   }
 }

@@ -1,6 +1,6 @@
 # Hallucination Detection Pipeline
 
-This document explains, step by step, how the detector decides whether a statement is a hallucination. Every stage is described with its purpose, its input and output, the exact algorithm the code runs, the mathematics behind it, a worked example taken from real runs of the system, and the reasons for the design choices. Section 3 covers the evaluation benchmarks and results, and Section 4 defines the evaluation metrics (TP, FP, TN, FN, precision, recall, F1) used to report them, with the confidence intervals and hypothesis tests used to compare them. Section 5 collects the limitations, and Section 6 explains how to install and run the system.
+This document explains, step by step, how the detector decides whether a statement is a hallucination. Every stage is described with its purpose, its input and output, the exact algorithm the code runs, the mathematics behind it, a worked example taken from real runs of the system, and the reasons for the design choices. Section 3 covers the evaluation benchmarks and results, and Section 4 defines the evaluation metrics (TP, FP, TN, FN, precision, recall, F1) used to report them, with the confidence intervals, hypothesis tests, multiple-comparison corrections and power analysis used to compare them, and the calibration of the NLI probabilities. Section 5 collects the limitations, and Section 6 explains how to install and run the system.
 
 **Summary.** The detector splits a text into atomic claims, retrieves evidence for each claim from Wikipedia, the web and ArXiv, and scores it with a natural language inference (NLI) model. Split conformal prediction then decides whether that verdict can stand or whether the claim must be escalated to a Knowledge Graph and an LLM arbiter, so the expensive stages run only on ambiguous claims. Results on 200 claims per benchmark (ten sets of 20, §3.3):
 
@@ -9,7 +9,7 @@ This document explains, step by step, how the detector decides whether a stateme
 | FEVER | 91.0% [86.2%, 94.2%] | 0.95 | 0.89 | 0.92 | 157 of 200 | 8.6 s |
 | FreshQA (never- and slow-changing) | 83.5% [77.7%, 88.0%] | 0.90 | 0.84 | 0.87 | 123 of 200 | 11.4 s |
 
-Both benchmarks were measured with the current pipeline, end to end with live retrieval and LLM calls. Precision, recall and F1 refer to the hallucination class. Claims settled by the NLI verdict alone are correct 90% of the time, and the LLM arbiter, used on the rest, fixed 36 NLI verdicts and broke 10 (exact McNemar test $p < 0.001$, §2.9). The main weaknesses (false premises, time-dependent and negated claims, and the conditions of the conformal guarantee) are discussed in Section 5.
+Both benchmarks were measured with the current pipeline, end to end with live retrieval and LLM calls. Precision, recall and F1 refer to the hallucination class. Claims settled by the NLI verdict alone are correct 90% of the time, and the LLM arbiter, used on the rest, fixed 36 NLI verdicts and broke 10 (exact McNemar test $p < 0.001$, significant after correction for all eight tests reported, §2.9, §4.5). The raw NLI probabilities overstate how often the model is right (mean confidence 95.8% at 85.4% accuracy); temperature scaling, fitted by maximum likelihood, corrects the reported confidence without changing any verdict (§4.6). The main weaknesses (false premises, time-dependent and negated claims, and the conditions of the conformal guarantee) are discussed in Section 5.
 
 **Contents**
 
@@ -28,7 +28,7 @@ Both benchmarks were measured with the current pipeline, end to end with live re
    - 2.11 End-to-end algorithm and cost model
    - 2.12 Execution details
 3. Evaluation: benchmarks, protocol, results, error analysis
-4. Evaluation metrics
+4. Evaluation metrics, hypothesis tests, power and calibration
 5. Limitations and future work
 6. Reproducibility: installation, configuration and commands
 
@@ -139,7 +139,7 @@ The claims are then verified **concurrently** (a thread pool of up to 5 workers)
 
 | Input | Route | Output |
 | :--- | :--- | :--- |
-| *"Juneau is the capital of Alaska."* | fast path (8 words, no clause marker) | `["Juneau is the capital of Alaska."]` |
+| *"Juneau is the capital of Alaska."* | fast path (6 words, no clause marker) | `["Juneau is the capital of Alaska."]` |
 | *"Albert Einstein was born in 1950 in San Francisco, and he won the Nobel Prize in Literature in 1980."* | LLM (contains `,` and ` and `) | `["Albert Einstein was born in 1950.", "Albert Einstein was born in San Francisco.", "Albert Einstein won the Nobel Prize in Literature in 1980."]` (recorded run of the interface's example input) |
 
 **Design rationale.** The fast path removes one LLM call (≈1–2 s and one unit of API quota) for the very common case of a single short statement; the marker list is conservative, so any sentence that might contain two propositions still goes to the LLM.
@@ -156,7 +156,7 @@ The claims are then verified **concurrently** (a thread pool of up to 5 workers)
    - Claims about creative works (*album, film, movie, song, single, novel, series, …*) or using epithets (*"king of"*, *"father of"*, *"iron lady"*, …) are **excluded** from the fast path, because they need disambiguation (*"Pixels"* the film vs. the unit) or resolution of the epithet to a real person.
    - The claim is split on relational patterns, tried in order: *"is the co-founder/founder/CEO/… of"*, *"is from"*, *"is the capital/headquarters/member/part of"*, *"was born/located/based in"*, *"was founded/directed/written by"*, *"founded/created/directed"*, *"is a/an/the"*. The subject and the (capitalised) object become the entities; leading articles are removed, temporal tails such as *"in 2018"* are dropped, and internal capitalisation is preserved (`BharatPe`, `iPhone`).
    - The domain is `scientific` if the claim contains a science keyword (*celsius, fahrenheit, quantum, temperature, species, molecule, climate, dna*), and the temporal flag is set if it contains *current, currently, now, present, today, as of* or *active*.
-2. **LLM path**, otherwise: the LLM returns the JSON object above, instructed to (i) disambiguate single-word entities (e.g. *"Pixels (2015 film)"*), (ii) always return at least one query, (iii) classify the domain, and (iv) set the temporal flag for claims about the present day (*"the current CEO"*, or implicit present tense such as *"Tim Cook is the CEO of Apple"*). The current date is included in the prompt. If the call or parsing fails, the claim itself becomes the only query.
+2. **LLM path**, otherwise: the LLM returns the JSON object above, instructed to (i) disambiguate single-word entities (e.g. *"Pixels (2015 film)"*), (ii) always return at least one query, (iii) classify the domain, and (iv) set the temporal flag for claims about the present day (*"the current CEO"*, or implicit present tense such as *"Tim Cook is the CEO of Apple"*). The current date is included in the prompt. If the call fails, or its reply contains no query, the claim itself becomes the only query; if the reply is not valid JSON, the raw reply is used as the only query.
 3. **Timestamp injection.** For temporal claims the evidence text assembled later is prefixed with `[SYSTEM TIMESTAMP: <today>]`, so that the NLI fallback and the LLM arbiter can reason about recency.
 
 **Worked example** (outputs from the actual code; the LLM rows are from the current benchmark run, §3.3):
@@ -199,11 +199,11 @@ The remaining sentences are kept, and a snippet left with fewer than 8 tokens is
 
 ### 2.4 Hybrid Re-Ranking (`retrieval/web_search.py`)
 
-**Purpose.** A query usually returns many candidate paragraphs (86 in the example below); only the few most relevant ones should be passed to the NLI model. Two complementary relevance signals are combined: **dense** semantic similarity, which recognises paraphrases, and **sparse** lexical matching (BM25), which rewards exact names, numbers and rare words.
+**Purpose.** A query usually returns many candidate paragraphs (68 in the example below); only the few most relevant ones should be passed to the NLI model. Two complementary relevance signals are combined: **dense** semantic similarity, which recognises paraphrases, and **sparse** lexical matching (BM25), which rewards exact names, numbers and rare words.
 
 **Input → Output.** Claim $c$ and $N$ candidate paragraphs → the top $k = 3$ evidence snippets.
 
-**Dense similarity.** Claim and paragraphs are embedded with `all-MiniLM-L6-v2`, a 6-layer sentence transformer producing 384-dimensional vectors (inputs truncated to 256 word pieces). For a text with token embeddings $`\mathbf{h}_1, \dots, \mathbf{h}_L`$ from the last layer, the sentence embedding is the L2-normalised mean:
+**Dense similarity.** Claim and paragraphs are embedded with `all-MiniLM-L6-v2`, a 6-layer sentence transformer (Reimers & Gurevych, 2019) producing 384-dimensional vectors (inputs truncated to 256 word pieces). For a text with token embeddings $`\mathbf{h}_1, \dots, \mathbf{h}_L`$ from the last layer, the sentence embedding is the L2-normalised mean:
 
 $$
 \bar{\mathbf{h}} = \frac{1}{L} \sum_{t=1}^{L} \mathbf{h}_t, \qquad \mathbf{e} = \frac{\bar{\mathbf{h}}}{\lVert \bar{\mathbf{h}} \rVert_2}
@@ -215,7 +215,7 @@ $$
 \text{sim}(\mathbf{c}, \mathbf{e}) = \frac{\mathbf{c} \cdot \mathbf{e}}{\lVert \mathbf{c} \rVert \, \lVert \mathbf{e} \rVert} = \mathbf{c} \cdot \mathbf{e} \in [-1, 1]
 $$
 
-**Sparse similarity (BM25 Okapi).** Claim and paragraphs are lower-cased and split on whitespace. For a claim with tokens $`t_1, \dots, t_Q`$, the score of paragraph $d$ is
+**Sparse similarity (BM25 Okapi; Robertson & Zaragoza, 2009).** Claim and paragraphs are lower-cased and split on whitespace. For a claim with tokens $`t_1, \dots, t_Q`$, the score of paragraph $d$ is
 
 $$
 \text{BM25}(d, c) = \sum_{j=1}^{Q} \text{IDF}(t_j) \cdot \frac{f(t_j, d) \, (k_1 + 1)}{f(t_j, d) + k_1 \left( 1 - b + b \, \dfrac{\lvert d \rvert}{\text{avgdl}} \right)}
@@ -262,7 +262,7 @@ For the first row: $`\text{RRF} = \frac{1}{60 + 2} + \frac{1}{60 + 1} = 0.016129
 
 **Input → Output.** Claim $c$ and evidence $`e_1, \dots, e_k`$ → a verdict $\hat{y}$ with a probability vector $`\hat{\boldsymbol{\pi}} = (\hat{\pi}_{\text{con}}, \hat{\pi}_{\text{unk}}, \hat{\pi}_{\text{sup}})`$, and a flag saying whether an LLM must review the verdict.
 
-**The NLI model.** Natural Language Inference asks whether a *premise* entails, contradicts, or is neutral towards a *hypothesis*. The detector uses `facebook/bart-large-mnli`: BART-large (a 12-layer encoder and 12-layer decoder Transformer, hidden size 1,024, 16 attention heads, ≈407M parameters) fine-tuned on the Multi-Genre NLI corpus (MultiNLI, ≈433k sentence pairs). The evidence is the premise and the claim the hypothesis, encoded as
+**The NLI model.** Natural Language Inference asks whether a *premise* entails, contradicts, or is neutral towards a *hypothesis*. The detector uses `facebook/bart-large-mnli`: BART-large (Lewis et al., 2020; a 12-layer encoder and 12-layer decoder Transformer, hidden size 1,024, 16 attention heads, ≈407M parameters) fine-tuned on the Multi-Genre NLI corpus (MultiNLI, Williams et al., 2018; ≈433k sentence pairs). The evidence is the premise and the claim the hypothesis, encoded as
 
 `<s> evidence </s></s> claim </s>`
 
@@ -338,6 +338,8 @@ The verdict takes the probability vector of its highest-confidence decisive snip
 | *"The largest bone in the body is the femur…"* (Wikipedia) | 0.9934 | 0.0063 | 0.0003 | contradicted | yes |
 
 Step 1: $S = 0.631 < 0.85$, so there is no source conflict. Step 2: $`\lvert D_{\text{con}} \rvert = 2 \ge m`$ and $`D_{\text{sup}} = \varnothing`$, so the verdict is **CONTRADICTED** with $`\hat{\boldsymbol{\pi}} = (0.9934, 0.0063, 0.0003)`$, with no LLM call; the conformal set is the singleton {CONTRADICTED} (§2.6), so the verdict stands. Under a "highest confidence wins" rule the same verdict would follow here; the corroboration rule only changes the outcome when a contradiction stands alone or is contested.
+
+**Calibrated confidence.** The probabilities above are over-confident on retrieved evidence: over the 378 benchmark claims whose NLI verdict is definite, the mean confidence is 95.8% but the accuracy 85.4%. The pipeline therefore also reports a **temperature-scaled** probability vector, $`\tilde{\boldsymbol{\pi}} = \text{softmax}(\mathbf{z} / T)`$, with $T = 2.39$ fitted by maximum likelihood (§4.6). Dividing all logits by the same $T > 0$ preserves their order, so the verdict is unchanged; only its stated confidence moves. For the *"Bones is a cuisine"* example above, the deciding snippet's logits $`\mathbf{z} = (4.084, -0.974, -3.995)`$ become $`\mathbf{z}/T = (1.708, -0.407, -1.670)`$, and the confidence in CONTRADICTED falls from 0.993 to 0.866. Decisions (the threshold $\tau$, the corroboration rule and the conformal layer) keep the raw probabilities they were designed and measured with, so the results of Section 3 are unaffected; the calibrated vector is recorded as `calibrated_probabilities`, and the interface shows its value for the verdict as the calibrated confidence next to the raw probabilities.
 
 **Is $m = 2$ fitted to these claims?** The value of $m$ was read off the table above, which comes from the same claims the accuracy is reported on, so the reported accuracy could be optimistic. `experiments/statistical_tests.py` checks this by cross-fitting (§4.5, where the method and the reason it removes the bias are derived). For every claim, its trace determines the verdict it would have received with $m = 1$ (a lone contradiction is accepted without review, so the claim takes its NLI verdict) or $m = 3$ (two agreeing contradictions are also reviewed: one LLM review of the saved evidence, as in §2.6). This concerns 41 of the 42 claims with two decisive contradicting snippets in the table; the 42nd was escalated, so $m$ does not affect it. All 41 reviews were made (one LLM call each, cached in `shadow_reviews.jsonl`), so no verdict is missing. Then $m \in \lbrace 1, 2, 3 \rbrace$ is chosen by accuracy on nine of the ten sets and the tenth set is scored with it, and separately one claim at a time is left out; a tie goes to the smaller $m$, which needs fewer LLM calls. On all 400 claims $m = 1$ gives 337 correct verdicts, $m = 2$ 349 and $m = 3$ 350, so most folds choose $m = 3$ (nine of the ten sets, and 399 of the 400 leave-one-out folds). The cross-fitted accuracy is 349 of 400, exactly the reported accuracy of $m = 2$: choosing $m$ from the data does no better than the fixed $m = 2$, so the reported figure carries no optimism from the choice. The advantage of $m = 2$ over $m = 1$ rests on the 20 claims whose verdict differs: 15 are right only with $m = 2$, 3 only with $m = 1$, and 2 with neither, and the exact McNemar test (§4.5) gives $p = 0.008$, significant at the 5% level. Against $m = 3$ only 2 verdicts differ (1 right only with $m = 3$, 1 wrong with both; $p = 1$), so the two are indistinguishable on this sample, and $m = 3$ would cost 41 more LLM reviews. Cross-fitting covers the choice of $m$ only; the other constants of the rule ($\tau = 0.80$ and the conflict thresholds) are not re-validated here.
 
@@ -421,10 +423,10 @@ In the second row, $0.62$ and $0.30$ exceed $0.1015$ but $0.08$ does not, so the
 
 | $\alpha$ | Nominal coverage $1 - \alpha$ | Empirical coverage | Wilson 95% CI | Mean set size | $`\hat{q}_\alpha`$ |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 0.05 | 95% | 99.00% | [94.57%, 99.82%] | 1.63 | 0.9881 |
-| **0.10** | **90%** | **90.00%** | **[82.59%, 94.51%]** | **1.26** | **0.8985** |
-| 0.15 | 85% | 85.00% | [76.70%, 90.73%] | 1.13 | 0.7787 |
-| 0.20 | 80% | 79.00% | [70.04%, 85.83%] | 1.01 | 0.6286 |
+| 0.05 | 95% | 99.00% | [94.55%, 99.82%] | 1.63 | 0.9881 |
+| **0.10** | **90%** | **90.00%** | **[82.56%, 94.48%]** | **1.26** | **0.8985** |
+| 0.15 | 85% | 85.00% | [76.72%, 90.69%] | 1.13 | 0.7787 |
+| 0.20 | 80% | 79.00% | [70.02%, 85.83%] | 1.01 | 0.6286 |
 
 At the production level $\alpha = 0.10$ the empirical coverage equals the nominal 90% with only 1.26 labels per set on average, so most claims receive a decisive singleton and only a minority are escalated. For $\alpha \ge 0.20$ the sets are already almost always singletons, so coverage cannot fall further and stays at the raw accuracy of the NLI model on gold evidence (79%). Plots: `experiments/conformal_coverage_plot.png`, `experiments/conformal_set_size_plot.png`.
 
@@ -435,13 +437,13 @@ At the production level $\alpha = 0.10$ the empirical coverage equals the nomina
 | current, $`\hat{q} = 0.8985`$ (gold-evidence calibration) | 84.2% | [80.4%, 87.5%] | 1.17 | 91.0% / 83.5% (measured) |
 | recalibrated on retrieved evidence, $`\hat{q} \approx 0.97`$–$`0.995`$ | 88.2% | [84.7%, 91.0%] | 1.64 | 91.5% / 84.5% (estimated) |
 
-With the current threshold the coverage on live evidence is measurably below the nominal 90% (the interval lies below it), as the exchangeability argument predicted. Recalibrating brings coverage to 88.2%, with an interval that contains 90%, but only with a threshold between 0.97 and 0.995 (the two folds), which admits any label above about 1–3% probability: 104 more claims would be escalated, and the estimated accuracy is about the same (88.0% against 87.3% pooled, a difference of 3 claims). (For the estimate, claims whose route would change were re-decided: newly escalated claims received one LLM review of their saved evidence, without the Knowledge Graph evidence.) The production threshold is therefore kept at 0.8985, and it is described as what it is in deployment: a calibrated escalation trigger with 84.2% measured coverage, not a 90% guarantee.
+With the current threshold the coverage on live evidence is measurably below the nominal 90% (the interval lies below it), as the exchangeability argument predicted. Recalibrating brings coverage to 88.2%, with an interval that contains 90%, but only with a threshold between 0.97 and 0.995 (the two folds), which admits any label above about 0.5–3% probability: 104 more claims would be escalated, and the estimated accuracy is about the same (88.0% against 87.3% pooled, a difference of 3 claims). (For the estimate, claims whose route would change were re-decided: newly escalated claims received one LLM review of their saved evidence, without the Knowledge Graph evidence.) The production threshold is therefore kept at 0.8985, and it is described as what it is in deployment: a calibrated escalation trigger with 84.2% measured coverage, not a 90% guarantee.
 
 ### 2.7 Routing: Query Rewrite, Absence Evaluation and Escalation (`detector/hallucination_detector.py`)
 
 **Purpose.** Decide what happens to each claim after scoring: accept the verdict, search again, judge the absence of evidence, ask the LLM to review, or escalate to full reasoning.
 
-**Self-reflective query rewrite (at most once per claim).** Retrieval can fail because a query was ambiguous, too specific, or used a name Wikipedia does not. On the **first pass only**, if no evidence was found or the verdict is `UNKNOWN`, a rewriter LLM receives the claim, the queries already tried, and up to 1,000 characters of the unhelpful evidence; it is asked to diagnose why the search failed and to propose up to 2 new, *divergent* queries (alternative names, the underlying event, a parent entity). If the rewriter returns no queries (the call failed or its reply had none), the second pass searches what the claim says about its entities instead: the claim with the entity names and leading auxiliaries removed, or the claim itself if fewer than two content words remain; this finds pages on the property (rankings, lists, events) rather than the entity's page again, and needs no LLM call. Retrieval and scoring then run again, including the web search, which is retried if it failed on the first pass. Evidence from both rounds is pooled (deduplicated by text), so a worse second search can never discard evidence found by the first. Verdicts that are already `SUPPORTED` or `CONTRADICTED` are not re-searched, even when the conformal set is ambiguous; they go straight to escalation.
+**Self-reflective query rewrite (at most once per claim).** Retrieval can fail because a query was ambiguous, too specific, or used a name Wikipedia does not. On the **first pass only**, if no evidence was found or the verdict is `UNKNOWN`, a rewriter LLM receives the claim, the queries already tried, and up to 1,000 characters of the unhelpful evidence; it is asked to diagnose why the search failed and to propose up to 2 new, *divergent* queries (alternative names, the underlying event, a parent entity). If the rewriter returns no queries (the call failed or its reply had none), the second pass searches what the claim says about its entities instead: the claim with the entity names and leading auxiliaries removed, or the claim itself if fewer than two content words remain; this finds pages on the property (rankings, lists, events) rather than the entity's page again, and needs no LLM call. Retrieval and scoring then run again, including the web search, which is retried if it failed on the first pass. Evidence found by the first round is kept (deduplicated by text) and scored again if the second search returns nothing, so an empty second search cannot discard it; when the second search returns snippets, those are scored instead. Verdicts that are already `SUPPORTED` or `CONTRADICTED` are not re-searched, even when the conformal set is ambiguous; they go straight to escalation.
 
 **Absence evaluation.** If evidence is still missing after the rewrite, the absence of evidence is itself informative, but only for prominent facts: if the claim describes a major, widely recorded event (a world leader's death, a famous monument being moved) and nothing is found, it is almost certainly false; if it describes a minor detail, the evidence may simply not be online. The LLM is asked which case applies and answers `CONTRADICTED` or `UNKNOWN`. The probability vector passed to the conformal layer is $(1, 0, 0)$ or $(0, 1, 0)$ respectively.
 
@@ -545,7 +547,7 @@ and the improvement is significant. Per benchmark: FreshQA 28 against 6 ($p = 0.
 
 ### 2.10 Output, Report and User Interface
 
-**Per-claim result.** The claim; the evidence text and source URLs; the verdict with its probability vector and confidence; the conformal set, p-values, $`\hat{q}`$ and set size; the decision route (`final_decision_policy`); and, for an escalated claim, its Wikidata graph (§2.8), whose statements were added to its evidence.
+**Per-claim result.** The claim; the evidence text and source URLs; the verdict with its probability vector and confidence, and the temperature-scaled probability vector (§4.6); the conformal set, p-values, $`\hat{q}`$ and set size; the decision route (`final_decision_policy`); and, for an escalated claim, its Wikidata graph (§2.8), whose statements were added to its evidence.
 
 **Report.** A summary of the whole input:
 
@@ -553,17 +555,17 @@ $$
 \text{hallucination rate} = \frac{\text{number of claims labelled CONTRADICTED}}{\text{total number of claims}}
 $$
 
-together with the numbers of supported, contradicted and unknown claims, of escalated claims, and of claims settled by a single-label conformal set.
+together with the numbers of supported, contradicted and unknown claims, of claims whose conformal set triggered escalation, and of the other claims with a single-label conformal set (which include contradictions that the LLM then reviews, §2.7).
 
 **Streaming UI.** The Flask server (`/api/analyze_stream`) streams newline-delimited JSON events: the list of extracted claims with the decomposition route (fast path, LLM, or NLTK fallback), one progress event per stage (tagged with the stage name and the claim it belongs to), each claim's result as soon as it is verified, and the final report, and after each claim's result its Wikidata graph (below). Claims are verified concurrently with the same per-claim code as the batch API, so the verdicts are identical. The web page (`static/`) has four tabs:
 
 - **Verify** shows a live stepper of the pipeline stages, combined over the claims in progress (a stage is active while any claim is in it, with a count of how many claims have reached it; optional stages such as query rewrite, Knowledge Graph and arbiter are marked as skipped when no claim needs them), and then:
   - an **answer-level verdict**: one contradicted claim flags the whole answer as a hallucination; otherwise the answer is reported as supported, or as partly unverifiable when the detector abstained on some claims;
   - **From text to claims**: each sentence of the input next to the atomic claims it was decomposed into, coloured by verdict, with the words the decomposition added (resolved pronouns, repeated subjects) underlined. Claims are matched to sentences by content-word overlap in the browser, so no extra LLM call is made;
-  - one card per claim, filled in as results arrive: the claim's **decision path** (NLI reading → conformal set → route → final verdict, noting when the LLM changed the NLI reading), the NLI posterior, the conformal set and p-values, and every evidence snippet with its own NLI reading, the snippet that decided the verdict, and its source;
+  - one card per claim, filled in as results arrive: the claim's **decision path** (NLI reading → conformal set → route → final verdict, noting when the LLM changed the NLI reading), the NLI posterior with its calibrated confidence, the conformal set and p-values, and every evidence snippet with its own NLI reading, the snippet that decided the verdict, and its source;
   - an **Under the hood** view of any claim's computation as it happens: the sentence the claim was split from and the decomposition route; the generated queries; the re-ranking table with cosine similarity, BM25, both ranks and the RRF formula; every snippet's NLI logits and the softmax; the decision-rule quantities S, K, |D_sup|, |D_con| and the branch taken; the conformal scores, q̂, p-values and set, with a **calibration plot** placing the claim's three non-conformity scores against the histogram of the 100 calibration scores and q̂ (`/api/calibration`); the routing condition term by term; and the LLM arbiter's written defense, prosecution and judgement. All of it comes from a per-claim trace that the detector records in `verification["trace"]` without changing any decision;
   - a timeline of the time each claim spent in each phase, and the **Wikidata graph** of all claims drawn with D3.js (below): each claim's dashed edge in its verdict colour next to the Wikidata statements for the same property, hovering shows an entity's description or a statement's references, and clicking opens it in Wikipedia or Wikidata; each claim card also states what Wikidata records for it.
-- **Benchmarks** charts the ten-set results of §3.3 from `evaluation/*_5_runs_results.json` (`/api/benchmarks`), with Wilson 95% intervals and the two-proportion test of FEVER against FreshQA (§4.5), including the accuracy of each decision route (§3.4), and has a **claim explorer** over all 400 benchmark claims (`/api/benchmark_claims/<name>`): they can be filtered by outcome (errors or correct), route and text, and each one opens with its evidence and the full computation trace recorded during the benchmark run, so every error in §3.5 can be inspected step by step.
+- **Benchmarks** charts the ten-set results of §3.3 from `evaluation/*_5_runs_results.json` (`/api/benchmarks`), with Wilson 95% intervals and the two-proportion test of FEVER against FreshQA with its multiple-comparison correction (§4.5), including the accuracy of each decision route (§3.4), and has a **claim explorer** over all 400 benchmark claims (`/api/benchmark_claims/<name>`): they can be filtered by outcome (errors or correct), route and text, and each one opens with its evidence and the full computation trace recorded during the benchmark run, so every error in §3.5 can be inspected step by step.
 - **Method** animates the cascade, with claims flowing into the three routes in the measured proportions, summarises the stages and lists the known limitations. It also replays the coverage argument of §2.6 on stored NLI scores (`/api/coverage_demo`): each trial draws a random split of the 200 gold-evidence FEVER claims of `experiments/eval_conformal.py`, calibrates $`\hat{q}`$ on 100 of them and drops a new claim's score among the sorted calibration scores. A histogram counts the rank $R$ at which it lands, and a chart tracks the running coverage with its Wilson interval. When the new claim comes from the same pool, the ranks are uniform and coverage converges to $`k/(n+1)`$; when it comes from the 400 benchmark claims scored on retrieved evidence, scores pile up beyond $`\hat{q}`$ and coverage settles near the 84.2% measured in §2.6.
 - **Docs** renders this document (`/api/docs`).
 
@@ -616,7 +618,7 @@ A claim settled on the fast path with fast-path queries needs **no LLM call at a
 - **LLM backend (`llm/`).** With `MODEL_PROVIDER=gemini`, two models are used, each serving as the other's fallback (larger Gemini models were dropped: their free-tier daily quota is too small to help). With the default `LLM_ROUTING=primary`, every call goes to `gemini-3.5-flash-lite` and falls back to `gemini-3.1-flash-lite` only when 3.5 is rate-limited, overloaded or out of daily quota: in the current evaluation, with 491 of 493 calls answered by 3.5, supporting calls took 1.3 s and arbitration calls 3.1 s on average (§3.4). Because 3.5 is faster, claims finish sooner and calls arrive closer together: during a latency measurement the Gemini console showed 3.5 at 18 requests in one minute against its limit of 15, so under sustained load the per-minute limit, not speed, is what sends calls to 3.1. Each call is also tagged by how demanding its task is, **heavy** for the steps that decide or preserve a verdict (arbitration, absence evaluation, claim decomposition) and **light** for supporting steps (query generation and rewriting); `LLM_ROUTING=tiered` sends heavy calls to 3.5 and light calls to 3.1, and `LLM_ROUTING=alternate` alternates between the two regardless of task. In every mode, a model that returns HTTP 429, 503 or 504, or times out, is skipped for 45 seconds and the request moves to the next model immediately; a model whose *daily* quota is used up is skipped until the quota resets (midnight Pacific time), so requests go straight to the models that can still answer. If both models fail at once with such a temporary error (a demand spike), the request waits and tries them again, after 2 s and then 5 s, before giving up; when both daily quotas are used up it fails at once, since waiting cannot help. Otherwise a local Ollama model (`qwen2.5:3b`) is used.
 - **Concurrency.** Claims, queries and data sources are processed in thread pools, and all network calls run in parallel. The NLI model and the embedding models are each protected by a lock, because their native code is not safe to call from several threads at once; on Apple GPUs (MPS) the command buffer is synchronised before the NLI lock is released. Embedding models run on the CPU and NLI on the GPU when available (`NLI_DEVICE` overrides the device).
 - **Warm-up.** When the server starts, the NLI model, both embedding models and the NLTK sentence tokenizer are each run once on a dummy input, so the first real request does not pay one-off initialisation (a cold NLI call took 1.18 s against 0.22 s warm). No cache is filled and no LLM is called.
-- **Caching.** Wikipedia searches and parsed pages (LRU caches), paragraph embeddings (keyed by text), web search results (10 minutes, successful lookups only), NLI scores per claim–snippet pair, and Wikipedia summaries for the graph are cached. Every cache returns exactly what recomputation would, so outputs are unchanged; the effect is speed, mainly on query-rewrite retries, which re-retrieve many of the same pages.
+- **Caching.** Wikipedia searches and parsed pages (LRU caches), paragraph embeddings (keyed by text), web search results (10 minutes, successful lookups only), NLI scores per claim–snippet pair, and the Wikidata entities and labels looked up for the graph are cached. Every cache returns exactly what recomputation would, so outputs are unchanged; the effect is speed, mainly on query-rewrite retries, which re-retrieve many of the same pages.
 
 ---
 
@@ -673,7 +675,7 @@ All figures below are measured with the current pipeline (the single configurati
 | Set 10 | 20 | 18 | 90.00% | 1.00 | 0.80 | 0.89 | 8 | 0 | 2 | 10 | 0 | 8.8 s |
 | **Pooled** | **200** | **182** | **91.00%** | **0.95** | **0.89** | **0.92** | 89 | 5 | 11 | 93 | 3 | 8.6 s |
 
-Pooled Wilson 95% CI (§4.4): [86.2%, 94.2%]. With 20 claims per set, one error moves a set's accuracy by 5 points, so the pooled figure is the one to quote. Sets 1–5 scored 95 of 100 and sets 6–10 scored 87 of 100; this difference is borderline (two-proportion z-test $p = 0.048$, Fisher's exact test $p = 0.08$), which is a further reason to quote the pooled figure rather than either half.
+Pooled Wilson 95% CI (§4.4): [86.2%, 94.2%]. With 20 claims per set, one error moves a set's accuracy by 5 points, so the pooled figure is the one to quote. Sets 1–5 scored 95 of 100 and sets 6–10 scored 87 of 100; this difference is borderline (two-proportion z-test $p = 0.048$, Fisher's exact test $p = 0.08$) and not significant after correction for the eight tests reported in this document (Holm-adjusted $p = 0.19$, §4.5), but it is a further reason to quote the pooled figure rather than either half.
 
 **FreshQA: ten-set evaluation.** Same protocol on never- and slow-changing questions (§3.1), 200 claims (summary in `evaluation/freshqa_5_runs_results.json`, per-claim records in `evaluation/freshqa_5_runs_claims.jsonl`):
 
@@ -691,9 +693,9 @@ Pooled Wilson 95% CI (§4.4): [86.2%, 94.2%]. With 20 claims per set, one error 
 | Set 10 | 20 | 17 | 85.00% | 0.90 | 0.90 | 0.90 | 9 | 1 | 1 | 8 | 1 | 10.7 s |
 | **Pooled** | **200** | **167** | **83.50%** | **0.90** | **0.84** | **0.87** | 84 | 9 | 16 | 83 | 11 | 11.4 s |
 
-Pooled Wilson 95% CI (§4.4): [77.7%, 88.0%]. Sets 1–5 scored 82 and sets 6–10 scored 85 of 100 (Fisher's exact test $p = 0.70$). Precision, recall and F1 refer to the `CONTRADICTED` (hallucination) class (definitions in §4.1); `UNKNOWN` counts as an error, and on a false claim as a missed hallucination (FN).
+Pooled Wilson 95% CI (§4.4): [77.7%, 88.0%]. Sets 1–5 scored 82 and sets 6–10 scored 85 of 100 (two-proportion z-test $p = 0.57$, Fisher's exact test $p = 0.70$). Precision, recall and F1 refer to the `CONTRADICTED` (hallucination) class (definitions in §4.1); `UNKNOWN` counts as an error, and on a false claim as a missed hallucination (FN).
 
-**FEVER vs FreshQA.** FreshQA is significantly harder. The difference in accuracy is 7.5 points (Newcombe 95% interval [0.9, 14.1] points), and a two-proportion z-test of equal accuracy gives $z = 2.25$, $p = 0.024$ (Fisher's exact test: $p = 0.035$; §4.5). Precision is close (0.95 vs 0.90); the gap is in recall (0.89 vs 0.84) and in abstentions (3 vs 11): FreshQA's false premises and claims about the present are more often accepted by the NLI model or left `UNKNOWN` by the arbiter when the evidence does not settle them, and some of its gold answers are contradicted by current evidence (§3.5).
+**FEVER vs FreshQA.** FreshQA is harder. The difference in accuracy is 7.5 points (Newcombe 95% interval [0.9, 14.1] points), and a two-proportion z-test of equal accuracy gives $z = 2.25$, $p = 0.025$ (Fisher's exact test: $p = 0.035$; §4.5). The evidence is moderate: the difference remains significant when the false discovery rate over the eight tests of this document is controlled (Benjamini–Hochberg adjusted $p = 0.049$), but not under the stricter family-wise correction (Holm-adjusted $p = 0.12$), and with 200 claims per benchmark a true difference of this size is detected only 61% of the time (§4.5). Precision is close (0.95 vs 0.90); the gap is in recall (0.89 vs 0.84) and in abstentions (3 vs 11): FreshQA's false premises and claims about the present are more often accepted by the NLI model or left `UNKNOWN` by the arbiter when the evidence does not settle them, and some of its gold answers are contradicted by current evidence (§3.5).
 
 ### 3.4 Latency, Routing and Cost (Current Pipeline)
 
@@ -728,7 +730,7 @@ Latency is measured end to end with live Wikipedia, web and Gemini calls on an A
 
 **FEVER (current pipeline, ten sets, 200 claims).** The 18 errors are 5 false accusations, 10 missed hallucinations and 3 abstentions:
 
-1. **NLI fast-path errors (11).** Settled without LLM review. Four true claims were settled `CONTRADICTED` by two or more agreeing snippets, which met the corroboration rule: *"Diana, Princess of Wales was renowned as Lady Diana Spencer"*, contradicted by snippets giving her full name, Diana Frances Spencer; *"Warner Bros. released Avenged Sevenfold"*, contradicted by snippets about the band's releases on other labels; *"The album Cher was created by Cher"*; and *"Taran Killam is an American writer"*, contradicted by snippets describing him as an actor and comedian. Seven false claims were settled `SUPPORTED` by a decisive supporting snippet about a related fact: *"Middle-earth is a real place"* (snippets on the geography of Tolkien's invented world), *"Stan Beeman is a fictional setting"* (he is a fictional character), *"Saturn is the second-largest moon in the Solar System"* (a snippet stating this of Titan, Saturn's largest moon), *"Chile is a food"* (a snippet on Chilean dishes), *"Aristotle spent almost 40 years at the Academy"*, *"I Kissed a Girl is part of Katy Perry's first studio album"* and *"The Chrysler Building was the world's tallest building for 8 months"*, each of which differs from the evidence in one number, title or role.
+1. **NLI fast-path errors (11).** Settled without LLM review. Four true claims were settled `CONTRADICTED` by two or more agreeing snippets, which met the corroboration rule: *"Diana, Princess of Wales was renowned as Lady Diana Spencer"*, contradicted by snippets giving her full name, Diana Frances Spencer; *"Warner Bros. released Avenged Sevenfold"*, contradicted by snippets about the band's releases on other labels; *"The album Cher was created by Cher"*; and *"Taran Killam is an American writer"*, contradicted by snippets describing him as an actor and comedian. Six false claims were settled `SUPPORTED` by a decisive supporting snippet about a related fact: *"Middle-earth is a real place"* (snippets on the geography of Tolkien's invented world), *"Stan Beeman is a fictional setting"* (he is a fictional character), *"Saturn is the second-largest moon in the Solar System"* (a snippet stating this of Titan, Saturn's largest moon), *"Chile is a food"* (a snippet on Chilean dishes), *"Aristotle spent almost 40 years at the Academy"* and *"I Kissed a Girl is part of Katy Perry's first studio album"*, each of which differs from the evidence in one number, title or role. A seventh, *"The Chrysler Building was the world's tallest building for 8 months"*, was settled `SUPPORTED` by the joint fallback (§2.5), although neither of its snippets supported it.
 2. **Arbiter errors (4).** *"Southpaw was the fighting style Mike Tyson used"* (false): the evidence said Tyson sometimes switched to a southpaw stance, and the arbiter accepted that as support although his style was orthodox. *"Peking University is in a unitary sovereign state in East Asia"* and *"The Good Wife is a movie"* (both false) were judged `SUPPORTED`, the first by reading the description of China as entailed, the second because the evidence also named a 1987 film of the same title. *"The Washington Wizards were the winners of four conference titles"* (true) was judged `CONTRADICTED`, although the evidence did not state the number of titles.
 3. **Abstentions (3).** *"Nuuk is the largest military center of Greenland"* (false): the evidence described Nuuk's civilian institutions only, and the arbiter, finding no statement either way, abstained. *"Brian Michael Bendis began teaching English at the University of Oregon in fall of 2013"* (true): the evidence and Wikidata confirm that he began teaching at the University of Oregon in fall 2013, but describe courses on graphic novels, so the arbiter treated the subject *English* as unverified. *"Matthias Corvinus, King of Hungary, established a royal theater troupe between 1458 and 1490"* (true): the evidence confirmed his reign and patronage of the arts but did not mention a theater troupe.
 
@@ -743,7 +745,7 @@ The 33 errors fall into four groups:
 
 1. **Abstentions (11: 8 true claims, 3 false).** For ten, the evidence covered the topic but not the specific fact, and the arbiter returned `UNKNOWN` rather than guess: the number of episodes of *The Rings of Power* season 1, Biden's most-visited country, the year of both Benedict XVI's and Elizabeth II's deaths and the UMass NLP faculty count (all true); and *"Humans have been killed by dinosaurs"* and *"Taylor Swift has been a UNICEF Goodwill Ambassador"* (both false); and, in sets 6–10, the number of Tesla vehicle models, the cause of death of the Perceptron's inventor, whether *The Boy and the Heron* is the most recent Studio Ghibli film (all true) and an Alpha Kappa Delta Phi chapter at American University (false). For the eleventh, *"The Japanese school year starts in April"* (true), the web search did state the fact, but the claim-echo filter removed both snippets as near-quotes of this short claim (§2.3), leaving only a paragraph about school terms.
 2. **NLI fast-path errors (13).** Settled without LLM review. From sets 1–5: a negation (*"The Great Pyramid of Giza is not one of the New 7 Wonders"*, true, settled `CONTRADICTED`), two claims about the present matched to past evidence (*"Pele is currently staying in a hospital to receive cancer treatment"*, from 2022 evidence, and *"Walt Disney Animation Studios' 60th animated film is being released this year"*, which is *Encanto*, 2021), and two near-matches (*"Donald Trump tweeted in 2022 after his unbanning"*, supported by evidence about his reinstatement, not a tweet; *"Novak Djokovic lost in a specific round at the 2022 Australian Open"*, a false premise, since he did not play it, supported by a snippet about his first-round loss at a different tournament). From sets 6–10: five false premises or claims about the present accepted from related evidence (*"Jeff Bezos sold Amazon"*, *"Canada currently requires arriving travelers to provide proof of COVID vaccination via an app"*, *"X Corp. has a CEO"*, *"Microsoft has scheduled a date in the future for the release of security updates for Windows 7"*, *"There are days left until the next season of Atlanta airs"*), and three true claims contradicted by two or more agreeing snippets (*"Sunderland, Massachusetts is located to the north of Amherst"*, *"The Democratic Republic of the Congo was the first country to detect a case of mpox in the most recent outbreak"* and *"Qianlong was the emperor of China when the American Revolutionary War ended"*), which turn on geography, on dates, or on which outbreak is the most recent.
-3. **Gold labels contradicted by current evidence (8).** The 2026 evidence states that Lewandowski left Barcelona at the end of the 2025–26 season (labelled as still playing there), that the LA Metro has 110 rail stations (labelled: 107), that a few species have landed on the Moon (labelled false), and that the 2027 Women's World Cup is to be held next year (*"A FIFA World Cup will be hosted next year"*, labelled false); *"Joe Biden announced his second presidential campaign in 2023"* was generated from a false-premise question but is true as stated. In sets 6–10, the evidence records Alphabet's market value at a record high in September 2025 (labelled false), gives Colleen Hoover's book count as 25 (labelled: 27) and names six asteroids discovered before impact (labelled: 11). In these cases the detector followed the evidence, and even slow-changing labels are drifting out of date.
+3. **Gold labels contradicted by current evidence (8).** The 2026 evidence states that Lewandowski left Barcelona at the end of the 2025–26 season (labelled as still playing there), that the LA Metro has 110 rail stations (labelled: 107), that a few species have landed on the Moon (labelled false), and that the 2027 Women's World Cup is to be held next year (*"A FIFA World Cup will be hosted next year"*, labelled false); *"Joe Biden announced his second presidential campaign in 2023"* was generated from a false-premise question but is true as stated. In sets 6–10, the evidence records Alphabet's market value at a record high in September 2025 (labelled false), gives Colleen Hoover's book count as 25 (labelled: 27) and names five asteroids and one suspected artificial satellite as the only objects detected before impact (labelled: 11 asteroids). In these cases the detector followed the evidence, and even slow-changing labels are drifting out of date.
 4. **Arbiter error (1).** *"Princeton University is the top-ranked university in the US according to the US News Ranking"* (true): the arbiter read the evidence's dated ranking information as contradicting the present-tense claim.
 
 ---
@@ -860,7 +862,7 @@ $$
 
 *Derivation.* The two accuracies are independent binomial proportions, so $`\mathrm{Var}(\hat{p}_1 - \hat{p}_2) = p_1 (1 - p_1)/n_1 + p_2 (1 - p_2)/n_2`$. Under $`H_0: p_1 = p_2 = p`$ this is $`p (1 - p)(1/n_1 + 1/n_2)`$, and the common $p$ is estimated by $\bar{p}$, its maximum-likelihood estimate under $`H_0`$. By the central limit theorem $z$ is then approximately standard normal under $`H_0`$.
 
-**Fisher's exact test** avoids the normal approximation. Under $`H_0`$, with $`N = n_1 + n_2`$, the probability of $a$ and $b$ correct verdicts is $`\binom{n_1}{a} \binom{n_2}{b} \, p^{a+b} (1 - p)^{N - a - b}`$, and the total $T = C_1 + C_2$ is $`\text{Binomial}(N, p)`$. Conditioning on the observed total $t$, the unknown $p$ cancels:
+**Fisher's exact test** (Fisher, 1922) avoids the normal approximation. Under $`H_0`$, with $`N = n_1 + n_2`$, the probability of $a$ and $b$ correct verdicts is $`\binom{n_1}{a} \binom{n_2}{b} \, p^{a+b} (1 - p)^{N - a - b}`$, and the total $T = C_1 + C_2$ is $`\text{Binomial}(N, p)`$. Conditioning on the observed total $t$, the unknown $p$ cancels:
 
 $$
 \Pr(C_1 = a \mid T = t) = \frac{\binom{n_1}{a} \binom{n_2}{t - a} \, p^t (1 - p)^{N - t}}{\binom{N}{t} \, p^t (1 - p)^{N - t}} = \frac{\binom{n_1}{a} \binom{n_2}{t - a}}{\binom{N}{t}}
@@ -884,7 +886,7 @@ $$
 
 *Derivation of the McNemar test* (McNemar, 1947). Each claim falls into one of four cells according to whether verdict A and verdict B are right, with probabilities $`\pi_{11}, \pi_{10}, \pi_{01}, \pi_{00}`$ (the first index for A). The accuracies are $`\pi_{11} + \pi_{10}`$ and $`\pi_{11} + \pi_{01}`$, so their difference is $`\pi_{10} - \pi_{01}`$: equal accuracy means $`\pi_{10} = \pi_{01}`$, and the claims on which both verdicts agree carry no information about it. Given $d = b + c$ discordant claims, each of them is "A right only" independently with probability $`\pi_{10} / (\pi_{10} + \pi_{01})`$, so $`b \mid d \sim \text{Binomial}\big(d, \pi_{10} / (\pi_{10} + \pi_{01})\big)`$, which under $`H_0`$ is $`\text{Binomial}(d, \tfrac{1}{2})`$. The two-sided p-value doubles the probability of the smaller tail. Treating the two sets of verdicts as independent samples would ignore that most claims are decided identically by both.
 
-**Selection bias and cross-fitting** (the choice of $m$, §2.5). Let $`\text{acc}_S(m)`$ be the accuracy of the rule with parameter $m$ on a set $S$ of claims, and $A(m)$ its true accuracy, so that $`\mathbb{E}[\text{acc}_S(m)] = A(m)`$. If $m$ is chosen on $S$ itself, $`\hat{m} = \arg\max_m \text{acc}_S(m)`$, the reported $`\text{acc}_S(\hat{m}) = \max_m \text{acc}_S(m)`$ is biased upwards. The maximum is a convex function, so by Jensen's inequality
+**Selection bias and cross-fitting** (the choice of $m$, §2.5). Let $`\text{acc}_S(m)`$ be the accuracy of the rule with parameter $m$ on a set $S$ of claims, and $A(m)$ its true accuracy, so that $`\mathbb{E}[\text{acc}_S(m)] = A(m)`$. If $m$ is chosen on $S$ itself, $`\hat{m} = \arg\max_m \text{acc}_S(m)`$, the reported $`\text{acc}_S(\hat{m}) = \max_m \text{acc}_S(m)`$ is biased upwards (Varma & Simon, 2006). The maximum is a convex function, so by Jensen's inequality
 
 $$
 \mathbb{E} \left[ \max_m \text{acc}_S(m) \right] \ge \max_m \mathbb{E} \left[ \text{acc}_S(m) \right] = \max_m A(m)
@@ -900,13 +902,122 @@ Claims are sampled independently, so $`\hat{m}_{-k}`$ is independent of the clai
 
 *Missing reviews.* A verdict under $m = 3$ needs an LLM review of each claim with exactly two decisive contradicting snippets. If some of these reviews were not made, the analysis would bound them both ways: on any training set the score of $m = 3$ does not decrease with the number of missing reviews that are correct, while the scores of $m = 1$ and $m = 2$ do not depend on them, so counting all of them correct and then all of them wrong gives the extreme choices of $m$. All 41 reviews were made for the current evaluation (§2.5), so the cross-fitted accuracy is determined exactly.
 
-| Comparison | Result | Test | $p$ |
+**Multiple comparisons.** This document reports eight hypothesis tests. Even if every null hypothesis were true, the chance that at least one of eight independent tests falls below 0.05 would be $`1 - 0.95^8 = 34\%`$, so individual p-values overstate the evidence. Two corrections are applied to the whole family (choosing a smaller family after seeing the p-values would defeat the purpose), with one p-value per hypothesis: the two-proportion z-test for the unpaired comparisons (quoted in §3.3) and the exact McNemar test for the paired ones. With the p-values sorted, $`p_{(1)} \le \dots \le p_{(k)}`$, $k = 8$:
+
+$$
+\text{Holm:} \quad \tilde{p}_{(i)} = \max_{j \le i} \; \min \left( 1, \; (k - j + 1) \, p_{(j)} \right)
+$$
+
+$$
+\text{Benjamini–Hochberg:} \quad \tilde{p}_{(i)} = \min_{j \ge i} \; \min \left( 1, \; \frac{k}{j} \, p_{(j)} \right)
+$$
+
+and a hypothesis is rejected when its adjusted $\tilde{p} < 0.05$.
+
+*Holm's procedure* (Holm, 1979) controls the **family-wise error rate** (FWER), the probability of rejecting even one true null hypothesis, under any dependence between the tests. Let $`k_0`$ of the $k$ hypotheses be true. Suppose a true null is rejected, and let it be the first true null in the sorted order, at position $j$. Only false nulls come before it, so $`j - 1 \le k - k_0`$, and it was rejected because $`p \le \alpha / (k - j + 1) \le \alpha / k_0`$. A family-wise error therefore implies that the smallest p-value among the $`k_0`$ true nulls is at most $`\alpha / k_0`$, and by the union bound
+
+$$
+\text{FWER} \le \Pr \left( \bigcup_{i \in I_0} \left\lbrace p_i \le \frac{\alpha}{k_0} \right\rbrace \right) \le \sum_{i \in I_0} \Pr \left( p_i \le \frac{\alpha}{k_0} \right) \le k_0 \cdot \frac{\alpha}{k_0} = \alpha
+$$
+
+where $`I_0`$ is the set of true nulls and each true-null p-value satisfies $`\Pr(p_i \le u) \le u`$. Holm rejects everything Bonferroni (every $p$ multiplied by $k$) rejects, and possibly more.
+
+*The Benjamini–Hochberg procedure* (Benjamini & Hochberg, 1995) controls the **false discovery rate** (FDR), the expected share of false rejections among all rejections, at $`\alpha k_0 / k \le \alpha`$ when the tests are independent or positively dependent (here the per-benchmark arbiter tests are positively dependent on the pooled one). It is less strict than Holm: it accepts that a small share of the significant findings may be false, rather than requiring that none is.
+
+| Comparison | Result | Test | $p$ | Holm | BH |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| LLM arbiter vs the NLI verdict it replaced, both benchmarks (120 claims, §2.9) | 36 fixed, 10 broken | exact McNemar | 0.00016 | **0.0013** | **0.0008** |
+| LLM arbiter, FreshQA (77 claims) | 28 fixed, 6 broken | exact McNemar | 0.0002 | **0.0014** | **0.0008** |
+| corroboration rule, $m = 2$ vs $m = 1$ (400 claims, §2.5) | 15 right only with $m = 2$, 3 only with $m = 1$ | exact McNemar | 0.008 | **0.045** | **0.020** |
+| FEVER vs FreshQA accuracy (§3.3) | 91.0% vs 83.5%; difference 7.5 points [0.9, 14.1] | two-proportion z-test ($z = 2.25$; Fisher's exact test $p = 0.035$) | 0.025 | 0.12 | **0.049** |
+| FEVER, sets 1–5 vs sets 6–10 (§3.3) | 95 vs 87 of 100 | two-proportion z-test ($z = 1.98$) | 0.048 | 0.19 | 0.077 |
+| LLM arbiter, FEVER (43 claims) | 8 fixed, 4 broken | exact McNemar | 0.39 | 1 | 0.52 |
+| FreshQA, sets 1–5 vs sets 6–10 (§3.3) | 82 vs 85 of 100 | two-proportion z-test ($z = -0.57$) | 0.57 | 1 | 0.65 |
+| corroboration rule, $m = 2$ vs $m = 3$ (400 claims, §2.5) | 0 right only with $m = 2$, 1 only with $m = 3$ | exact McNemar | 1 | 1 | 1 |
+| cross-fitted choice of $m$ vs fixed $m = 2$ (400 claims, §2.5) | 349 vs 349 correct | — | — | — | — |
+
+Bold marks an adjusted $p < 0.05$. Three findings survive the strict correction: the arbiter improves on the NLI verdict (pooled, and on FreshQA alone), and $m = 2$ beats $m = 1$. The FEVER–FreshQA difference survives only the false-discovery-rate correction, and the difference between the two halves of the FEVER run survives neither.
+
+**Power and sample size.** A test that does not reject may simply have had too few claims. The **power** of a test is the probability that it rejects when a given effect is real, and it is used here to plan how many claims a conclusive evaluation needs. (Power computed at the observed effect only restates the p-value and says nothing new about a result already obtained; Hoenig & Heisey, 2001.) All figures use $\alpha = 0.05$ and a target power of 80%, and each formula is checked by simulating 20,000 evaluations from the assumed accuracies.
+
+*Interval width.* The smallest $N$ whose Wilson half-width (§4.4) at the observed accuracy is at most $h$ is found by search: ±4.0 points now for FEVER (200 claims) needs 354 claims for ±3 and 791 for ±2; ±5.1 points for FreshQA needs 588 for ±3 and 1,323 for ±2.
+
+*Two independent accuracies.* Under $`H_1`$ the difference $`\hat{p}_1 - \hat{p}_2`$ is approximately normal with mean $`\delta = p_1 - p_2`$ and variance $`\sigma_1^2 = (p_1 q_1 + p_2 q_2)/n`$ ($q = 1 - p$, $n$ claims per group). The z-test rejects when $`\lvert \hat{p}_1 - \hat{p}_2 \rvert > z_{1-\alpha/2} \, \sigma_0`$, with $`\sigma_0^2 = 2 \bar{p} \bar{q} / n`$ its null variance at $`\bar{p} = (p_1 + p_2)/2`$. Ignoring the negligible chance of rejecting in the wrong direction,
+
+$$
+1 - \beta = \Phi \left( \frac{\lvert \delta \rvert - z_{1-\alpha/2} \, \sigma_0}{\sigma_1} \right) \quad \Longrightarrow \quad n = \frac{\left( z_{1-\alpha/2} \sqrt{2 \bar{p} \bar{q}} + z_{1-\beta} \sqrt{p_1 q_1 + p_2 q_2} \right)^2}{\delta^2}
+$$
+
+| True difference (around 87.25%) | Power with 200 claims per benchmark | Simulated | Claims per benchmark for 80% power |
 | :--- | :--- | :--- | :--- |
-| FEVER vs FreshQA accuracy (§3.3) | 91.0% vs 83.5%; difference 7.5 points [0.9, 14.1] | two-proportion z-test ($z = 2.25$); Fisher's exact test | 0.024; 0.035 |
-| LLM arbiter vs the NLI verdict it replaced (120 claims, §2.9) | 36 fixed, 10 broken | exact McNemar | 0.00016 |
-| corroboration rule, $m = 2$ vs $m = 1$ (400 claims, §2.5) | 15 right only with $m = 2$, 3 only with $m = 1$ | exact McNemar | 0.008 |
-| corroboration rule, $m = 2$ vs $m = 3$ (400 claims, §2.5) | 0 right only with $m = 2$, 1 only with $m = 3$ | exact McNemar | 1 |
-| cross-fitted choice of $m$ vs fixed $m = 2$ (400 claims, §2.5) | 349 vs 349 correct | — | — |
+| 5 points | 32% | 32% | 698 |
+| 7.5 points (the observed difference) | 61% | 63% | 310 |
+| 10 points | 85% | 86% | 174 |
+
+*Paired verdicts* (McNemar). With $\psi$ the probability that a claim is discordant (right under exactly one of the two verdicts) and $\delta$ the difference between the two discordant probabilities, the number of claims needed is (Connor, 1987)
+
+$$
+n = \frac{\left( z_{1-\alpha/2} \sqrt{\psi} + z_{1-\beta} \sqrt{\psi - \delta^2} \right)^2}{\delta^2}
+$$
+
+For the arbiter on FEVER (8 fixed, 4 broken of 43: $`\psi = 0.28`$, $`\delta = 0.09`$) this gives 251 arbitrated claims, about 1,170 FEVER claims at the observed arbitration rate, against 43 now. For $m = 3$ against $m = 2$ (one discordant claim in 400) it gives 3,138 claims; the simulated power of the exact test at these sizes is 78% and 79% (the exact test is slightly conservative). The non-significant results of the table are therefore expected at this sample size: they do not show that the arbiter does nothing on FEVER or that $m = 2$ and $m = 3$ are equal, only that 200 claims per benchmark cannot separate effects this small.
+
+### 4.6 Calibration of the NLI Probabilities
+
+A probability is **calibrated** when it matches the frequency it predicts: among verdicts given with confidence $c$, a fraction $c$ should be right, $`\Pr(\hat{Y} = Y \mid \text{confidence} = c) = c`$. Calibration is computed by `experiments/calibration.py` from the per-claim records, without LLM calls, on the 378 benchmark claims whose final NLI verdict is SUPPORTED or CONTRADICTED (the gold labels are never UNKNOWN, so an UNKNOWN verdict has no calibration target; the 9 source-conflict claims carry no logits).
+
+**Metrics.** For $N$ claims with gold labels $`y_i`$, probability vectors $`\boldsymbol{\pi}_i`$ and confidences $`c_i = \max_y \pi_{iy}`$:
+
+$$
+\text{NLL} = -\frac{1}{N} \sum_{i=1}^{N} \ln \pi_{i y_i}, \qquad \text{Brier} = \frac{1}{N} \sum_{i=1}^{N} \sum_{y \in \mathcal{Y}} \left( \pi_{iy} - \mathbb{I}(y = y_i) \right)^2, \qquad \text{ECE} = \sum_{b=1}^{B} \frac{\lvert B_b \rvert}{N} \left\lvert \bar{c}(B_b) - \text{acc}(B_b) \right\rvert
+$$
+
+The negative log-likelihood (NLL) and the Brier score (Brier, 1950) are proper scoring rules: their expectation is minimised by the true probabilities, so they reward calibration and sharpness together. NLL punishes confident mistakes hardest ($-\ln 0.001 = 6.9$). The **expected calibration error** (ECE; Naeini et al., 2015) sorts the claims by confidence into $B = 10$ bins of equal size (37–38 claims; equal-width bins would leave most of them empty, since most confidences exceed 0.95) and averages the gap between mean confidence and accuracy.
+
+**Temperature scaling** (Guo et al., 2017) divides the three logits of §2.5 by one constant $T > 0$, $`\tilde{\pi}_y = \exp(z_y / T) / \sum_{y'} \exp(z_{y'} / T)`$. $T > 1$ softens the probabilities and $T < 1$ sharpens them, and since every logit is divided by the same positive number, their order and so the verdict never change. $T$ is the maximum-likelihood estimate. With $\beta = 1/T$, the mean NLL is
+
+$$
+L(\beta) = \frac{1}{N} \sum_{i=1}^{N} \left[ \ln \sum_{y} e^{\beta z_{iy}} - \beta z_{i y_i} \right]
+$$
+
+with derivatives
+
+$$
+L'(\beta) = \frac{1}{N} \sum_{i=1}^{N} \left( \mathbb{E}_{\tilde{\boldsymbol{\pi}}_i}[z_i] - z_{i y_i} \right), \qquad L''(\beta) = \frac{1}{N} \sum_{i=1}^{N} \mathrm{Var}_{\tilde{\boldsymbol{\pi}}_i}(z_i) \ge 0
+$$
+
+where $`\mathbb{E}_{\tilde{\boldsymbol{\pi}}_i}`$ and $`\mathrm{Var}_{\tilde{\boldsymbol{\pi}}_i}`$ treat the claim's logit as a random variable taking the value $`z_{iy}`$ with probability $`\tilde{\pi}_{iy}`$. (Differentiating the log-sum-exp gives the softmax-weighted mean, and differentiating that mean gives the variance.) The second derivative is a variance, so $L$ is convex and has a single minimum, found by Newton's method $`\beta \leftarrow \beta - L'(\beta) / L''(\beta)`$. Far from the minimum $L$ is not close to quadratic: from $\beta = 1$ the full Newton step overshoots to a negative $\beta$, so the step is halved until $L$ decreases (here twice, in the first iteration only). It then converges quadratically, reaching $T = 2.392$ to six digits in four iterations, the value a general-purpose optimiser also finds. The condition $L'(\beta) = 0$ has a direct reading: at the optimum, the expected logit under the scaled probabilities equals, on average, the logit of the true label.
+
+**Protocol.** Fitting $T$ and scoring on the same claims would be optimistic (§4.5), so $T$ is cross-fitted: set $s$ of both benchmarks is scored with the $T$ fitted on the other nine sets. The ten fitted temperatures range from 2.34 to 2.51. A paired bootstrap (10,000 resamples of the claims; Efron & Tibshirani, 1993) gives 95% intervals for each change.
+
+| Metric (378 claims) | Raw | Temperature-scaled (cross-fitted) | Change, 95% bootstrap interval |
+| :--- | :--- | :--- | :--- |
+| NLL | 0.839 | 0.561 | −0.278 [−0.403, −0.161] |
+| Brier score | 0.281 | 0.272 | −0.009 [−0.028, +0.010] |
+| ECE | 10.8% | 6.2% | −4.6 points [−7.9, +1.2] |
+| Mean confidence | 95.8% | 80.7% | — |
+| Accuracy | 85.4% | 85.4% | unchanged |
+
+Reliability by bin (each about 38 claims, sorted by confidence; `experiments/calibration_reliability.png` plots it):
+
+| Bin | Raw confidence | Accuracy | Scaled confidence | Accuracy |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | 76.4% | 78.9% | 55.7% | 78.9% |
+| 2 | 90.9% | 71.1% | 66.8% | 71.1% |
+| 3 | 95.7% | 71.1% | 73.5% | 73.7% |
+| 4 | 97.8% | 89.5% | 78.7% | 89.5% |
+| 5 | 98.7% | 78.9% | 82.0% | 78.9% |
+| 6 | 99.2% | 86.8% | 84.7% | 81.6% |
+| 7 | 99.5% | 89.5% | 87.5% | 92.1% |
+| 8 | 99.8% | 94.7% | 90.2% | 97.4% |
+| 9 | 99.9% | 94.6% | 93.1% | 91.9% |
+| 10 | 100.0% | 100.0% | 95.6% | 100.0% |
+
+(The accuracy columns differ slightly because scaling can reorder confidences between claims whose other two logits differ.) The raw confidences are crowded above 0.95 while accuracy ranges from 71% to 100%. After scaling, the stated confidence tracks accuracy in most bins, and the NLL improvement is clearly significant, because it comes from the confident mistakes the scaling softens. The ECE and Brier improvements are not significant at this sample size: each bin's accuracy has a standard error of about $`\sqrt{0.85 \times 0.15 / 38} = 5.8`$ points. On the 280 claims settled by the NLI verdict alone (90.4% correct), the mean confidence falls from 98.1% to 84.0% and the ECE from 7.8% to 6.3%.
+
+**Limits of one parameter.** A single temperature cannot fix every bin: the lowest bin, half of it (19 of 38) verdicts of the joint fallback (§2.5), becomes under-confident (55.7% stated, 78.9% right). A two-parameter Platt scaling of the verdict's confidence alone (Platt, 1999), $`\Pr(\text{right}) = \sigma\big(a \cdot \text{logit}(c) + b\big)`$, cross-fitted in the same way, reaches a top-label ECE of 4.6% against 6.2% (NLL 0.394 against 0.399, Brier 0.121 against 0.123), a difference within the noise above. Temperature scaling is kept because it has one parameter and yields a full probability vector rather than a single number.
+
+**Calibration is not discrimination.** Scaling changes what a confidence means, but hardly which verdicts are ranked as more likely right. The raw confidence separates right from wrong verdicts with an AUROC of 0.686 (the probability that a random right verdict has a higher confidence than a random wrong one), and the cross-fitted scaled confidence with 0.689: only claims whose other two logits differ can swap places. Better routing therefore needs signals beyond the confidence, such as the number of agreeing snippets (§2.5). Decisions keep the raw scale (§2.5) because $\tau$, the conflict thresholds and the conformal quantile were set and measured on it; moving them to the calibrated scale would change which claims are routed to the LLM and would require a new measured run.
 
 ---
 
@@ -924,11 +1035,11 @@ Claims are sampled independently, so $`\hat{m}_{-k}`$ is independent of the clai
 
 **Limitations of the evaluation.**
 
-1. **Sample size.** With 200 claims per benchmark the Wilson 95% intervals are 8 points (FEVER) and 10 points (FreshQA) wide; differences of a few points between pipeline versions are within noise (§4.4).
+1. **Sample size.** With 200 claims per benchmark the Wilson 95% intervals are 8 points (FEVER) and 10 points (FreshQA) wide; differences of a few points between pipeline versions are within noise (§4.4). Detecting a true 5-point difference between two benchmarks with 80% power would need about 700 claims per benchmark, and the arbiter's effect on FEVER alone about 1,170 FEVER claims (§4.5).
 2. **Reproducibility of live runs.** Retrieval uses live Wikipedia and web search, and the LLM is not deterministic, so a re-run on the same claims can differ slightly: search results and Wikipedia pages change, and borderline claims may be routed differently.
 3. **Label quality.** FreshQA gold answers are dated snapshots, and its questions are converted into claims by an LLM, which occasionally produces a claim whose label no longer matches. Fast-changing questions are excluded for this reason (§3.1), but even slow-changing labels drift: 8 of the 33 FreshQA errors in the current evaluation are claims on which current evidence contradicts the gold answer (§3.5).
 
-**Future work.** A non-conformity score better suited to retrieved evidence, so that a 90% guarantee can hold without escalating far more claims (§2.6); routing negated and time-dependent claims to the arbiter, or an NLI model trained on harder data, for the fast-path errors of §3.5; better retrieval for specific numeric facts, the main cause of the remaining abstentions; and a larger evaluation against a frozen evidence snapshot with re-checked labels, so that runs are exactly repeatable.
+**Future work.** Routing decisions from calibrated probabilities and additional features (the number of agreeing snippets, the source of the deciding snippet) with an explicit trade-off between accuracy and LLM calls, since the confidence alone ranks right and wrong verdicts only moderately (AUROC 0.69, §4.6); a non-conformity score better suited to retrieved evidence, so that a 90% guarantee can hold without escalating far more claims (§2.6); routing negated and time-dependent claims to the arbiter, or an NLI model trained on harder data, for the fast-path errors of §3.5; better retrieval for specific numeric facts, the main cause of the remaining abstentions; and a larger evaluation against a frozen evidence snapshot with re-checked labels, so that runs are exactly repeatable.
 
 ---
 
@@ -963,7 +1074,8 @@ python server.py                                   # web interface at http://loc
 python evaluation/run_5_runs.py --dataset all      # ten-set evaluation (§3.2), resumable
 python experiments/full_evaluation.py              # the full evaluation of §3, including §2.5, §2.6 and §2.9 (resumable)
 python experiments/eval_conformal.py               # conformal calibration and coverage (§2.6)
-python experiments/statistical_tests.py            # intervals, hypothesis tests and the cross-fit of m (§2.5, §2.9, §4.5); no LLM call
+python experiments/statistical_tests.py            # intervals, hypothesis tests, multiple comparisons, power and the cross-fit of m (§2.5, §4.5); no LLM call
+python experiments/calibration.py                  # temperature scaling of the NLI probabilities and its evaluation (§4.6); no LLM call
 python tests/test_hierarchical_scoring.py          # each file in tests/ runs as a standalone script
 ```
 
@@ -976,15 +1088,24 @@ The ten-set evaluation of both benchmarks makes several hundred LLM calls. If a 
 ## References
 
 - Angelopoulos, A. N., & Bates, S. (2021). *A Gentle Introduction to Conformal Prediction and Distribution-Free Uncertainty Quantification.* arXiv:2107.07511.
+- Benjamini, Y., & Hochberg, Y. (1995). *Controlling the False Discovery Rate: A Practical and Powerful Approach to Multiple Testing.* Journal of the Royal Statistical Society, Series B, 57(1), 289–300.
+- Brier, G. W. (1950). *Verification of Forecasts Expressed in Terms of Probability.* Monthly Weather Review, 78(1), 1–3.
 - Brown, L. D., Cai, T. T., & DasGupta, A. (2001). *Interval Estimation for a Binomial Proportion.* Statistical Science, 16(2), 101–133.
+- Connor, R. J. (1987). *Sample Size for Testing Differences in Proportions for the Paired-Sample Design.* Biometrics, 43(1), 207–211.
 - Cormack, G. V., Clarke, C. L. A., & Büttcher, S. (2009). *Reciprocal Rank Fusion Outperforms Condorcet and Individual Rank Learning Methods.* SIGIR.
 - Du, Y., Li, S., Torralba, A., Tenenbaum, J. B., & Mordatch, I. (2023). *Improving Factuality and Reasoning in Language Models through Multiagent Debate.* arXiv:2305.14325.
+- Efron, B., & Tibshirani, R. J. (1993). *An Introduction to the Bootstrap.* Chapman & Hall.
 - El-Yaniv, R., & Wiener, Y. (2010). *On the Foundations of Noise-free Selective Classification.* JMLR.
 - Fisher, R. A. (1922). *On the Interpretation of χ² from Contingency Tables, and the Calculation of P.* Journal of the Royal Statistical Society, 85(1), 87–94.
+- Guo, C., Pleiss, G., Sun, Y., & Weinberger, K. Q. (2017). *On Calibration of Modern Neural Networks.* ICML.
+- Hoenig, J. M., & Heisey, D. M. (2001). *The Abuse of Power: The Pervasive Fallacy of Power Calculations for Data Analysis.* The American Statistician, 55(1), 19–24.
+- Holm, S. (1979). *A Simple Sequentially Rejective Multiple Test Procedure.* Scandinavian Journal of Statistics, 6(2), 65–70.
 - Lewis, M., et al. (2020). *BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension.* ACL.
 - Liang, T., et al. (2023). *Encouraging Divergent Thinking in Large Language Models through Multi-Agent Debate.* arXiv:2305.19118.
 - McNemar, Q. (1947). *Note on the Sampling Error of the Difference between Correlated Proportions or Percentages.* Psychometrika, 12(2), 153–157.
+- Naeini, M. P., Cooper, G. F., & Hauskrecht, M. (2015). *Obtaining Well Calibrated Probabilities Using Bayesian Binning.* AAAI.
 - Newcombe, R. G. (1998). *Interval Estimation for the Difference between Independent Proportions: Comparison of Eleven Methods.* Statistics in Medicine, 17(8), 873–890.
+- Platt, J. (1999). *Probabilistic Outputs for Support Vector Machines and Comparisons to Regularized Likelihood Methods.* In Advances in Large Margin Classifiers, MIT Press.
 - Reimers, N., & Gurevych, I. (2019). *Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks.* EMNLP.
 - Robertson, S., & Zaragoza, H. (2009). *The Probabilistic Relevance Framework: BM25 and Beyond.* Foundations and Trends in Information Retrieval.
 - Thorne, J., Vlachos, A., Christodoulopoulos, C., & Mittal, A. (2018). *FEVER: a Large-scale Dataset for Fact Extraction and VERification.* NAACL.

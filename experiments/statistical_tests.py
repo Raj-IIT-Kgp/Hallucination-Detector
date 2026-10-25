@@ -9,12 +9,17 @@ claim's computation trace); no LLM is called unless --shadow is given.
      difference in accuracy (§3.3, §4.5)
   3. the LLM arbiter: exact McNemar test of the NLI verdict before arbitration against the final verdict (§2.9)
   4. the corroboration rule (§2.5): the minimum number m of decisive contradicting snippets was chosen by
-     looking at these same 200 claims, so the reported accuracy could be optimistic. The verdict every claim
+     looking at these same 400 claims, so the reported accuracy could be optimistic. The verdict every claim
      would have received with m = 1, 2 or 3 is reconstructed from its trace; m is then chosen by
      cross-fitting (on the other folds only) and each claim is scored with the m chosen without it.
      With m = 3, corroborated contradictions would be reviewed by the LLM; those reviews are read from the
      cache of experiments/full_evaluation.py (shadow_reviews.jsonl) and, with --shadow, missing ones are made
      and cached (one call each). Without them, results are reported as a range.
+  5. the first five sets against the five added later, per benchmark (two-proportion z-test and Fisher) (§3.3)
+  6. multiple comparisons: Holm (family-wise error) and Benjamini-Hochberg (false discovery rate) adjusted
+     p-values over every test above (§4.5)
+  7. power and sample size: claims needed for a given interval width, for each comparison to reach 80% power,
+     each analytic formula checked by Monte Carlo simulation (§4.5)
 
 usage: python experiments/statistical_tests.py [--tag wikidata-kg] [--shadow]
 """
@@ -23,6 +28,9 @@ import os
 import json
 import math
 import argparse
+from statistics import NormalDist
+
+import numpy as np
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -32,6 +40,11 @@ EVAL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 DATASETS = ("fever", "freshqa")
 CANDIDATE_M = (1, 2, 3)
 PUBLISHED_M = 2
+ALPHA = 0.05
+POWER = 0.80
+SIM_REPS = 20000
+SEED = 0
+ORIGINAL_SETS = 5    # as in evaluation/run_5_runs.py (not imported: that module loads the NLI model)
 
 
 def load_records(path):
@@ -86,6 +99,142 @@ def mcnemar_exact_p(b, c):
     if n == 0:
         return 1.0
     return min(1.0, 2 * sum(math.comb(n, i) for i in range(min(b, c) + 1)) / 2 ** n)
+
+
+# ---------------------------------------------------------------- multiple comparisons
+
+def holm(pvalues):
+    """
+    Holm's step-down adjustment (controls the family-wise error rate, the chance of even one false rejection,
+    under any dependence between the tests). With the p-values sorted p_(1) <= ... <= p_(k), the adjusted value is
+        p~_(i) = max_{j <= i} min(1, (k - j + 1) p_(j)).
+    """
+    k = len(pvalues)
+    order = sorted(pvalues, key=pvalues.get)
+    out, running = {}, 0.0
+    for i, name in enumerate(order):
+        running = max(running, min(1.0, (k - i) * pvalues[name]))
+        out[name] = running
+    return out
+
+
+def benjamini_hochberg(pvalues):
+    """
+    Benjamini-Hochberg step-up adjustment (controls the false discovery rate, the expected share of false
+    rejections among all rejections; valid for independent or positively dependent tests):
+        p~_(i) = min_{j >= i} min(1, k p_(j) / j).
+    """
+    k = len(pvalues)
+    order = sorted(pvalues, key=pvalues.get)
+    out, running = {}, 1.0
+    for i in range(k - 1, -1, -1):
+        running = min(running, min(1.0, k * pvalues[order[i]] / (i + 1)))
+        out[order[i]] = running
+    return out
+
+
+# ---------------------------------------------------------------- power and sample size
+
+_N = NormalDist()
+
+
+def wilson_half_width(p, n, z=1.96):
+    return z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / (1 + z * z / n)
+
+
+def n_for_half_width(p, width):
+    """Smallest n whose Wilson 95% interval at accuracy p has a half-width of at most `width`."""
+    n = 1
+    while wilson_half_width(p, n) > width:
+        n += 1
+    return n
+
+
+def power_two_proportion(p1, p2, n):
+    """Power of the two-sided pooled z-test with n claims per group when the true accuracies are p1 and p2:
+        1 - beta = Phi( (|p1 - p2| - z_{1-a/2} sqrt(2 pbar qbar / n)) / sqrt((p1 q1 + p2 q2) / n) )."""
+    pbar = (p1 + p2) / 2
+    za = _N.inv_cdf(1 - ALPHA / 2)
+    return _N.cdf((abs(p1 - p2) - za * math.sqrt(2 * pbar * (1 - pbar) / n))
+                  / math.sqrt((p1 * (1 - p1) + p2 * (1 - p2)) / n))
+
+
+def n_two_proportion(p1, p2):
+    """Claims per group for the two-sided z-test to reach POWER (the formula above solved for n)."""
+    pbar = (p1 + p2) / 2
+    za, zb = _N.inv_cdf(1 - ALPHA / 2), _N.inv_cdf(POWER)
+    return math.ceil((za * math.sqrt(2 * pbar * (1 - pbar)) + zb * math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2
+                     / (p1 - p2) ** 2)
+
+
+def simulate_two_proportion(p1, p2, n, rng):
+    """Share of SIM_REPS simulated studies (n claims per group) in which the z-test rejects at ALPHA."""
+    c1, c2 = rng.binomial(n, p1, SIM_REPS), rng.binomial(n, p2, SIM_REPS)
+    p = (c1 + c2) / (2 * n)
+    se = np.sqrt(p * (1 - p) * 2 / n)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        z = np.where(se > 0, (c1 - c2) / n / se, 0.0)
+    return float(np.mean(np.abs(z) > _N.inv_cdf(1 - ALPHA / 2)))
+
+
+def n_mcnemar(psi, delta):
+    """
+    Pairs needed for McNemar's test to reach POWER (Connor, 1987), where psi is the probability that a pair is
+    discordant (the two verdicts differ) and delta the difference between the two discordant probabilities:
+        n = ( z_{1-a/2} sqrt(psi) + z_{1-b} sqrt(psi - delta^2) )^2 / delta^2.
+    """
+    za, zb = _N.inv_cdf(1 - ALPHA / 2), _N.inv_cdf(POWER)
+    return math.ceil((za * math.sqrt(psi) + zb * math.sqrt(psi - delta ** 2)) ** 2 / delta ** 2)
+
+
+def simulate_mcnemar(p_b, p_c, n, rng):
+    """Share of SIM_REPS simulated studies of n pairs in which the exact McNemar test rejects at ALPHA."""
+    counts = rng.multinomial(n, [p_b, p_c, 1 - p_b - p_c], SIM_REPS)[:, :2]
+    cache = {}
+    reject = 0
+    for b, c in ((int(b), int(c)) for b, c in counts):
+        if (b, c) not in cache:
+            cache[(b, c)] = mcnemar_exact_p(b, c) < ALPHA
+        reject += cache[(b, c)]
+    return reject / SIM_REPS
+
+
+def power_analysis(report, rows):
+    rng = np.random.default_rng(SEED)
+    out = {"alpha": ALPHA, "target_power": POWER, "simulations": SIM_REPS}
+    # 1. interval width
+    out["interval_width"] = {ds: {f"half_width_{w}": n_for_half_width(a["accuracy"], w / 100) for w in (3, 2)}
+                             | {"half_width_now": wilson_half_width(a["accuracy"], a["n"])}
+                             for ds, a in report["accuracy"].items()}
+    # 2. FEVER vs FreshQA: power of the current design for a range of true differences around the pooled
+    #    accuracy, and the claims needed for the observed difference
+    f, q = report["accuracy"]["fever"], report["accuracy"]["freshqa"]
+    n_now = f["n"]
+    centre = (f["accuracy"] + q["accuracy"]) / 2
+    grid = []
+    for d in (0.05, 0.075, 0.10):
+        p1, p2 = centre + d / 2, centre - d / 2
+        grid.append({"difference": d, "p1": p1, "p2": p2, "power_analytic": power_two_proportion(p1, p2, n_now),
+                     "power_simulated": simulate_two_proportion(p1, p2, n_now, rng),
+                     "n_per_group_for_80": n_two_proportion(p1, p2)})
+    n_obs = n_two_proportion(f["accuracy"], q["accuracy"])
+    out["fever_vs_freshqa"] = {"n_per_group_now": n_now, "grid": grid, "observed": {
+        "p1": f["accuracy"], "p2": q["accuracy"], "n_per_group_for_80": n_obs,
+        "power_simulated_at_that_n": simulate_two_proportion(f["accuracy"], q["accuracy"], n_obs, rng)}}
+    # 3. paired comparisons (McNemar): pairs needed for the observed discordance to reach 80% power
+    paired = {}
+    c = report["corroboration"]
+    for name, (b, cc, n) in {
+        "arbiter_fever": (report["arbiter"]["fever"]["fixed"], report["arbiter"]["fever"]["broken"], report["arbiter"]["fever"]["decided"]),
+        "m3_vs_m2": (c["paired_vs_published"][3]["alternative_right_only"], c["paired_vs_published"][3]["published_right_only"], c["claims"]),
+    }.items():
+        p_b, p_c = b / n, cc / n
+        need = n_mcnemar(p_b + p_c, p_b - p_c)
+        paired[name] = {"discordant_better": b, "discordant_worse": cc, "pairs": n, "psi": p_b + p_c, "delta": p_b - p_c,
+                        "pairs_for_80": need, "power_simulated_at_that_n": simulate_mcnemar(p_b, p_c, need, rng),
+                        "power_simulated_now": simulate_mcnemar(p_b, p_c, n, rng)}
+    out["mcnemar"] = paired
+    return out
 
 
 # ---------------------------------------------------------------- the corroboration rule
@@ -223,6 +372,37 @@ def main():
                          "v": {m: verdict_with_m(ds, r, m, reviews) for m in CANDIDATE_M}})
     report["corroboration"] = corroboration_analysis(rows)
 
+    # 5. the original five sets against the five added later
+    report["halves"] = {}
+    for ds, recs in records.items():
+        first = [r for r in recs if r["set"] <= ORIGINAL_SETS]
+        later = [r for r in recs if r["set"] > ORIGINAL_SETS]
+        c1, n1 = sum(r["gold"] == r["prediction"] for r in first), len(first)
+        c2, n2 = sum(r["gold"] == r["prediction"] for r in later), len(later)
+        z, p = two_proportion_test(c1, n1, c2, n2)
+        report["halves"][ds] = {"first": [c1, n1], "later": [c2, n2], "z": z, "p_two_proportion": p,
+                                "p_fisher_exact": fisher_exact_p(c1, n1, c2, n2)}
+
+    # 6. multiple comparisons over every test reported (one p-value per hypothesis: the z-test for the
+    #    unpaired comparisons, as reported in §3.3, and the exact McNemar test for the paired ones)
+    family = {
+        "fever_vs_freshqa": report["fever_vs_freshqa"]["p_two_proportion"],
+        "arbiter_pooled": report["arbiter"]["pooled"]["mcnemar_exact_p"],
+        "arbiter_fever": report["arbiter"]["fever"]["mcnemar_exact_p"],
+        "arbiter_freshqa": report["arbiter"]["freshqa"]["mcnemar_exact_p"],
+        "m2_vs_m1": report["corroboration"]["paired_vs_published"][1]["mcnemar_exact_p"],
+        "m2_vs_m3": report["corroboration"]["paired_vs_published"][3]["mcnemar_exact_p"],
+        "halves_fever": report["halves"]["fever"]["p_two_proportion"],
+        "halves_freshqa": report["halves"]["freshqa"]["p_two_proportion"],
+    }
+    h, bh = holm(family), benjamini_hochberg(family)
+    report["multiple_testing"] = {"alpha": ALPHA, "tests": {
+        k: {"p": family[k], "holm": h[k], "bh": bh[k], "significant_raw": family[k] < ALPHA,
+            "significant_holm": h[k] < ALPHA, "significant_bh": bh[k] < ALPHA} for k in sorted(family, key=family.get)}}
+
+    # 7. power and sample size
+    report["power"] = power_analysis(report, rows)
+
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "statistical_tests.json")
     with open(out, "w") as fh:
         json.dump(report, fh, indent=2)
@@ -254,6 +434,29 @@ def print_report(rep):
             ms = sorted(set(r["chosen_m"].values()))
             print(f"  cross-fit ({name}, missing reviews {'correct' if case == 'best' else 'wrong'}): m chosen {ms}, "
                   f"{r['correct_known']} correct + {r['unknown']} unknown of {c['claims']}")
+    print("\nFirst five sets vs the five added later")
+    for ds, a in rep["halves"].items():
+        print(f"  {ds:8} {a['first'][0]}/{a['first'][1]} vs {a['later'][0]}/{a['later'][1]}: z = {a['z']:.2f}, "
+              f"p = {a['p_two_proportion']:.4f} (Fisher exact p = {a['p_fisher_exact']:.4f})")
+    print(f"\nMultiple comparisons ({len(rep['multiple_testing']['tests'])} tests, alpha = {ALPHA})")
+    for k, t in rep["multiple_testing"]["tests"].items():
+        mark = lambda b: "yes" if b else "no"
+        print(f"  {k:17} p = {t['p']:.4g}  Holm {t['holm']:.4g} ({mark(t['significant_holm'])})  "
+              f"BH {t['bh']:.4g} ({mark(t['significant_bh'])})")
+    pw = rep["power"]
+    print(f"\nPower and sample size (alpha = {ALPHA}, target power {POWER:.0%}, {SIM_REPS} simulations)")
+    for ds, w in pw["interval_width"].items():
+        print(f"  {ds:8} Wilson half-width now {pc(w['half_width_now'])}; n for ±3 points: {w['half_width_3']}, ±2 points: {w['half_width_2']}")
+    fq = pw["fever_vs_freshqa"]
+    for g in fq["grid"]:
+        print(f"  FEVER vs FreshQA, true difference {pc(g['difference'])}: power at n = {fq['n_per_group_now']} "
+              f"{pc(g['power_analytic'])} (simulated {pc(g['power_simulated'])}); n per group for 80%: {g['n_per_group_for_80']}")
+    o = fq["observed"]
+    print(f"  observed {pc(o['p1'])} vs {pc(o['p2'])}: n per group for 80% = {o['n_per_group_for_80']} "
+          f"(simulated power there {pc(o['power_simulated_at_that_n'])})")
+    for k, m in pw["mcnemar"].items():
+        print(f"  {k}: {m['discordant_better']} vs {m['discordant_worse']} of {m['pairs']} (power now {pc(m['power_simulated_now'])}); "
+              f"pairs for 80%: {m['pairs_for_80']} (simulated power there {pc(m['power_simulated_at_that_n'])})")
 
 
 if __name__ == "__main__":

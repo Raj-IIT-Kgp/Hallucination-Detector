@@ -340,6 +340,19 @@ function argmaxLabel(probs) {
     return LABEL_ORDER[probs.indexOf(Math.max(...probs))];
 }
 
+// Temperature T of the NLI probabilities (experiments/calibration.py), from /api/calibration
+let nliTemperature = null;
+
+// The NLI probabilities after temperature scaling, softmax(z / T): recorded by the pipeline, or computed from
+// the logits for runs recorded before calibration was added. Display only; decisions use the raw probabilities.
+function calibratedProbs(v) {
+    if (v.calibrated_probabilities) return v.calibrated_probabilities;
+    const z = v.logits;
+    if (!z || z.length !== 3 || !nliTemperature) return null;
+    const m = Math.max(...z), e = z.map(x => Math.exp((x - m) / nliTemperature)), s = e.reduce((a, b) => a + b, 0);
+    return e.map(x => x / s);
+}
+
 function parseEvidence(text) {
     const notes = [];
     if (!text) return { items: [], notes };
@@ -356,11 +369,14 @@ function parseEvidence(text) {
         notes.push(t.trim());
         return { items: [], notes };
     }
-    const items = t.split(/\n\n(?=(?:Evidence \d+|KG Evidence \[[^\]]*\]):)/).map(p => {
-        const m = p.match(/^(?:Evidence (\d+)|KG Evidence \[([^\]]*)\]):\s*([\s\S]*)$/);
+    // Retrieved snippets ("Evidence N: …") and, for escalated claims, Wikidata statements ("Wikidata Evidence [entity]: …",
+    // after a "Wikidata Evidence: …" note for the arbiter, which is not itself evidence)
+    const items = t.split(/\n\n(?=(?:Evidence \d+|Wikidata Evidence(?: \[[^\]]*\])?):)/)
+        .filter(p => !p.startsWith('Wikidata Evidence: ')).map(p => {
+        const m = p.match(/^(?:Evidence (\d+)|Wikidata Evidence \[([^\]]*)\]):\s*([\s\S]*)$/);
         if (!m) return { kind: 'web', label: 'Evidence', text: p.trim() };
         return m[2] !== undefined
-            ? { kind: 'kg', label: `Knowledge graph · ${m[2]}`, text: m[3].trim() }
+            ? { kind: 'kg', label: `Wikidata · ${m[2]}`, text: m[3].trim() }
             : { kind: 'web', label: `Evidence ${m[1]}`, text: m[3].trim(), index: Number(m[1]) - 1 };
     }).filter(x => x.text);
     return { items, notes };
@@ -448,6 +464,7 @@ function claimDetailsHtml(result, { hoodIndex = null } = {}) {
     const overridden = v.debate_resolved && !llmDown && nliLabel && nliLabel !== label;
 
     const probs = v.probabilities || [];
+    const calProbs = probs.length === 3 ? calibratedProbs(v) : null;
     const probRows = probs.length === 3 ? LABEL_ORDER.map((l, k) => `
         <div class="prob-row">
             <span>${VERDICT[l].text}</span>
@@ -493,6 +510,7 @@ function claimDetailsHtml(result, { hoodIndex = null } = {}) {
             <div class="panel">
                 <div class="panel-title"><span>NLI probabilities${overridden ? ' (before arbitration)' : ''}</span><span>sum to 1</span></div>
                 ${probRows}
+                ${calProbs && nliLabel ? `<p class="pv-note">Calibrated confidence: <strong>${VERDICT[nliLabel].text} ${pct(calProbs[LABEL_ORDER.indexOf(nliLabel)], 0)}</strong> (T = ${Number(v.calibration_temperature || nliTemperature).toFixed(2)}). The raw probabilities overstate how often the NLI model is right; dividing its logits by T, fitted on the benchmark claims, corrects that. Routing uses the raw probabilities.</p>` : ''}
                 ${pvText ? `
                 <div class="panel-title" style="margin-top:14px"><span>Conformal p-values</span><span class="no-case">α = 0.10</span></div>
                 <p class="pv">${escapeHtml(pvText)}</p>
@@ -1006,7 +1024,7 @@ const HOOD_RENDER = {
     rewrite: st => hoodStep('↺', 'Self-reflective query rewrite', `after ${escapeHtml(st.reason)}`, `
         <div class="hood-chipline">${(st.queries || []).map(q => `<span class="q-chip">${escapeHtml(q)}</span>`).join('') || '<span class="muted">no new queries</span>'}</div>
         ${st.route === 'fallback' ? '<p class="hood-note">The LLM returned no queries, so the second pass searches what the claim says about its entities (the claim without their names).</p>' : ''}
-        <p class="hood-note">Evidence from both passes is pooled, so a worse second search cannot discard what the first one found.</p>`),
+        <p class="hood-note">If the second search finds nothing, the first pass's evidence is scored again; otherwise the new snippets are scored.</p>`),
 
     kg: st => hoodStep('G', 'Knowledge graph: Wikidata statements', `${st.statements || 0} statement${st.statements === 1 ? '' : 's'} for the arbiter`, `
         <p class="hood-note">The claim's entities (${(st.entities || []).map(e => `“${escapeHtml(e)}”`).join(', ') || 'none'}) were looked up in Wikidata; the statements below were added to the arbiter's evidence, each with its number of references.${(st.unresolved || []).length ? ` Not found in Wikidata: ${st.unresolved.map(e => `“${escapeHtml(e)}”`).join(', ')}.` : ''}${st.error ? ` Wikidata could not be reached (${escapeHtml(st.error)}), so the arbiter decided on the retrieved evidence alone.` : ''}</p>
@@ -1617,7 +1635,7 @@ async function loadBenchmarks() {
             drawSetChart(k, data[k]);
             bindRouteTips(k, data[k]);
         });
-        if (keys.length === 2) $('benchGrid').insertAdjacentHTML('afterend', compareCard(data.fever.pooled, data.freshqa.pooled));
+        if (keys.length === 2) $('benchGrid').insertAdjacentHTML('afterend', compareCard(data.fever.pooled, data.freshqa.pooled, data.multiple_testing));
         loadExplorer();
     } catch (err) {
         $('benchLoading').textContent = `Could not load benchmark results: ${err.message}`;
@@ -1816,9 +1834,17 @@ function twoProportionTest(c1, n1, c2, n2) {
 
 // Describes the measured gap between the benchmarks from the numbers themselves, so the text stays
 // true when the results are re-run
-function compareCard(f, q) {
+function compareCard(f, q, multiple) {
     const test = twoProportionTest(f.correct_claims, f.evaluated_claims, q.correct_claims, q.evaluated_claims);
     const significant = test.p < 0.05;
+    // the same test corrected for every test reported in the Docs (§4.5), when experiments/statistical_tests.py has run
+    const adj = multiple && multiple.tests && multiple.tests.fever_vs_freshqa;
+    const nTests = adj ? Object.keys(multiple.tests).length : 0;
+    const adjText = !adj || !significant ? '' : adj.significant_holm
+        ? ` It stays significant after correcting for all ${nTests} tests reported in the Docs (Holm-adjusted p = ${adj.holm.toFixed(3)}).`
+        : adj.significant_bh
+            ? ` Corrected for all ${nTests} tests reported in the Docs, it holds under false-discovery-rate control (Benjamini–Hochberg p = ${adj.bh.toFixed(3)}) but not under the stricter family-wise correction (Holm p = ${adj.holm.toFixed(2)}), so the evidence is moderate.`
+            : ` Corrected for all ${nTests} tests reported in the Docs, it is no longer significant (Holm p = ${adj.holm.toFixed(2)}, Benjamini–Hochberg p = ${adj.bh.toFixed(2)}).`;
     const pText = test.p < 0.001 ? 'p < 0.001' : `p = ${test.p.toFixed(3)}`;
     const dP = f.precision - q.precision, dR = f.recall - q.recall;
     const fmt = x => x.toFixed(2);
@@ -1828,7 +1854,7 @@ function compareCard(f, q) {
     return `<div class="card compare">
         <h2 style="margin-bottom:6px">FEVER vs FreshQA</h2>
         <p>FEVER scores ${pct(f.accuracy, 0)} and FreshQA ${pct(q.accuracy, 0)}. A two-proportion z-test of equal accuracy gives
-        z = ${test.z.toFixed(2)}, ${pText}, so ${significant ? 'FreshQA is significantly harder at the 5% level' : 'the gap is not significant at the 5% level at this sample size'}.
+        z = ${test.z.toFixed(2)}, ${pText}, so ${significant ? 'FreshQA is significantly harder at the 5% level' : 'the gap is not significant at the 5% level at this sample size'}.${adjText}
         ${where} FreshQA is harder for reasons the error analysis shows: its claims depend on time and negation, which the NLI model handles poorly,
         and some of its gold answers are contradicted by current evidence (see the Docs, §3.5).</p>
     </div>`;
@@ -2217,7 +2243,7 @@ function covBuild() {
     const d = cov.data, n1 = d.n + 1;
     $('covInsight').innerHTML = cov.mode === 'gold'
         ? `Each trial draws a fresh random split of the ${d.gold.length} FEVER claims scored against their gold evidence: ${d.n} calibrate ${tex('\\hat q', false)} and one of the others is the new claim. Because the split is random, the ${n1} scores are <strong>exchangeable</strong>: the new score is equally likely to take any of the ${n1} ranks, so the histogram flattens towards the dotted uniform line. It is covered exactly when it lands among the first k = ${k}, which happens with probability <strong>${k}/${n1} = ${pct(k / n1, 1)}</strong>, whatever the NLI model and whatever the score distribution.`
-        : `The new claim now comes from the ${d.retrieved.length} benchmark claims scored on the evidence the pipeline retrieved, while ${tex('\\hat q', false)} is still calibrated on gold evidence. Retrieved snippets are noisier, so the new scores run larger than the calibration scores and pile up beyond ${tex('\\hat q', false)}: coverage settles near the <strong>${pct(d.measured, 1)}</strong> measured with the production ${tex('\\hat q = ' + fx(d.q_hat, 4), false)}, below the nominal ${pct(1 - d.alpha, 0)}. The guarantee rests on exchangeability, which is why the pipeline treats the prediction set as a calibrated escalation trigger rather than a 90% guarantee (§2.6).`;
+        : `The new claim now comes from the ${d.retrieved.length} benchmark claims scored on the evidence the pipeline retrieved, while ${tex('\\hat q', false)} is still calibrated on gold evidence. Retrieved snippets are noisier, so the new scores run larger than the calibration scores and pile up beyond ${tex('\\hat q', false)}: coverage settles near the <strong>${pct(d.measured, 2)}</strong> measured with the production ${tex('\\hat q = ' + fx(d.q_hat, 4), false)}, below the nominal ${pct(1 - d.alpha, 0)}. The guarantee rests on exchangeability, which is why the pipeline treats the prediction set as a calibrated escalation trigger rather than a 90% guarantee (§2.6).`;
 }
 
 function covPaint(t, force = false) {
@@ -2279,7 +2305,7 @@ function covPaint(t, force = false) {
     $('covCi').textContent = cov.trials ? `${pct(lo, 1)} – ${pct(hi, 1)}` : '–';
     $('covTarget').textContent = cov.mode === 'gold'
         ? `theory: k/(n + 1) = ${pct(k / (n + 1), 1)}`
-        : `measured on retrieved evidence: ${pct(d.measured, 1)}`;
+        : `measured on retrieved evidence: ${pct(d.measured, 2)}`;
     $('covConv').innerHTML = covConvSvg();
     $('covMath').innerHTML = covMathHtml();
 }
@@ -2302,7 +2328,7 @@ function covConvSvg() {
     svg += `<text class="ref-label" x="${m.l + iw - 2}" y="${y(1 - d.alpha) - 6}" text-anchor="end">1 − α</text>`;
     if (cov.mode !== 'gold') {
         svg += `<line class="cov-measured" x1="${m.l}" x2="${m.l + iw}" y1="${y(d.measured)}" y2="${y(d.measured)}"></line>`;
-        svg += `<text class="ref-label" x="${m.l + 4}" y="${y(d.measured) + 13}">measured ${pct(d.measured, 1)}</text>`;
+        svg += `<text class="ref-label" x="${m.l + 4}" y="${y(d.measured) + 13}">measured ${pct(d.measured, 2)}</text>`;
     }
     const pts = [...cov.history];
     if (cov.trials && pts[pts.length - 1].t !== cov.trials) pts.push({ t: cov.trials, c: cov.covered });
@@ -2433,6 +2459,7 @@ async function loadDocs() {
 // ================================================================ init
 
 document.addEventListener('DOMContentLoaded', () => {
+    fetchCalibration().then(c => { nliTemperature = c.temperature || null; }).catch(() => {});
     document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => showView(t.dataset.view)));
     document.querySelectorAll('[data-goto]').forEach(a => a.addEventListener('click', async e => {
         e.preventDefault();

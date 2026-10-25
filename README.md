@@ -40,7 +40,7 @@ The server runs in production mode by default (waitress, bound to `127.0.0.1`). 
 
 ## Web interface
 
-- **Verify**: paste text and watch each claim go through the pipeline live, with its verdict, the NLI reading of every evidence snippet (and which one decided), the conformal set, a stage timeline, and a knowledge graph from Wikidata that sets each claim next to what Wikidata records (escalated claims also give these statements to the LLM arbiter).
+- **Verify**: paste text and watch each claim go through the pipeline live, with its verdict, the NLI probabilities and their calibrated confidence, the NLI reading of every evidence snippet (and which one decided), the conformal set, a stage timeline, and a knowledge graph from Wikidata that sets each claim next to what Wikidata records (escalated claims also give these statements to the LLM arbiter).
 - **Benchmarks**: the FEVER and FreshQA ten-set results.
 - **Method**: the pipeline stages and known limitations.
 - **Docs**: `pipeline.md`, rendered.
@@ -52,7 +52,8 @@ python evaluation/run_5_runs.py --dataset all      # ten-set evaluation of FEVER
 python evaluation/run_benchmark.py --dataset fever --samples 20
 python experiments/full_evaluation.py              # the full evaluation: ten-set run plus every analysis in pipeline.md §2.5, §2.6, §2.9 and §3
 python experiments/eval_conformal.py               # conformal calibration and coverage
-python experiments/statistical_tests.py            # confidence intervals and hypothesis tests (no LLM call)
+python experiments/statistical_tests.py            # confidence intervals, hypothesis tests, multiple comparisons and power (no LLM call)
+python experiments/calibration.py                  # temperature scaling of the NLI probabilities (no LLM call)
 ```
 
 The ten-set evaluation makes several hundred LLM calls; if the API quota runs out, it stops and resumes where it stopped when started again.
@@ -64,11 +65,11 @@ The ten-set evaluation makes several hundred LLM calls; if the API quota runs ou
 | `agents/` | claim extraction, query generation, Wikidata knowledge graph, LLM arbiter |
 | `retrieval/` | Wikipedia, web and arXiv retrieval; hybrid re-ranking |
 | `verification/` | NLI model |
-| `statistical_layer/` | split conformal prediction |
+| `statistical_layer/` | split conformal prediction; temperature scaling of the NLI probabilities |
 | `detector/` | the pipeline that connects the stages, and the report |
 | `llm/` | Gemini and Ollama clients |
 | `evaluation/` | benchmark loaders, runners and result files |
-| `experiments/` | conformal calibration and the full evaluation report |
+| `experiments/` | conformal calibration, probability calibration, statistical tests and the full evaluation report |
 | `static/`, `server.py`, `run_cache.py` | web interface, server and recorded runs |
 | `demo_runs/` | recorded runs of the example inputs |
 | `tests/` | test scripts, each run directly, e.g. `python tests/test_hierarchical_scoring.py` |

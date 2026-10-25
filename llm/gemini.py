@@ -22,8 +22,8 @@ MODELS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]
 
 # LLM_ROUTING=primary (default): every call goes to gemini-3.5-flash-lite, which measured both faster
 # and stronger, and falls back to gemini-3.1-flash-lite instantly when it is busy, rate-limited or
-# out of daily quota. LLM_ROUTING=tiered: heavy tasks on 3.5, light tasks on 3.1 (the setup of the
-# five-set results in pipeline.md §3.3). LLM_ROUTING=alternate: 50/50 between the two.
+# out of daily quota (the setup of the ten-set results in pipeline.md §3.3). LLM_ROUTING=tiered: heavy
+# tasks on 3.5, light tasks on 3.1. LLM_ROUTING=alternate: 50/50 between the two.
 ROUTING = os.environ.get("LLM_ROUTING", "primary").lower()
 PREFERRED = {
     "primary": {"heavy": "gemini-3.5-flash-lite", "light": "gemini-3.5-flash-lite"},

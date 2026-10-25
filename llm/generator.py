@@ -37,8 +37,8 @@ def get_call_log():
 def generate_response(prompt, tier="light"):
     """
     tier names how demanding the task is: "heavy" for steps that decide or preserve a verdict
-    (arbitration, absence check, claim decomposition), "light" for supporting steps (search queries,
-    entity linking, graph relations). With Gemini it selects the preferred model (llm/gemini.py).
+    (arbitration, absence check, claim decomposition), "light" for supporting steps (query generation and
+    query rewriting). With Gemini it selects the preferred model (llm/gemini.py).
     """
     global _failure_count, _call_count
     provider = os.environ.get("MODEL_PROVIDER", "ollama").lower()

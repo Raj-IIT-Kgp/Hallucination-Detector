@@ -5,6 +5,7 @@ from verification.nli_verifier import verify_claim, verify_claims_batch
 from detector.report_generator import generate_report
 from agents.critic_agent import nli_override, evaluate_absence
 from statistical_layer.conformal_predictor import ConformalVerifier
+from statistical_layer.calibration import TemperatureScaler
 import os
 import re
 import inspect
@@ -113,9 +114,15 @@ class HallucinationDetector:
             self.conformal_verifier.q_hat = 0.8985
             self.conformal_verifier.calibrated_scores = np.linspace(0.0001, 0.999, 100)
 
+        # Temperature fitted by experiments/calibration.py. It only rescales the reported probabilities;
+        # decisions (tau, corroboration, conformal) keep the raw ones they were measured with.
+        self.temperature_scaler = TemperatureScaler(os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "experiments", "calibration.json"))
+
     def _verify_snippets(self, claim, evidence_list, domain):
         """
-        Runs batched NLI verification on all evidence snippets in a single forward pass on GPU/MPS.
+        Runs NLI verification on each evidence snippet (one forward pass per snippet, sequentially under the
+        inference lock), reusing cached results per (claim, snippet).
         """
         if not evidence_list:
             return []
@@ -201,7 +208,7 @@ class HallucinationDetector:
                                  and verification["confidence"] >= _DECISIVE_CONF)
             return verification, evidence_text, needs_arbitration, "Running NLI verification..."
 
-        # Hierarchical Evidence Scoring: Score snippets in PARALLEL
+        # Hierarchical Evidence Scoring: score each snippet separately
         snippet_results = self._verify_snippets(claim, evidence, domain)
 
         # 1. Calibrated Epistemic Contradiction Detection:
@@ -391,6 +398,10 @@ class HallucinationDetector:
                 "set_size": conf_res["set_size"],
                 "final_decision_policy": "conformal_singleton" if not conf_res["is_escalation_candidate"] else "escalation_required"
             })
+            calibrated = self.temperature_scaler.calibrate(verification.get("logits"))
+            if calibrated is not None:
+                verification["calibrated_probabilities"] = calibrated
+                verification["calibration_temperature"] = self.temperature_scaler.temperature
             set_str = ", ".join(conf_res["conformal_set"]).upper()
             emit(f"Conformal Set: [{set_str}] (Guaranteed Coverage: {conf_res['coverage_guarantee']})", "conformal",
                  {"kind": "conformal", "probabilities": verification.get("probabilities"), "set": conf_res["conformal_set"],

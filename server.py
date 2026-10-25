@@ -170,7 +170,7 @@ def samples():
 
 @app.route("/api/benchmarks")
 def benchmarks():
-    """Five-set benchmark summaries written by evaluation/run_5_runs.py, for the Benchmarks tab."""
+    """Ten-set benchmark summaries written by evaluation/run_5_runs.py, for the Benchmarks tab."""
     results = {}
     for name in ("fever", "freshqa"):
         path = os.path.join(BASE_DIR, "evaluation", f"{name}_5_runs_results.json")
@@ -179,6 +179,11 @@ def benchmarks():
                 results[name] = json.load(f)
             results[name]["route_outcomes"] = _route_outcomes(name)
             results[name]["latency"] = _latency(name)
+    # Holm and Benjamini-Hochberg adjusted p-values over every test in pipeline.md (experiments/statistical_tests.py)
+    path = os.path.join(BASE_DIR, "experiments", "statistical_tests.json")
+    if os.path.exists(path):
+        with open(path) as f:
+            results["multiple_testing"] = json.load(f).get("multiple_testing")
     return jsonify(results)
 
 
@@ -210,10 +215,12 @@ def _route_outcomes(name):
 
 @app.route("/api/calibration")
 def calibration():
-    """The conformal calibration scores behind q_hat, for the calibration plot of the Under-the-hood view."""
+    """The conformal calibration scores behind q_hat, for the calibration plot of the Under-the-hood view, and the
+    temperature of the NLI probabilities (experiments/calibration.py) for the calibrated confidence."""
     cv = detector.conformal_verifier
     return jsonify({"alpha": cv.alpha, "q_hat": cv.q_hat, "n": len(cv.calibrated_scores),
-                    "scores": [float(s) for s in cv.calibrated_scores]})
+                    "scores": [float(s) for s in cv.calibrated_scores],
+                    "temperature": detector.temperature_scaler.temperature})
 
 
 _coverage_pools = None
