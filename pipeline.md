@@ -846,7 +846,7 @@ $$
 z = \frac{\hat{p}_1 - \hat{p}_2}{\sqrt{\bar{p} (1 - \bar{p}) \left( \dfrac{1}{n_1} + \dfrac{1}{n_2} \right)}}, \qquad p = 2 \left( 1 - \Phi(\lvert z \rvert) \right)
 $$
 
-*Derivation.* The two accuracies are independent binomial proportions, so $`\operatorname{Var}(\hat{p}_1 - \hat{p}_2) = p_1 (1 - p_1)/n_1 + p_2 (1 - p_2)/n_2`$. Under $`H_0: p_1 = p_2 = p`$ this is $`p (1 - p)(1/n_1 + 1/n_2)`$, and the common $p$ is estimated by $\bar{p}$, its maximum-likelihood estimate under $`H_0`$. By the central limit theorem $z$ is then approximately standard normal under $`H_0`$.
+*Derivation.* The two accuracies are independent binomial proportions, so $`\mathrm{Var}(\hat{p}_1 - \hat{p}_2) = p_1 (1 - p_1)/n_1 + p_2 (1 - p_2)/n_2`$. Under $`H_0: p_1 = p_2 = p`$ this is $`p (1 - p)(1/n_1 + 1/n_2)`$, and the common $p$ is estimated by $\bar{p}$, its maximum-likelihood estimate under $`H_0`$. By the central limit theorem $z$ is then approximately standard normal under $`H_0`$.
 
 **Fisher's exact test** avoids the normal approximation. Under $`H_0`$, with $`N = n_1 + n_2`$, the probability of $a$ and $b$ correct verdicts is $`\binom{n_1}{a} \binom{n_2}{b} \, p^{a+b} (1 - p)^{N - a - b}`$, and the total $T = C_1 + C_2$ is $`\text{Binomial}(N, p)`$. Conditioning on the observed total $t$, the unknown $p$ cancels:
 
