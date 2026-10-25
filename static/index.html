@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=52">
+    <link rel="stylesheet" href="/static/style.css?v=53">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
@@ -269,6 +269,42 @@
                 <p class="cascade-insight" id="cascadeInsight"></p>
             </div>
 
+            <!-- The finite-sample coverage proof of split conformal prediction, replayed on stored NLI scores -->
+            <div class="card coverage-card">
+                <div class="card-head">
+                    <div>
+                        <h2>Why the 90% guarantee holds</h2>
+                        <span class="muted">Split conformal prediction replayed on real NLI scores: each trial calibrates q̂ on 100 claims and tests one new claim</span>
+                    </div>
+                    <div class="seg-toggle" role="group" aria-label="New claims">
+                        <button type="button" class="seg-btn active" data-cov="gold">Exchangeable</button>
+                        <button type="button" class="seg-btn" data-cov="retrieved">Distribution shift</button>
+                    </div>
+                </div>
+                <div class="cov-layout">
+                    <div class="cov-main" id="covMain"><p class="muted">Loading calibration scores…</p></div>
+                    <div class="cov-side">
+                        <div class="cov-stats">
+                            <div class="bench-stat"><span class="stat-label">Empirical coverage</span><span class="stat-value" id="covRate">–</span><span class="stat-sub" id="covCount">0 trials</span></div>
+                            <div class="bench-stat"><span class="stat-label">Wilson 95% CI</span><span class="stat-value cov-ci-value" id="covCi">–</span><span class="stat-sub" id="covTarget"></span></div>
+                        </div>
+                        <div class="chart cov-conv" id="covConv"></div>
+                    </div>
+                </div>
+                <div class="cov-controls">
+                    <button type="button" class="btn-primary" id="covPlay">▶ Play</button>
+                    <button type="button" class="btn-ghost" id="covStep">One trial</button>
+                    <div class="seg-toggle" role="group" aria-label="Speed">
+                        <button type="button" class="seg-btn active" data-cov-speed="1">1×</button>
+                        <button type="button" class="seg-btn" data-cov-speed="10">10×</button>
+                        <button type="button" class="seg-btn" data-cov-speed="100">100×</button>
+                    </div>
+                    <button type="button" class="btn-ghost" id="covReset">Reset</button>
+                </div>
+                <div class="hood-math" id="covMath"></div>
+                <p class="cascade-insight" id="covInsight"></p>
+            </div>
+
             <ol class="method-list" id="methodList"></ol>
 
             <div class="card limits-card">
@@ -299,6 +335,6 @@
 
     <div id="vizTip" class="viz-tip" role="tooltip"></div>
 
-    <script src="/static/app.js?v=70"></script>
+    <script src="/static/app.js?v=72"></script>
 </body>
 </html>

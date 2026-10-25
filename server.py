@@ -216,6 +216,42 @@ def calibration():
                     "scores": [float(s) for s in cv.calibrated_scores]})
 
 
+_coverage_pools = None
+
+
+@app.route("/api/coverage_demo")
+def coverage_demo():
+    """Non-conformity scores at the true label for the coverage animation of the Method tab: the 200 FEVER claims
+    scored on gold evidence (experiments/eval_conformal.py; the first 100 are the calibration set) and the 200
+    benchmark claims scored on the evidence the pipeline retrieved."""
+    global _coverage_pools
+    if _coverage_pools is None:
+        cv = detector.conformal_verifier
+        labels = list(cv.labels)
+        gold, retrieved = [], []
+        path = os.path.join(BASE_DIR, "experiments", "fever_200_cache.json")
+        if os.path.exists(path):
+            with open(path) as f:
+                cache = json.load(f)
+            gold = [1 - p[labels.index(y)] for p, y in zip(cache["prob_vectors"], cache["y_true_labels"])]
+        for name in ("fever", "freshqa"):
+            path = os.path.join(BASE_DIR, "evaluation", f"{name}_5_runs_claims.jsonl")
+            if not os.path.exists(path):
+                continue
+            with open(path) as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    record = json.loads(line)
+                    probs = ((record.get("result") or {}).get("verification") or {}).get("probabilities")
+                    if probs and record.get("gold") in labels:
+                        retrieved.append(1 - probs[labels.index(record["gold"])])
+        _coverage_pools = {"alpha": cv.alpha, "q_hat": cv.q_hat, "n": len(cv.calibrated_scores),
+                           "calibration": [float(s) for s in cv.calibrated_scores],
+                           "gold": gold, "retrieved": retrieved}
+    return jsonify(_coverage_pools)
+
+
 @app.route("/api/benchmark_claims/<name>")
 def benchmark_claims(name):
     """Per-claim records of the five-set run (verdict, evidence, computation trace), for the claim explorer."""

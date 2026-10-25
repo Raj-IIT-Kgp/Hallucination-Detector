@@ -110,7 +110,8 @@ function showView(name) {
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === `view-${name}`));
     if (name === 'benchmarks' && !benchLoaded) loadBenchmarks();
     if (name === 'docs' && !docsLoaded && !docsPromise) docsPromise = loadDocs();
-    if (name === 'method') loadCascade();
+    if (name === 'method') { loadCascade(); loadCoverage(); }
+    else if (cov.playing) covSetPlaying(false);
     try { history.replaceState(null, '', `#${name}`); } catch { /* sandboxed */ }
 }
 
@@ -2035,6 +2036,283 @@ function renderCascade(data) {
     }).join('');
 }
 
+// ---- coverage proof ------------------------------------------------------------
+// Replays split conformal prediction on stored NLI scores. Each trial calibrates q̂ = s_(k) on n claims and tests one
+// new claim, which is covered exactly when the rank R of its score among all n + 1 scores is at most k. When the
+// claims are exchangeable R is uniform on 1 … n + 1, so P(covered) = k / (n + 1) ≥ 1 − α.
+
+const COV_RATE = { 1: 1.2, 10: 15, 100: 150 };   // trials per second at each speed
+const COV_G = { W: 720, H: 336, l: 24, r: 24, dropY: 58, rowY: 124, histTop: 196, baseY: 306 };
+
+const cov = {
+    data: null, mode: 'gold', speed: 1, playing: false, raf: 0, lastT: 0, debt: 0, slowAt: 0,
+    trials: 0, covered: 0, counts: [], history: [], falling: null, last: null, hit: null, bars: [],
+};
+
+let covPromise = null;
+
+function fetchCoverage() {
+    if (!covPromise) {
+        covPromise = fetch('/api/coverage_demo').then(res => {
+            if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+            return res.json();
+        });
+        covPromise.catch(() => { covPromise = null; });
+    }
+    return covPromise;
+}
+
+const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function wilson(c, t, z = 1.96) {
+    if (!t) return [0, 1];
+    const p = c / t, d = 1 + z * z / t;
+    const mid = (p + z * z / (2 * t)) / d;
+    const half = z * Math.sqrt(p * (1 - p) / t + z * z / (4 * t * t)) / d;
+    return [Math.max(0, mid - half), Math.min(1, mid + half)];
+}
+
+async function loadCoverage() {
+    if (cov.data) return;
+    try {
+        const d = await fetchCoverage();
+        if (cov.data) return;
+        if (!d.calibration.length || d.gold.length <= d.n || !d.retrieved.length) throw new Error('scores not available');
+        cov.data = {
+            ...d,
+            k: Math.ceil((d.n + 1) * (1 - d.alpha)),
+            measured: d.retrieved.filter(s => s <= d.q_hat).length / d.retrieved.length,
+        };
+        covReset();
+    } catch (err) {
+        $('covMain').innerHTML = `<p class="muted">Could not load the calibration scores: ${escapeHtml(err.message)}</p>`;
+    }
+}
+
+function covGeom() {
+    const G = COV_G, slots = cov.data.n + 1, w = (G.W - G.l - G.r) / slots;
+    return { G, slots, w, sx: j => G.l + (j - 0.5) * w, bx: i => G.l + i * w };
+}
+
+function covTrial() {
+    const { gold, retrieved, n, k } = cov.data;
+    // a fresh random split of the gold-evidence claims: n calibrate q̂, and the new claim is one of the others
+    // (exchangeable) or a claim scored on retrieved evidence (distribution shift)
+    const idx = gold.map((_, i) => i);
+    for (let i = 0; i <= n; i++) {
+        const j = i + Math.floor(Math.random() * (idx.length - i));
+        [idx[i], idx[j]] = [idx[j], idx[i]];
+    }
+    const cal = idx.slice(0, n).map(i => gold[i]).sort((a, b) => a - b);
+    const s = cov.mode === 'gold' ? gold[idx[n]] : retrieved[Math.floor(Math.random() * retrieved.length)];
+    const q = cal[k - 1];
+    return { s, q, cal, rank: 1 + cal.filter(v => v < s).length, covered: s <= q };
+}
+
+function covStart(t, dur) {
+    if (cov.falling) covCommit(cov.falling);
+    cov.falling = { ...covTrial(), t0: t, dur };
+    cov.last = cov.falling;
+}
+
+function covCommit(tr) {
+    cov.falling = null;
+    cov.counts[tr.rank - 1] += 1;
+    cov.trials += 1;
+    cov.covered += tr.covered;
+    cov.hit = tr.rank;
+    const prev = cov.history[cov.history.length - 1];
+    if (!prev || cov.trials < 40 || cov.trials >= prev.t * 1.025) cov.history.push({ t: cov.trials, c: cov.covered });
+}
+
+const covFallMs = () => reducedMotion() ? 0 : Math.min(700, 800 / COV_RATE[cov.speed]);
+
+function covFrame(t) {
+    cov.raf = 0;
+    if (!$('view-method').classList.contains('active')) covSetPlaying(false);
+    const dt = cov.lastT ? Math.min(250, t - cov.lastT) : 0;
+    cov.lastT = t;
+    if (cov.playing) {
+        cov.debt += dt / 1000 * COV_RATE[cov.speed];
+        while (cov.debt >= 1) { cov.debt -= 1; covStart(t, covFallMs()); }
+    }
+    if (cov.falling && t - cov.falling.t0 >= cov.falling.dur) covCommit(cov.falling);
+    const more = cov.playing || cov.falling;
+    covPaint(t, !more);
+    if (more) cov.raf = requestAnimationFrame(covFrame);
+    else cov.lastT = 0;
+}
+
+function covKick() { if (!cov.raf) cov.raf = requestAnimationFrame(covFrame); }
+
+function covSetPlaying(on) {
+    cov.playing = on;
+    $('covPlay').textContent = on ? '❚❚ Pause' : '▶ Play';
+    if (on) { cov.debt = Math.max(cov.debt, 1); covKick(); }
+}
+
+function covReset() {
+    covSetPlaying(false);
+    Object.assign(cov, { trials: 0, covered: 0, counts: new Array(cov.data.n + 1).fill(0), history: [], falling: null, last: null, hit: null, debt: 0 });
+    covBuild();
+    covPaint(performance.now(), true);
+}
+
+// The static part of the figure: the sorted calibration scores as beads on a wire, the rank slots between them
+// (covered zone R ≤ k left of q̂), and one histogram bar per rank
+function covBuild() {
+    const { n, k } = cov.data, { G, slots, w, sx, bx } = covGeom(), qx = bx(k);
+    let svg = `<svg viewBox="0 0 ${G.W} ${G.H}" role="img" aria-label="A new claim's score falls into one of the ${slots} rank slots between the sorted calibration scores; it is covered when it lands left of q̂">`;
+    svg += `<rect class="cov-zone in" x="${G.l}" y="${G.rowY - 40}" width="${qx - G.l}" height="${G.baseY - G.rowY + 40}" rx="6"></rect>`;
+    svg += `<rect class="cov-zone out" x="${qx}" y="${G.rowY - 40}" width="${bx(slots) - qx}" height="${G.baseY - G.rowY + 40}" rx="6"></rect>`;
+    svg += `<text class="cov-title" x="${G.l}" y="16">One trial</text>`;
+    svg += `<text class="cov-label" id="covTrialText" x="${G.l}" y="38"></text>`;
+
+    svg += `<text class="cov-label" x="${G.l + 8}" y="${G.rowY - 22}">${n} calibration scores, sorted · a fresh random split every trial</text>`;
+    svg += `<line class="cov-wire" x1="${G.l}" x2="${bx(slots)}" y1="${G.rowY}" y2="${G.rowY}"></line>`;
+    for (let i = 1; i <= n; i++) {
+        if (i !== k) svg += `<circle class="cov-bead" cx="${bx(i)}" cy="${G.rowY}" r="2.6"></circle>`;
+    }
+    svg += `<line class="cov-q" x1="${qx}" x2="${qx}" y1="${G.rowY - 40}" y2="${G.baseY}"></line>`;
+    svg += `<circle class="cov-bead q" cx="${qx}" cy="${G.rowY}" r="5"></circle>`;
+    svg += `<text class="cov-label strong" x="${qx - 8}" y="${G.rowY - 22}" text-anchor="end">q̂ = s₍${k}₎ = <tspan id="covQ"></tspan></text>`;
+    svg += `<text class="cov-label" x="${G.l + 8}" y="${G.rowY + 22}">s₍₁₎ = <tspan id="covS1"></tspan></text>`;
+    svg += `<text class="cov-label" x="${bx(n)}" y="${G.rowY + 22}" text-anchor="end">s₍${n}₎ = <tspan id="covSn"></tspan></text>`;
+
+    svg += `<text class="cov-title" x="${G.l + 8}" y="${G.histTop - 18}">Rank R of the new score among all n + 1 = ${slots} scores, counted over trials</text>`;
+    svg += `<text class="cov-zone-label in" x="${G.l + 8}" y="${G.histTop - 2}">covered: R ≤ k = ${k}</text>`;
+    svg += `<text class="cov-zone-label out" x="${(qx + bx(slots)) / 2}" y="${G.histTop - 2}" text-anchor="middle">missed</text>`;
+    for (let j = 1; j <= slots; j++) {
+        svg += `<rect class="cov-bar${j > k ? ' out' : ''}" x="${(sx(j) - w / 2 + 1).toFixed(2)}" width="${(w - 2).toFixed(2)}" y="${G.baseY}" height="0" rx="1"></rect>`;
+    }
+    svg += `<line class="cov-uniform" id="covUniform" x1="${G.l}" x2="${bx(slots)}" y1="${G.baseY}" y2="${G.baseY}" visibility="hidden"></line>`;
+    svg += `<text class="cov-label strong" id="covUniformLabel" x="${sx(Math.round(slots * 0.42))}" y="${G.baseY}" text-anchor="middle" visibility="hidden">uniform: each rank 1/(n + 1)</text>`;
+    svg += `<line class="axis-line cov-wire" x1="${G.l}" x2="${bx(slots)}" y1="${G.baseY}" y2="${G.baseY}"></line>`;
+    [[1, '1'], [k, `k = ${k}`], [slots, `${slots}`]].forEach(([j, label]) => {
+        svg += `<text class="cov-label" x="${sx(j)}" y="${G.baseY + 16}" text-anchor="${j === 1 ? 'start' : j === slots ? 'end' : 'middle'}">${label}</text>`;
+    });
+    svg += `<line class="cov-trail" id="covTrail" visibility="hidden"></line>`;
+    svg += `<circle class="cov-dot" id="covDot" r="6.5" visibility="hidden"></circle>`;
+    $('covMain').innerHTML = svg + '</svg>';
+    cov.bars = [...$('covMain').querySelectorAll('.cov-bar')];
+
+    const d = cov.data, n1 = d.n + 1;
+    $('covInsight').innerHTML = cov.mode === 'gold'
+        ? `Each trial draws a fresh random split of the ${d.gold.length} FEVER claims scored against their gold evidence: ${d.n} calibrate ${tex('\\hat q', false)} and one of the others is the new claim. Because the split is random, the ${n1} scores are <strong>exchangeable</strong>: the new score is equally likely to take any of the ${n1} ranks, so the histogram flattens towards the dotted uniform line. It is covered exactly when it lands among the first k = ${k}, which happens with probability <strong>${k}/${n1} = ${pct(k / n1, 1)}</strong>, whatever the NLI model and whatever the score distribution.`
+        : `The new claim now comes from the ${d.retrieved.length} benchmark claims scored on the evidence the pipeline retrieved, while ${tex('\\hat q', false)} is still calibrated on gold evidence. Retrieved snippets are noisier, so the new scores run larger than the calibration scores and pile up beyond ${tex('\\hat q', false)}: coverage settles near the <strong>${pct(d.measured, 1)}</strong> measured with the production ${tex('\\hat q = ' + fx(d.q_hat, 4), false)}, below the nominal ${pct(1 - d.alpha, 0)}. The guarantee rests on exchangeability, which is why the pipeline treats the prediction set as a calibrated escalation trigger rather than a 90% guarantee (§2.6).`;
+}
+
+function covPaint(t, force = false) {
+    if (!cov.data || !cov.bars.length) return;
+    const { k, n } = cov.data, { G, slots, sx } = covGeom();
+    const expected = cov.trials / slots;
+    const ymax = Math.max(4, expected * 1.7, ...cov.counts);
+    const hy = c => G.baseY - (c / ymax) * (G.baseY - G.histTop);
+    cov.bars.forEach((b, j) => {
+        const y = hy(cov.counts[j]);
+        b.setAttribute('y', y.toFixed(1));
+        b.setAttribute('height', (G.baseY - y).toFixed(1));
+        b.classList.toggle('hit', j + 1 === cov.hit);
+    });
+    const uy = hy(expected).toFixed(1), vis = cov.trials ? 'visible' : 'hidden';
+    $('covUniform').setAttribute('y1', uy);
+    $('covUniform').setAttribute('y2', uy);
+    $('covUniform').setAttribute('visibility', vis);
+    $('covUniformLabel').setAttribute('y', (uy - 6).toFixed(1));
+    $('covUniformLabel').setAttribute('visibility', vis);
+
+    // the new claim's score: falls from above through its slot in the bead row, onto its histogram bar
+    const tr = cov.last, dot = $('covDot'), trail = $('covTrail');
+    if (tr) {
+        const f = cov.falling, x = sx(tr.rank);
+        let y = hy(cov.counts[tr.rank - 1]) - 7;
+        if (f) {
+            const p = f.dur ? Math.min(1, (t - f.t0) / f.dur) : 1;
+            y = G.dropY + (hy(cov.counts[tr.rank - 1] + 1) - 7 - G.dropY) * p * p;   // constant acceleration
+        }
+        const cls = y < G.rowY ? 'new' : tr.covered ? 'in' : 'out';
+        dot.setAttribute('cx', x.toFixed(1));
+        dot.setAttribute('cy', y.toFixed(1));
+        dot.setAttribute('class', `cov-dot ${cls}`);
+        dot.setAttribute('visibility', 'visible');
+        trail.setAttribute('x1', x.toFixed(1));
+        trail.setAttribute('x2', x.toFixed(1));
+        trail.setAttribute('y1', G.dropY);
+        trail.setAttribute('y2', y.toFixed(1));
+        trail.setAttribute('class', `cov-trail ${cls}`);
+        trail.setAttribute('visibility', 'visible');
+        $('covTrialText').innerHTML = `New claim: s₍ₙ₊₁₎ = ${fx(tr.s, 4)}  →  R = 1 + #{ i : sᵢ < s₍ₙ₊₁₎ } = ${tr.rank} ${tr.covered ? '≤' : '>'} k = ${k}  →  `
+            + `<tspan class="cov-verdict ${tr.covered ? 'in' : 'out'}">${tr.covered ? '✓ covered' : '✕ not covered'}</tspan>`;
+    } else {
+        dot.setAttribute('visibility', 'hidden');
+        trail.setAttribute('visibility', 'hidden');
+        $('covTrialText').textContent = 'Press Play to run trials, or One trial to watch a single claim fall into place.';
+    }
+    const cal = tr && tr.cal;
+    $('covQ').textContent = cal ? fx(cal[k - 1], 4) : '?';
+    $('covS1').textContent = cal ? fx(cal[0], 4) : '?';
+    $('covSn').textContent = cal ? fx(cal[n - 1], 4) : '?';
+
+    if (!force && t - cov.slowAt < 150) return;
+    cov.slowAt = t;
+    const d = cov.data, [lo, hi] = wilson(cov.covered, cov.trials);
+    $('covRate').textContent = cov.trials ? pct(cov.covered / cov.trials, 1) : '–';
+    $('covCount').textContent = `${cov.covered.toLocaleString()} of ${cov.trials.toLocaleString()} trials covered`;
+    $('covCi').textContent = cov.trials ? `${pct(lo, 1)} – ${pct(hi, 1)}` : '–';
+    $('covTarget').textContent = cov.mode === 'gold'
+        ? `theory: k/(n + 1) = ${pct(k / (n + 1), 1)}`
+        : `measured on retrieved evidence: ${pct(d.measured, 1)}`;
+    $('covConv').innerHTML = covConvSvg();
+    $('covMath').innerHTML = covMathHtml();
+}
+
+// Running coverage against the number of trials (log scale), with its Wilson interval, the 1 − α line and the
+// finite-sample band k/(n+1) ≤ coverage ≤ (k+1)/(n+1)
+function covConvSvg() {
+    const d = cov.data, W = 300, H = 186, m = { l: 36, r: 10, t: 10, b: 32 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b, n1 = d.n + 1, floor = 0.6;
+    const xmax = Math.max(100, 10 ** Math.ceil(Math.log10(Math.max(1, cov.trials))));
+    const x = t => m.l + Math.log10(Math.max(1, t)) / Math.log10(xmax) * iw;
+    const y = v => m.t + (1 - (Math.max(floor, Math.min(1, v)) - floor) / (1 - floor)) * ih;
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Running empirical coverage against the number of trials">`;
+    [0.6, 0.7, 0.8, 0.9, 1].forEach(v => {
+        svg += `<line class="grid-line" x1="${m.l}" x2="${m.l + iw}" y1="${y(v)}" y2="${y(v)}"></line>`;
+        svg += `<text class="tick" x="${m.l - 6}" y="${y(v)}" dy="0.35em" text-anchor="end">${pct(v, 0)}</text>`;
+    });
+    svg += `<rect class="cov-band" x="${m.l}" width="${iw}" y="${y((d.k + 1) / n1)}" height="${Math.max(2, y(d.k / n1) - y((d.k + 1) / n1))}"></rect>`;
+    svg += `<line class="ref-line" x1="${m.l}" x2="${m.l + iw}" y1="${y(1 - d.alpha)}" y2="${y(1 - d.alpha)}"></line>`;
+    svg += `<text class="ref-label" x="${m.l + iw - 2}" y="${y(1 - d.alpha) - 6}" text-anchor="end">1 − α</text>`;
+    if (cov.mode !== 'gold') {
+        svg += `<line class="cov-measured" x1="${m.l}" x2="${m.l + iw}" y1="${y(d.measured)}" y2="${y(d.measured)}"></line>`;
+        svg += `<text class="ref-label" x="${m.l + 4}" y="${y(d.measured) + 13}">measured ${pct(d.measured, 1)}</text>`;
+    }
+    const pts = [...cov.history];
+    if (cov.trials && pts[pts.length - 1].t !== cov.trials) pts.push({ t: cov.trials, c: cov.covered });
+    if (pts.length) {
+        const ci = pts.map(p => wilson(p.c, p.t));
+        const upper = pts.map((p, i) => `${x(p.t).toFixed(1)},${y(ci[i][1]).toFixed(1)}`);
+        const lower = pts.map((p, i) => `${x(p.t).toFixed(1)},${y(ci[i][0]).toFixed(1)}`).reverse();
+        svg += `<path class="cov-ci" d="M${upper.join('L')}L${lower.join('L')}Z"></path>`;
+        svg += `<path class="cov-path" d="M${pts.map(p => `${x(p.t).toFixed(1)},${y(p.c / p.t).toFixed(1)}`).join('L')}"></path>`;
+    }
+    svg += `<line class="axis-line" x1="${m.l}" x2="${m.l + iw}" y1="${m.t + ih}" y2="${m.t + ih}"></line>`;
+    for (let v = 1; v <= xmax; v *= 10) {
+        svg += `<text class="tick" x="${x(v)}" y="${m.t + ih + 14}" text-anchor="${v === 1 ? 'start' : v === xmax ? 'end' : 'middle'}">${v >= 1000 ? `${v / 1000}k` : v}</text>`;
+    }
+    svg += `<text class="tick" x="${m.l + iw / 2}" y="${H - 2}" text-anchor="middle">trials (log scale) · shaded: Wilson 95% CI</text>`;
+    return svg + '</svg>';
+}
+
+function covMathHtml() {
+    const d = cov.data, k = d.k, n1 = d.n + 1;
+    const obs = cov.trials ? `\\tfrac{${cov.covered}}{${cov.trials}} = ${fx(cov.covered / cov.trials, 4)}` : '\\text{—}';
+    const def = tex(`R = 1 + \\#\\{\\, i \\le n : s_i < s_{n+1} \\,\\}, \\qquad Y_{n+1} \\in \\mathcal C(X_{n+1}) \\iff s_{n+1} \\le \\hat q = s_{(k)} \\iff R \\le k = \\lceil (n+1)(1-\\alpha) \\rceil = ${k}`);
+    const law = cov.mode === 'gold'
+        ? tex(`\\Pr(R = r) = \\tfrac{1}{n+1} \\;\\Rightarrow\\; \\Pr(R \\le k) = \\tfrac{k}{n+1} = \\tfrac{${k}}{${n1}} = ${fx(k / n1, 4)} \\ge 1 - \\alpha \\qquad \\text{observed: } ${obs}`)
+        : tex(`s_{n+1} \\text{ not exchangeable with } s_1, \\dots, s_n \\;\\Rightarrow\\; \\Pr(R \\le k) \\ne \\tfrac{${k}}{${n1}} \\qquad \\text{observed: } ${obs}`);
+    return def + law;
+}
+
 function renderMethod() {
     $('limitsList').innerHTML = LIMITS.map(([title, text]) => `<li><strong>${title}.</strong> ${text}</li>`).join('');
     $('methodList').innerHTML = METHOD.map(([title, when, text], i) => `
@@ -2159,6 +2437,24 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('[data-cascade]').forEach(x => x.classList.toggle('active', x === b));
         loadCascade();
     }));
+    document.querySelectorAll('[data-cov]').forEach(b => b.addEventListener('click', () => {
+        if (!cov.data || cov.mode === b.dataset.cov) return;
+        cov.mode = b.dataset.cov;
+        document.querySelectorAll('[data-cov]').forEach(x => x.classList.toggle('active', x === b));
+        covReset();
+    }));
+    document.querySelectorAll('[data-cov-speed]').forEach(b => b.addEventListener('click', () => {
+        cov.speed = Number(b.dataset.covSpeed);
+        document.querySelectorAll('[data-cov-speed]').forEach(x => x.classList.toggle('active', x === b));
+    }));
+    $('covPlay').addEventListener('click', () => { if (cov.data) covSetPlaying(!cov.playing); });
+    $('covStep').addEventListener('click', () => {
+        if (!cov.data) return;
+        covSetPlaying(false);
+        covStart(performance.now(), reducedMotion() ? 0 : 700);
+        covKick();
+    });
+    $('covReset').addEventListener('click', () => { if (cov.data) covReset(); });
     document.querySelectorAll('[data-explore]').forEach(b => b.addEventListener('click', () => {
         explore.key = b.dataset.explore;
         explore.open = null;
