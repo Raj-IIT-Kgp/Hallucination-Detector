@@ -2,10 +2,10 @@
 
 VeriFact checks a text, typically an answer written by a language model, for hallucinations. It splits the text into atomic claims, retrieves evidence for each claim from Wikipedia, the web and arXiv, scores the evidence with a natural language inference (NLI) model, and uses split conformal prediction to decide when that verdict can stand and when the claim must be escalated to a knowledge graph and an LLM arbiter.
 
-| Benchmark (100 claims, five sets of 20) | Accuracy (95% CI) | Precision | Recall | F1 |
+| Benchmark (100 claims, five sets of 20) | Accuracy (Wilson 95% CI) | Precision | Recall | F1 |
 | :--- | :--- | :--- | :--- | :--- |
-| FEVER | 95.0% [90.7%, 99.3%] | 0.96 | 0.96 | 0.96 |
-| FreshQA (never- and slow-changing) | 82.0% [74.5%, 89.5%] | 0.91 | 0.82 | 0.86 |
+| FEVER | 95.0% [88.8%, 97.8%] | 0.96 | 0.96 | 0.96 |
+| FreshQA (never- and slow-changing) | 82.0% [73.3%, 88.3%] | 0.91 | 0.82 | 0.86 |
 
 Mean latency per claim: **8.6 s** on FEVER and **12.2 s** on FreshQA.
 
@@ -52,6 +52,7 @@ python evaluation/run_5_runs.py --dataset all      # five-set evaluation of FEVE
 python evaluation/run_benchmark.py --dataset fever --samples 20
 python experiments/full_evaluation.py              # the full evaluation: five-set run plus every analysis in pipeline.md §2.5, §2.6, §2.9 and §3
 python experiments/eval_conformal.py               # conformal calibration and coverage
+python experiments/statistical_tests.py            # confidence intervals and hypothesis tests (no LLM call)
 ```
 
 The five-set evaluation makes several hundred LLM calls; if the API quota runs out, it stops and resumes where it stopped when started again.

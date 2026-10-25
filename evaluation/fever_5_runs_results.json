@@ -113,8 +113,9 @@
     "p90_latency_sec": 12.101342791225761,
     "mean_llm_calls": 0.98,
     "standard_error": 0.021794494717703377,
-    "ci_lower_95": 0.9072827903533014,
-    "ci_upper_95": 0.9927172096466985
+    "ci_lower_95": 0.8882480347279117,
+    "ci_upper_95": 0.9784566385436865,
+    "ci_method": "wilson"
   },
   "routing": {
     "multi_agent_debate": 9,

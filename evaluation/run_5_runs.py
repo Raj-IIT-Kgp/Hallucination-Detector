@@ -37,7 +37,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from retrieval.web_search import WebRetriever
 from detector.hallucination_detector import HallucinationDetector
-from evaluation.metrics import precision, recall, f1_score
+from evaluation.metrics import precision, recall, f1_score, wilson_interval
 from llm.generator import get_failure_count, get_call_count, get_call_log
 
 EVAL_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -187,8 +187,8 @@ def run_5_sets(dataset, samples_per_set=20, num_sets=5, seed=42, fresh=False, ta
     set_results = [{"set": f"Set {s}", **metrics([r for r in records if r["set"] == s])} for s in range(1, num_sets + 1)]
     pooled = metrics(records)
     se = math.sqrt(pooled["accuracy"] * (1 - pooled["accuracy"]) / pooled["evaluated_claims"])
-    pooled.update({"standard_error": se, "ci_lower_95": max(0.0, pooled["accuracy"] - 1.96 * se),
-                   "ci_upper_95": min(1.0, pooled["accuracy"] + 1.96 * se)})
+    lower, upper = wilson_interval(pooled["correct_claims"], pooled["evaluated_claims"])
+    pooled.update({"standard_error": se, "ci_lower_95": lower, "ci_upper_95": upper, "ci_method": "wilson"})
     routing = {}
     for r in records:
         routing[r["decision_policy"]] = routing.get(r["decision_policy"], 0) + 1

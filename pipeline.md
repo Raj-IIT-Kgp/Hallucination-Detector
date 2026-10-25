@@ -1,15 +1,15 @@
 # Hallucination Detection Pipeline
 
-This document explains, step by step, how the detector decides whether a statement is a hallucination. Every stage is described with its purpose, its input and output, the exact algorithm the code runs, the mathematics behind it, a worked example taken from real runs of the system, and the reasons for the design choices. Section 3 covers the evaluation benchmarks and results, and Section 4 defines the evaluation metrics (TP, FP, TN, FN, precision, recall, F1) used to report them. Section 5 collects the limitations, and Section 6 explains how to install and run the system.
+This document explains, step by step, how the detector decides whether a statement is a hallucination. Every stage is described with its purpose, its input and output, the exact algorithm the code runs, the mathematics behind it, a worked example taken from real runs of the system, and the reasons for the design choices. Section 3 covers the evaluation benchmarks and results, and Section 4 defines the evaluation metrics (TP, FP, TN, FN, precision, recall, F1) used to report them, with the confidence intervals and hypothesis tests used to compare them. Section 5 collects the limitations, and Section 6 explains how to install and run the system.
 
 **Summary.** The detector splits a text into atomic claims, retrieves evidence for each claim from Wikipedia, the web and ArXiv, and scores it with a natural language inference (NLI) model. Split conformal prediction then decides whether that verdict can stand or whether the claim must be escalated to a Knowledge Graph and an LLM arbiter, so the expensive stages run only on ambiguous claims. Results on 100 claims per benchmark (five sets of 20, §3.3):
 
-| Benchmark | Accuracy (95% CI) | Precision | Recall | F1 | Settled by the NLI verdict | Mean latency |
+| Benchmark | Accuracy (Wilson 95% CI) | Precision | Recall | F1 | Settled by the NLI verdict | Mean latency |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| FEVER | 95.0% [90.7%, 99.3%] | 0.96 | 0.96 | 0.96 | 86 of 100 | 8.6 s |
-| FreshQA (never- and slow-changing) | 82.0% [74.5%, 89.5%] | 0.91 | 0.82 | 0.86 | 58 of 100 | 12.2 s |
+| FEVER | 95.0% [88.8%, 97.8%] | 0.96 | 0.96 | 0.96 | 86 of 100 | 8.6 s |
+| FreshQA (never- and slow-changing) | 82.0% [73.3%, 88.3%] | 0.91 | 0.82 | 0.86 | 58 of 100 | 12.2 s |
 
-Both benchmarks were measured with the current pipeline, end to end with live retrieval and LLM calls. Precision, recall and F1 refer to the hallucination class. Claims settled by the NLI verdict alone are correct 92% of the time, and the LLM arbiter, used on the rest, fixed 17 NLI verdicts and broke 2 (§2.9). The main weaknesses (false premises, time-dependent and negated claims, and the conditions of the conformal guarantee) are discussed in Section 5.
+Both benchmarks were measured with the current pipeline, end to end with live retrieval and LLM calls. Precision, recall and F1 refer to the hallucination class. Claims settled by the NLI verdict alone are correct 92% of the time, and the LLM arbiter, used on the rest, fixed 17 NLI verdicts and broke 2 (exact McNemar test $p < 0.001$, §2.9). The main weaknesses (false premises, time-dependent and negated claims, and the conditions of the conformal guarantee) are discussed in Section 5.
 
 **Contents**
 
@@ -339,6 +339,8 @@ The verdict takes the probability vector of its highest-confidence decisive snip
 
 Step 1: $S = 0.631 < 0.85$, so there is no source conflict. Step 2: $`\lvert D_{\text{con}} \rvert = 2 \ge m`$ and $`D_{\text{sup}} = \varnothing`$, so the verdict is **CONTRADICTED** with $`\hat{\boldsymbol{\pi}} = (0.9934, 0.0063, 0.0003)`$, with no LLM call; the conformal set is the singleton {CONTRADICTED} (§2.6), so the verdict stands. Under a "highest confidence wins" rule the same verdict would follow here; the corroboration rule only changes the outcome when a contradiction stands alone or is contested.
 
+**Is $m = 2$ fitted to these claims?** The value of $m$ was read off the table above, which comes from the same 200 claims the accuracy is reported on, so the reported accuracy could be optimistic. `experiments/statistical_tests.py` checks this by cross-fitting (§4.5, where the method and the reason it removes the bias are derived). For every claim, its trace determines the verdict it would have received with $m = 1$ (a lone contradiction is accepted without review, so the claim takes its NLI verdict) or $m = 3$ (two agreeing contradictions are also reviewed: one LLM review of the saved evidence, as in §2.6). This concerns 24 of the 25 claims with two decisive contradicting snippets in the table; the 25th was escalated, so $m$ does not affect it. 16 of the 24 reviews were already cached, and the other 8 are bounded both ways. Then $m \in \lbrace 1, 2, 3 \rbrace$ is chosen by accuracy on four of the five sets and the fifth set is scored with it, and separately one claim at a time is left out; a tie goes to the smaller $m$, which needs fewer LLM calls. Every fold chooses $m = 2$, whatever the missing reviews say, so the cross-fitted accuracy equals the reported one (177 of 200): the choice of $m$ adds no optimism. On all 200 claims $m = 1$ gives 170 correct verdicts and $m = 3$ at most 177 (all 16 cached reviews agree with the verdict accepted at $m = 2$). The advantage of $m = 2$ over $m = 1$ rests on the 12 claims whose verdict differs: 9 are right only with $m = 2$, 2 only with $m = 1$, and 1 with neither. The exact McNemar test (§4.5) gives $p = 0.065$, so the direction is consistent but not significant at the 5% level on this sample. Cross-fitting covers the choice of $m$ only; the other constants of the rule ($\tau = 0.80$ and the conflict thresholds) are not re-validated here.
+
 **Design rationale and limitations.** The rule is asymmetric on purpose: a decisive *supporting* snippet is rarely wrong, while lone and contested contradictions are often wrong (38% and 75% of the time, against 8% for two agreeing snippets), and a false accusation is the more harmful error (§1.1). Corroborated contradictions — the typical case for genuinely false encyclopedic claims, which several Wikipedia sentences contradict — stay on the fast path, so the extra LLM cost is limited to the ambiguous cases (5 of 100 FEVER and 25 of 100 FreshQA claims in the current evaluation, §3.4). The NLI model cannot do arithmetic or date reasoning and ignores words such as *"currently"*; such cases surface as residual errors (§3.5). `HallucinationDetector(min_contra_snippets=None)` restores the original rule (the highest-confidence decisive snippet wins regardless of label) for ablation studies; a randomised check over 20,000 synthetic score configurations confirms it reproduces the original decisions exactly.
 
 ### 2.6 Conformal Uncertainty Layer (`statistical_layer/conformal_predictor.py`)
@@ -533,7 +535,13 @@ The prompt reserves `UNKNOWN` for evidence that is absent, unrelated, or genuine
 | FreshQA | 42 (25 reviews, 17 escalations) | 13 | 1 | 19 | 9 |
 | **Total** | **56** | **17** | **2** | **27** | **10** |
 
-The arbiter corrected 17 verdicts and spoiled 2.
+The arbiter corrected 17 verdicts and spoiled 2. If arbitration did not change accuracy, each of the 19 claims whose correctness changed would be equally likely to be a fix or a break, so the exact McNemar test (§4.5) gives
+
+$$
+p = 2 \sum_{i=0}^{2} \binom{19}{i} \, 2^{-19} = \frac{2 \, (1 + 19 + 171)}{524{,}288} = 0.0007
+$$
+
+and the improvement is significant. Per benchmark: FreshQA 13 against 1 ($p = 0.002$); FEVER 4 against 1 ($p = 0.38$), too few changed verdicts to conclude on FEVER alone.
 
 ### 2.10 Output, Report and User Interface
 
@@ -555,7 +563,7 @@ together with the numbers of supported, contradicted and unknown claims, of esca
   - one card per claim, filled in as results arrive: the claim's **decision path** (NLI reading → conformal set → route → final verdict, noting when the LLM changed the NLI reading), the NLI posterior, the conformal set and p-values, and every evidence snippet with its own NLI reading, the snippet that decided the verdict, and its source;
   - an **Under the hood** view of any claim's computation as it happens: the sentence the claim was split from and the decomposition route; the generated queries; the re-ranking table with cosine similarity, BM25, both ranks and the RRF formula; every snippet's NLI logits and the softmax; the decision-rule quantities S, K, |D_sup|, |D_con| and the branch taken; the conformal scores, q̂, p-values and set, with a **calibration plot** placing the claim's three non-conformity scores against the histogram of the 100 calibration scores and q̂ (`/api/calibration`); the routing condition term by term; and the LLM arbiter's written defense, prosecution and judgement. All of it comes from a per-claim trace that the detector records in `verification["trace"]` without changing any decision;
   - a timeline of the time each claim spent in each phase, and the **Wikidata graph** of all claims drawn with D3.js (below): each claim's dashed edge in its verdict colour next to the Wikidata statements for the same property, hovering shows an entity's description or a statement's references, and clicking opens it in Wikipedia or Wikidata; each claim card also states what Wikidata records for it.
-- **Benchmarks** charts the five-set results of §3.3 from `evaluation/*_5_runs_results.json` (`/api/benchmarks`), including the accuracy of each decision route (§3.4), and has a **claim explorer** over all 200 benchmark claims (`/api/benchmark_claims/<name>`): they can be filtered by outcome (errors or correct), route and text, and each one opens with its evidence and the full computation trace recorded during the benchmark run, so every error in §3.5 can be inspected step by step.
+- **Benchmarks** charts the five-set results of §3.3 from `evaluation/*_5_runs_results.json` (`/api/benchmarks`), with Wilson 95% intervals and the two-proportion test of FEVER against FreshQA (§4.5), including the accuracy of each decision route (§3.4), and has a **claim explorer** over all 200 benchmark claims (`/api/benchmark_claims/<name>`): they can be filtered by outcome (errors or correct), route and text, and each one opens with its evidence and the full computation trace recorded during the benchmark run, so every error in §3.5 can be inspected step by step.
 - **Method** animates the cascade, with claims flowing into the three routes in the measured proportions, summarises the stages and lists the known limitations. It also replays the coverage argument of §2.6 on stored NLI scores (`/api/coverage_demo`): each trial draws a random split of the 200 gold-evidence FEVER claims of `experiments/eval_conformal.py`, calibrates $`\hat{q}`$ on 100 of them and drops a new claim's score among the sorted calibration scores. A histogram counts the rank $R$ at which it lands, and a chart tracks the running coverage with its Wilson interval. When the new claim comes from the same pool, the ranks are uniform and coverage converges to $`k/(n+1)`$; when it comes from the 200 benchmark claims scored on retrieved evidence, scores pile up beyond $`\hat{q}`$ and coverage settles near the 83.5% measured in §2.6.
 - **Docs** renders this document (`/api/docs`).
 
@@ -660,7 +668,7 @@ All figures below are measured with the current pipeline (the single configurati
 | Set 5 | 20 | 20 | 100.00% | 1.00 | 1.00 | 1.00 | 10 | 0 | 0 | 10 | 0 | 6.9 s |
 | **Pooled** | **100** | **95** | **95.00%** | **0.96** | **0.96** | **0.96** | 48 | 2 | 2 | 47 | 2 | 8.6 s |
 
-Pooled 95% CI (normal approximation, §4.4): [90.7%, 99.3%]. With 20 claims per set, one error moves a set's accuracy by 5 points, so the pooled figure is the one to quote.
+Pooled Wilson 95% CI (§4.4): [88.8%, 97.8%]. With 20 claims per set, one error moves a set's accuracy by 5 points, so the pooled figure is the one to quote.
 
 **FreshQA: five-set evaluation.** Same protocol on never- and slow-changing questions (§3.1), 100 claims (summary in `evaluation/freshqa_5_runs_results.json`, per-claim records in `evaluation/freshqa_5_runs_claims.jsonl`):
 
@@ -673,9 +681,9 @@ Pooled 95% CI (normal approximation, §4.4): [90.7%, 99.3%]. With 20 claims per 
 | Set 5 | 20 | 19 | 95.00% | 0.91 | 1.00 | 0.95 | 10 | 1 | 0 | 9 | 0 | 9.7 s |
 | **Pooled** | **100** | **82** | **82.00%** | **0.91** | **0.82** | **0.86** | 41 | 4 | 9 | 41 | 7 | 12.2 s |
 
-Pooled 95% CI (normal approximation, §4.4): [74.5%, 89.5%]. Precision, recall and F1 refer to the `CONTRADICTED` (hallucination) class (definitions in §4.1); `UNKNOWN` counts as an error, and on a false claim as a missed hallucination (FN).
+Pooled Wilson 95% CI (§4.4): [73.3%, 88.3%]. Precision, recall and F1 refer to the `CONTRADICTED` (hallucination) class (definitions in §4.1); `UNKNOWN` counts as an error, and on a false claim as a missed hallucination (FN).
 
-**FEVER vs FreshQA.** The confidence intervals ([90.7%, 99.3%] and [74.5%, 89.5%]) just fail to overlap, so FreshQA is harder, though only by a margin this sample can barely resolve. Precision is close (0.96 vs 0.91); the gap is in recall (0.96 vs 0.82) and in abstentions: FreshQA's false premises and claims about the present are more often accepted by the NLI model or left `UNKNOWN` by the arbiter when the evidence does not settle them, and some of its gold answers are contradicted by current evidence (§3.5).
+**FEVER vs FreshQA.** FreshQA is significantly harder. The difference in accuracy is 13.0 points (Newcombe 95% interval [4.2, 22.1] points), and a two-proportion z-test of equal accuracy gives $z = 2.88$, $p = 0.004$ (Fisher's exact test: $p = 0.007$; §4.5). Precision is close (0.96 vs 0.91); the gap is in recall (0.96 vs 0.82) and in abstentions: FreshQA's false premises and claims about the present are more often accepted by the NLI model or left `UNKNOWN` by the arbiter when the evidence does not settle them, and some of its gold answers are contradicted by current evidence (§3.5).
 
 ### 3.4 Latency, Routing and Cost (Current Pipeline)
 
@@ -798,11 +806,93 @@ $$
 
 For example, $`\hat{p} = 0.80`$ on $N = 100$ gives $`\text{SE} = 4.0\%`$ and the interval $`[72.2\%, 87.8\%]`$; on $N = 40$ the half-width grows to about $`12.4\%`$. Differences of a few points between runs of 20–40 claims are therefore within noise, and comparisons between pipeline versions should use the same claims and larger samples.
 
-Near 0% or 100% the normal approximation is poor (it can even exceed 100%), so the conformal coverage in §2.6 is reported with the **Wilson score interval**:
+Near 0% or 100% the normal approximation is poor: it can exceed 100%, and its actual coverage falls below the nominal 95%. Every interval in this document, for accuracies (§3.3) and for conformal coverage (§2.6), is therefore the **Wilson score interval** (Wilson, 1927), the interval recommended by Brown, Cai and DasGupta (2001).
+
+*Derivation.* The normal approximation evaluates the standard error at the estimate $\hat{p}$. The score test of $`H_0: p = p_0`$ evaluates it at the hypothesised value instead: by the central limit theorem, if the true accuracy is $`p_0`$, then
 
 $$
-\frac{\hat{p} + \dfrac{z^2}{2N} \pm z \sqrt{\dfrac{\hat{p}(1 - \hat{p})}{N} + \dfrac{z^2}{4N^2}}}{1 + \dfrac{z^2}{N}}, \qquad z = 1.96
+Z(p_0) = \frac{\hat{p} - p_0}{\sqrt{p_0 (1 - p_0) / N}} \approx \mathcal{N}(0, 1)
 $$
+
+The 95% interval is the set of values $`p_0`$ that this test does not reject at the 5% level, $`\lvert Z(p_0) \rvert \le z`$ with $z = 1.96$. Squaring both sides gives a quadratic inequality in $`p_0`$:
+
+$$
+(\hat{p} - p_0)^2 \le \frac{z^2}{N} \, p_0 (1 - p_0) \iff Q(p_0) = \left( 1 + \frac{z^2}{N} \right) p_0^2 - \left( 2 \hat{p} + \frac{z^2}{N} \right) p_0 + \hat{p}^2 \le 0
+$$
+
+Its leading coefficient is positive, so the solutions are the values between the two roots of $Q$, which the quadratic formula gives as
+
+$$
+\frac{\hat{p} + \dfrac{z^2}{2N} \pm z \sqrt{\dfrac{\hat{p}(1 - \hat{p})}{N} + \dfrac{z^2}{4N^2}}}{1 + \dfrac{z^2}{N}}
+$$
+
+*Properties.* (i) The interval always lies in $[0, 1]$: $`Q(0) = \hat{p}^2 \ge 0`$, $`Q(1) = (1 - \hat{p})^2 \ge 0`$, and the minimum of $Q$ lies at $`\big( 2\hat{p} + z^2/N \big) / \big( 2 (1 + z^2/N) \big) \in [0, 1]`$, so both roots lie in $[0, 1]$. (ii) Its centre is a weighted average of $\hat{p}$ and $\tfrac{1}{2}$,
+
+$$
+\frac{\hat{p} + z^2 / (2N)}{1 + z^2 / N} = \frac{N}{N + z^2} \, \hat{p} + \frac{z^2}{N + z^2} \cdot \frac{1}{2}
+$$
+
+so the interval is pulled towards $\tfrac{1}{2}$, more strongly for small $N$, and is asymmetric around $\hat{p}$ near 0 or 1. (iii) It never has zero width: at $\hat{p} = 1$ the roots are $`N/(N + z^2)`$ and 1. The normal approximation gives zero width there; for FEVER's Set 5 (20 of 20 correct, §3.3) it gives $[100\%, 100\%]$, while the Wilson interval is $[83.9\%, 100\%]$.
+
+For FEVER's pooled 95 correct verdicts out of 100, the centre is $(0.95 + 0.0192)/1.0384 = 0.9334$ and the half-width $`1.96 \sqrt{0.000475 + 0.000096} / 1.0384 = 0.0451`$, so the interval is [88.8%, 97.8%], where the normal approximation gives [90.7%, 99.3%].
+
+### 4.5 Hypothesis Tests
+
+The tests below are computed by `experiments/statistical_tests.py` from the per-claim records; it makes no LLM call.
+
+**Two independent accuracies** (FEVER vs FreshQA, which share no claims). With $`c_1`$ of $`n_1`$ and $`c_2`$ of $`n_2`$ correct, and the pooled proportion $`\bar{p} = (c_1 + c_2)/(n_1 + n_2)`$, the two-proportion z-test of equal accuracy is
+
+$$
+z = \frac{\hat{p}_1 - \hat{p}_2}{\sqrt{\bar{p} (1 - \bar{p}) \left( \dfrac{1}{n_1} + \dfrac{1}{n_2} \right)}}, \qquad p = 2 \left( 1 - \Phi(\lvert z \rvert) \right)
+$$
+
+*Derivation.* The two accuracies are independent binomial proportions, so $`\operatorname{Var}(\hat{p}_1 - \hat{p}_2) = p_1 (1 - p_1)/n_1 + p_2 (1 - p_2)/n_2`$. Under $`H_0: p_1 = p_2 = p`$ this is $`p (1 - p)(1/n_1 + 1/n_2)`$, and the common $p$ is estimated by $\bar{p}$, its maximum-likelihood estimate under $`H_0`$. By the central limit theorem $z$ is then approximately standard normal under $`H_0`$.
+
+**Fisher's exact test** avoids the normal approximation. Under $`H_0`$, with $`N = n_1 + n_2`$, the probability of $a$ and $b$ correct verdicts is $`\binom{n_1}{a} \binom{n_2}{b} \, p^{a+b} (1 - p)^{N - a - b}`$, and the total $T = C_1 + C_2$ is $`\text{Binomial}(N, p)`$. Conditioning on the observed total $t$, the unknown $p$ cancels:
+
+$$
+\Pr(C_1 = a \mid T = t) = \frac{\binom{n_1}{a} \binom{n_2}{t - a} \, p^t (1 - p)^{N - t}}{\binom{N}{t} \, p^t (1 - p)^{N - t}} = \frac{\binom{n_1}{a} \binom{n_2}{t - a}}{\binom{N}{t}}
+$$
+
+a hypergeometric distribution that is fully known under $`H_0`$. The two-sided p-value is the total probability of the tables with the same margins that are at most as probable as the observed one.
+
+**The interval for the difference** $`\hat{\delta} = \hat{p}_1 - \hat{p}_2`$ is Newcombe's hybrid score interval (Newcombe, 1998), built from the two Wilson intervals $`[l_i, u_i]`$:
+
+$$
+\left[ \hat{\delta} - \sqrt{(\hat{p}_1 - l_1)^2 + (u_2 - \hat{p}_2)^2}, \;\; \hat{\delta} + \sqrt{(u_1 - \hat{p}_1)^2 + (\hat{p}_2 - l_2)^2} \right]
+$$
+
+**Two verdicts on the same claims** (the NLI verdict against the arbiter's, or $m = 2$ against $m = 1$). The verdicts are paired, so only the claims on which exactly one of them is right carry information. With $b$ claims right only under the first and $c$ right only under the second, equal accuracy implies $`b \sim \text{Binomial}(b + c, \tfrac{1}{2})`$, and the exact McNemar test gives
+
+$$
+p = \min \left( 1, \; 2 \sum_{i=0}^{\min(b, c)} \binom{b + c}{i} \, 2^{-(b + c)} \right)
+$$
+
+*Derivation.* Newcombe's interval recovers variances from the Wilson limits (Zou & Donner, 2008). For each proportion, the distances $`\hat{p}_i - l_i`$ and $`u_i - \hat{p}_i`$ play the role of $z$ standard errors below and above the estimate. The difference is smallest when $`p_1`$ is low and $`p_2`$ is high, so the lower limit of $\delta$ combines the lower distance of $`\hat{p}_1`$ with the upper distance of $`\hat{p}_2`$. Because the estimates are independent their variances add, so the distances add in quadrature; the upper limit is built symmetrically. The interval inherits the asymmetry of the Wilson intervals. It is an approximation whose coverage is close to 95% in simulation studies, not an exact interval.
+
+*Derivation of the McNemar test* (McNemar, 1947). Each claim falls into one of four cells according to whether verdict A and verdict B are right, with probabilities $`\pi_{11}, \pi_{10}, \pi_{01}, \pi_{00}`$ (the first index for A). The accuracies are $`\pi_{11} + \pi_{10}`$ and $`\pi_{11} + \pi_{01}`$, so their difference is $`\pi_{10} - \pi_{01}`$: equal accuracy means $`\pi_{10} = \pi_{01}`$, and the claims on which both verdicts agree carry no information about it. Given $d = b + c$ discordant claims, each of them is "A right only" independently with probability $`\pi_{10} / (\pi_{10} + \pi_{01})`$, so $`b \mid d \sim \text{Binomial}\big(d, \pi_{10} / (\pi_{10} + \pi_{01})\big)`$, which under $`H_0`$ is $`\text{Binomial}(d, \tfrac{1}{2})`$. The two-sided p-value doubles the probability of the smaller tail. Treating the two sets of verdicts as independent samples would ignore that most claims are decided identically by both.
+
+**Selection bias and cross-fitting** (the choice of $m$, §2.5). Let $`\text{acc}_S(m)`$ be the accuracy of the rule with parameter $m$ on a set $S$ of claims, and $A(m)$ its true accuracy, so that $`\mathbb{E}[\text{acc}_S(m)] = A(m)`$. If $m$ is chosen on $S$ itself, $`\hat{m} = \arg\max_m \text{acc}_S(m)`$, the reported $`\text{acc}_S(\hat{m}) = \max_m \text{acc}_S(m)`$ is biased upwards. The maximum is a convex function, so by Jensen's inequality
+
+$$
+\mathbb{E} \left[ \max_m \text{acc}_S(m) \right] \ge \max_m \mathbb{E} \left[ \text{acc}_S(m) \right] = \max_m A(m)
+$$
+
+On average the in-sample figure overstates even the best rule's true accuracy. Cross-fitting removes this bias. The claims are split into folds $`F_1, \dots, F_K`$ (here the five sets, and separately $K = N$ folds of one claim). Each fold is scored with the parameter $`\hat{m}_{-k}`$ chosen on the other folds:
+
+$$
+\widehat{\text{acc}}_{\text{CF}} = \frac{1}{N} \sum_{k=1}^{K} \sum_{i \in F_k} \mathbb{I} \left( \hat{y}_i^{(\hat{m}_{-k})} = y_i \right)
+$$
+
+Claims are sampled independently, so $`\hat{m}_{-k}`$ is independent of the claims in $`F_k`$, and $`\mathbb{E} \big[ \mathbb{I}(\hat{y}_i^{(\hat{m}_{-k})} = y_i) \mid \hat{m}_{-k} \big] = A(\hat{m}_{-k})`$. Each term is therefore an unbiased estimate of the true accuracy of the parameter actually chosen. The cross-fitted accuracy estimates the accuracy of the whole procedure (choose $m$ from data, then apply it) without optimism.
+
+*Missing reviews.* For $m = 3$, 8 LLM reviews were not made (§2.5). On any training set, the score of $m = 3$ does not decrease with the number of those reviews that are correct, while the scores of $m = 1$ and $m = 2$ do not depend on them. If $m = 2$ is chosen when every missing review is counted correct (the most favourable case for $m = 3$), it beats $m = 1$ and at least ties $m = 3$, and ties go to the smaller $m$. So it is chosen whatever the missing reviews say. The held-out verdicts of $m = 2$ need no missing review, so the cross-fitted accuracy is determined exactly.
+
+| Comparison | Result | Test | $p$ |
+| :--- | :--- | :--- | :--- |
+| FEVER vs FreshQA accuracy (§3.3) | 95.0% vs 82.0%; difference 13.0 points [4.2, 22.1] | two-proportion z-test ($z = 2.88$); Fisher's exact test | 0.004; 0.007 |
+| LLM arbiter vs the NLI verdict it replaced (56 claims, §2.9) | 17 fixed, 2 broken | exact McNemar | 0.0007 |
+| corroboration rule, $m = 2$ vs $m = 1$ (200 claims, §2.5) | 9 right only with $m = 2$, 2 only with $m = 1$ | exact McNemar | 0.065 |
 
 ---
 
@@ -816,11 +906,11 @@ $$
 4. **Dependence on an external LLM.** Claim decomposition, query generation, query rewriting and arbitration call a hosted LLM. Rate limits and quotas are absorbed by switching models (§2.12), but a different model may judge a borderline claim differently, and the arbiter abstains (`UNKNOWN`, flagged as an outage rather than a judgement, §2.9) if every model fails.
 5. **Limits of the Knowledge Graph evidence.** Wikidata has no property for many claims (opinions, events, descriptions: 83 of the 200 benchmark claims matched none), can be incomplete or out of date, which matters most for FreshQA, and the property matching can pick a near property (§2.8).
 6. **Claim-echo filter on short claims.** The filter removes web sentences that contain at least 80% of the claim's tokens (§2.3). For a short claim, an independent paraphrase reaches that threshold easily: in the current evaluation it removed the only snippets stating the fact for one true claim, which ended `UNKNOWN` (§3.5).
-7. **Modest sample sizes.** The corroboration rule (§2.5) is measured on the 200 evaluation claims, and the arbiter's effect (§2.9) is measured on the 56 claims it decided; the smaller routes (e.g. 5 FEVER reviews) give indicative rather than precise accuracies.
+7. **Modest sample sizes.** The corroboration rule (§2.5) is measured on the 200 evaluation claims, and the arbiter's effect (§2.9) is measured on the 56 claims it decided; the smaller routes (e.g. 5 FEVER reviews) give indicative rather than precise accuracies. Cross-fitting shows that the choice of $m = 2$ adds no optimism to the reported accuracy, but its advantage over $m = 1$ is not significant at the 5% level ($p = 0.065$, §2.5).
 
 **Limitations of the evaluation.**
 
-1. **Sample size.** With 100 claims per benchmark the 95% confidence intervals are about ±4 points (FEVER) and ±7 points (FreshQA); differences of a few points between pipeline versions are within noise (§4.4).
+1. **Sample size.** With 100 claims per benchmark the Wilson 95% intervals are 9 points (FEVER) and 15 points (FreshQA) wide; differences of a few points between pipeline versions are within noise (§4.4).
 2. **Reproducibility of live runs.** Retrieval uses live Wikipedia and web search, and the LLM is not deterministic, so a re-run on the same claims can differ slightly: search results and Wikipedia pages change, and borderline claims may be routed differently.
 3. **Label quality.** FreshQA gold answers are dated snapshots, and its questions are converted into claims by an LLM, which occasionally produces a claim whose label no longer matches. Fast-changing questions are excluded for this reason (§3.1), but even slow-changing labels drift: 5 of the 18 FreshQA errors in the current evaluation are claims on which current evidence contradicts the gold answer (§3.5).
 
@@ -859,6 +949,7 @@ python server.py                                   # web interface at http://loc
 python evaluation/run_5_runs.py --dataset all      # five-set evaluation (§3.2), resumable
 python experiments/full_evaluation.py              # the full evaluation of §3, including §2.5, §2.6 and §2.9 (resumable)
 python experiments/eval_conformal.py               # conformal calibration and coverage (§2.6)
+python experiments/statistical_tests.py            # intervals, hypothesis tests and the cross-fit of m (§2.5, §2.9, §4.5); no LLM call
 python tests/test_hierarchical_scoring.py          # each file in tests/ runs as a standalone script
 ```
 
@@ -871,14 +962,21 @@ The five-set evaluation of both benchmarks makes several hundred LLM calls. If a
 ## References
 
 - Angelopoulos, A. N., & Bates, S. (2021). *A Gentle Introduction to Conformal Prediction and Distribution-Free Uncertainty Quantification.* arXiv:2107.07511.
+- Brown, L. D., Cai, T. T., & DasGupta, A. (2001). *Interval Estimation for a Binomial Proportion.* Statistical Science, 16(2), 101–133.
 - Cormack, G. V., Clarke, C. L. A., & Büttcher, S. (2009). *Reciprocal Rank Fusion Outperforms Condorcet and Individual Rank Learning Methods.* SIGIR.
 - Du, Y., Li, S., Torralba, A., Tenenbaum, J. B., & Mordatch, I. (2023). *Improving Factuality and Reasoning in Language Models through Multiagent Debate.* arXiv:2305.14325.
 - El-Yaniv, R., & Wiener, Y. (2010). *On the Foundations of Noise-free Selective Classification.* JMLR.
+- Fisher, R. A. (1922). *On the Interpretation of χ² from Contingency Tables, and the Calculation of P.* Journal of the Royal Statistical Society, 85(1), 87–94.
 - Lewis, M., et al. (2020). *BART: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension.* ACL.
 - Liang, T., et al. (2023). *Encouraging Divergent Thinking in Large Language Models through Multi-Agent Debate.* arXiv:2305.19118.
+- McNemar, Q. (1947). *Note on the Sampling Error of the Difference between Correlated Proportions or Percentages.* Psychometrika, 12(2), 153–157.
+- Newcombe, R. G. (1998). *Interval Estimation for the Difference between Independent Proportions: Comparison of Eleven Methods.* Statistics in Medicine, 17(8), 873–890.
 - Reimers, N., & Gurevych, I. (2019). *Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks.* EMNLP.
 - Robertson, S., & Zaragoza, H. (2009). *The Probabilistic Relevance Framework: BM25 and Beyond.* Foundations and Trends in Information Retrieval.
 - Thorne, J., Vlachos, A., Christodoulopoulos, C., & Mittal, A. (2018). *FEVER: a Large-scale Dataset for Fact Extraction and VERification.* NAACL.
+- Varma, S., & Simon, R. (2006). *Bias in Error Estimation when Using Cross-Validation for Model Selection.* BMC Bioinformatics, 7, 91.
 - Vovk, V., Gammerman, A., & Shafer, G. (2005). *Algorithmic Learning in a Random World.* Springer.
 - Vu, T., et al. (2023). *FreshLLMs: Refreshing Large Language Models with Search Engine Augmentation.* arXiv:2310.03214.
 - Williams, A., Nangia, N., & Bowman, S. (2018). *A Broad-Coverage Challenge Corpus for Sentence Understanding through Inference (MultiNLI).* NAACL.
+- Wilson, E. B. (1927). *Probable Inference, the Law of Succession, and Statistical Inference.* Journal of the American Statistical Association, 22(158), 209–212.
+- Zou, G. Y., & Donner, A. (2008). *Construction of Confidence Limits about Effect Measures: A General Approach.* Statistics in Medicine, 27(10), 1693–1702.

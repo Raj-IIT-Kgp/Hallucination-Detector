@@ -1639,7 +1639,7 @@ function benchCard(key, d) {
         <p class="bench-desc">${meta.desc}</p>
         <div class="bench-stats">
             <div class="bench-stat"><span class="stat-label">Accuracy</span><span class="stat-value">${pct(p.accuracy, 0)}</span>
-                <span class="stat-sub">95% CI ${pct(p.ci_lower_95, 0)}–${pct(p.ci_upper_95, 0)}</span></div>
+                <span class="stat-sub">95% CI ${wilsonText(p.correct_claims, p.evaluated_claims)} (Wilson)</span></div>
             <div class="bench-stat"><span class="stat-label">Precision</span><span class="stat-value">${p.precision.toFixed(2)}</span><span class="stat-sub">of flags correct</span></div>
             <div class="bench-stat"><span class="stat-label">Recall</span><span class="stat-value">${p.recall.toFixed(2)}</span><span class="stat-sub">of hallucinations caught</span></div>
             <div class="bench-stat"><span class="stat-label">F1</span><span class="stat-value">${p.f1.toFixed(2)}</span><span class="stat-sub">${p.correct_claims}/${n} correct</span></div>
@@ -1798,10 +1798,28 @@ function bindRouteTips(key, d) {
     });
 }
 
+// Wilson 95% interval of an accuracy, from the stored counts
+function wilsonText(correct, n) {
+    const [lo, hi] = wilson(correct, n);
+    return `${pct(lo, 0)}–${pct(hi, 0)}`;
+}
+
+// Pooled two-proportion z-test of equal accuracy; two-sided p from the normal tail
+function twoProportionTest(c1, n1, c2, n2) {
+    const p = (c1 + c2) / (n1 + n2), se = Math.sqrt(p * (1 - p) * (1 / n1 + 1 / n2));
+    const z = se ? (c1 / n1 - c2 / n2) / se : 0;
+    // complementary error function (Abramowitz & Stegun 7.1.26), accurate to about 1e-7
+    const x = Math.abs(z) / Math.SQRT2, t = 1 / (1 + 0.3275911 * x);
+    const erfc = t * (0.254829592 + t * (-0.284496736 + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429)))) * Math.exp(-x * x);
+    return { z, p: erfc };
+}
+
 // Describes the measured gap between the benchmarks from the numbers themselves, so the text stays
 // true when the results are re-run
 function compareCard(f, q) {
-    const overlap = q.ci_upper_95 >= f.ci_lower_95;
+    const test = twoProportionTest(f.correct_claims, f.evaluated_claims, q.correct_claims, q.evaluated_claims);
+    const significant = test.p < 0.05;
+    const pText = test.p < 0.001 ? 'p < 0.001' : `p = ${test.p.toFixed(3)}`;
     const dP = f.precision - q.precision, dR = f.recall - q.recall;
     const fmt = x => x.toFixed(2);
     const where = Math.abs(dP) > Math.abs(dR)
@@ -1809,8 +1827,8 @@ function compareCard(f, q) {
         : `The gap is mainly in recall (${fmt(f.recall)} vs ${fmt(q.recall)}): FreshQA has more hallucinations missed or left uncertain (${q.fn} vs ${f.fn}), while precision is closer (${fmt(f.precision)} vs ${fmt(q.precision)}).`;
     return `<div class="card compare">
         <h2 style="margin-bottom:6px">FEVER vs FreshQA</h2>
-        <p>FEVER scores ${pct(f.accuracy, 0)} and FreshQA ${pct(q.accuracy, 0)}; the 95% intervals
-        ${overlap ? 'overlap, so the gap is suggestive rather than conclusive at this sample size' : 'do not overlap, so FreshQA is genuinely harder'}.
+        <p>FEVER scores ${pct(f.accuracy, 0)} and FreshQA ${pct(q.accuracy, 0)}. A two-proportion z-test of equal accuracy gives
+        z = ${test.z.toFixed(2)}, ${pText}, so ${significant ? 'FreshQA is significantly harder at the 5% level' : 'the gap is not significant at the 5% level at this sample size'}.
         ${where} FreshQA is harder for reasons the error analysis shows: its claims depend on time and negation, which the NLI model handles poorly,
         and some of its gold answers are contradicted by current evidence (see the Docs, §3.5).</p>
     </div>`;
