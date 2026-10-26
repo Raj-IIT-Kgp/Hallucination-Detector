@@ -1664,7 +1664,7 @@ function benchCard(key, d) {
         </div>
 
         <div class="bench-block">
-            <h3>Accuracy per set (20 claims each)</h3>
+            <h3>Accuracy per set (%, 20 claims each)</h3>
             <div class="chart" id="chart-${key}"></div>
         </div>
 
@@ -1778,11 +1778,15 @@ function drawSetChart(key, d) {
         return `M${x0},${ih}V${y0 + rr}Q${x0},${y0} ${x0 + rr},${y0}H${x0 + w - rr}Q${x0 + w},${y0} ${x0 + w},${y0 + rr}V${ih}Z`;
     };
     const bars = g.selectAll('path.bar').data(sets).enter().append('path').attr('class', 'bar').attr('d', barPath);
+    // With many sets the bars are narrow: label them with the bare number (the percentage and "Set N" stay in the tooltip)
+    const compact = sets.length > 8;
     g.selectAll('text.val-label').data(sets).enter().append('text').attr('class', 'val-label')
         .attr('x', s => x(s.set) + x.bandwidth() / 2).attr('y', s => y(s.accuracy) + 15).attr('text-anchor', 'middle')
-        .text(s => pct(s.accuracy, 0));
+        .style('font-size', compact ? '9px' : null)
+        .text(s => compact ? Math.round(s.accuracy * 100) : pct(s.accuracy, 0));
     g.selectAll('text.xl').data(sets).enter().append('text').attr('class', 'tick')
-        .attr('x', s => x(s.set) + x.bandwidth() / 2).attr('y', ih + 16).attr('text-anchor', 'middle').text(s => s.set);
+        .attr('x', s => x(s.set) + x.bandwidth() / 2).attr('y', ih + 16).attr('text-anchor', 'middle')
+        .text(s => compact ? s.set.replace(/^Set /, '') : s.set);
 
     const py = y(d.pooled.accuracy);
     g.append('line').attr('class', 'ref-line').attr('x1', 0).attr('x2', iw).attr('y1', py).attr('y2', py);
@@ -1962,7 +1966,7 @@ const METHOD = [
     ['Query generation', 'always', 'Each claim becomes entity-focused search queries, a domain tag and a flag for time-sensitive claims; simple claims use a rule-based fast path with no LLM call.'],
     ['Evidence retrieval and re-ranking', 'always', 'Wikipedia, web search and arXiv are queried in parallel; paragraphs are re-ranked by a hybrid lexical and semantic score, and web sentences that merely quote the claim are removed.'],
     ['NLI evidence scoring', 'always', 'A BART-large-MNLI cross-encoder scores every snippet. Decisive support settles a claim; a contradiction is accepted directly only when at least two decisive snippets agree.'],
-    ['Conformal prediction set', 'always', 'Split conformal prediction, calibrated on 100 FEVER claims, turns the NLI posterior into a label set with nominal 90% coverage (84.2% measured on live evidence). A single-label set is accepted; a multi-label set triggers escalation.'],
+    ['Conformal prediction set', 'always', 'Split conformal prediction, calibrated on 100 FEVER claims, turns the NLI posterior into a label set with nominal 90% coverage (83.2% measured on live evidence). A single-label set is accepted; a multi-label set triggers escalation.'],
     ['Self-reflective query rewrite', 'only if uncertain', 'When the evidence is inconclusive, the LLM rewrites the queries once (if it returns none, the claim without its entity names is searched) and retrieval runs again.'],
     ['Knowledge graph (Wikidata)', 'only if escalated', 'The claim\'s entities are looked up in Wikidata, and their recorded statements (what the entity is, dates, places, awards, …) are added to the arbiter\'s evidence, with no LLM call.'],
     ['LLM arbiter', 'only if escalated or contested', 'A dialectical prompt argues for and against the claim, then judges against the raw evidence. It also reviews lone or contested contradictions, which are unreliable on their own.'],
@@ -1972,13 +1976,13 @@ const METHOD = [
 
 // Mirrors §5 of pipeline.md
 const LIMITS = [
-    ['Missing specific facts', 'When the evidence does not contain the specific number, date or ranking a claim asserts, the arbiter abstains: 14 of the 51 errors across both benchmarks are such abstentions.'],
-    ['NLI blind spots', 'The NLI model does not reason about time ("currently"), mishandles negations and accepts near-matching names; a decisive snippet settles a claim without LLM review, so these errors reach the output (13 of the 33 FreshQA errors).'],
-    ['Drifting labels', 'Even slow-changing FreshQA answers go out of date: on 8 of the 33 FreshQA errors, current evidence contradicts the gold answer (e.g. Lewandowski has left Barcelona).'],
-    ['Scope of the conformal guarantee', 'The conformal layer is calibrated on FEVER claims with gold evidence; on the pipeline\'s own retrieved evidence its measured coverage is 84.2%, below 90%, so the prediction set acts as a calibrated escalation trigger. Recalibrating brings coverage close to 90% but escalates many more claims for about the same accuracy.'],
+    ['Missing specific facts', 'When the evidence does not contain the specific number, date or ranking a claim asserts, the arbiter abstains: 19 of the 81 errors across both benchmarks are such abstentions.'],
+    ['NLI blind spots', 'The NLI model does not reason about time ("currently"), mishandles negations and accepts near-matching names; a decisive snippet settles a claim without LLM review, so these errors reach the output (24 of the 53 FreshQA errors).'],
+    ['Drifting labels', 'Even slow-changing FreshQA answers go out of date: on 11 of the 53 FreshQA errors, current evidence contradicts the gold answer (e.g. Lewandowski has left Barcelona).'],
+    ['Scope of the conformal guarantee', 'The conformal layer is calibrated on FEVER claims with gold evidence; on the pipeline\'s own retrieved evidence its measured coverage is 83.2%, below 90%, so the prediction set acts as a calibrated escalation trigger. Recalibrating brings coverage to 90% but escalates 181 more claims for an accuracy gain that is not significant.'],
     ['Echo filter on short claims', 'Web sentences containing 80% of the claim\'s words are removed as quotes of it; on a short claim an independent paraphrase can be removed too, as for one true claim that then ended Uncertain.'],
     ['Dependence on a hosted LLM', 'Rate limits are absorbed by switching Gemini models, but another model may judge a borderline claim differently, and the arbiter abstains if every model fails.'],
-    ['Evaluation size and repeatability', '200 claims per benchmark give ±4 (FEVER) and ±5 (FreshQA) point confidence intervals, and live retrieval and a non-deterministic LLM mean a re-run can differ slightly.'],
+    ['Evaluation size and repeatability', '300 claims per benchmark give ±3 (FEVER) and ±4 (FreshQA) point confidence intervals, and live retrieval and a non-deterministic LLM mean a re-run can differ slightly.'],
 ];
 
 // ---- cascade diagram ---------------------------------------------------------

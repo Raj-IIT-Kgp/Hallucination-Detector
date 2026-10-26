@@ -170,7 +170,7 @@ def samples():
 
 @app.route("/api/benchmarks")
 def benchmarks():
-    """Ten-set benchmark summaries written by evaluation/run_5_runs.py, for the Benchmarks tab."""
+    """Fifteen-set benchmark summaries written by evaluation/run_5_runs.py, for the Benchmarks tab."""
     results = {}
     for name in ("fever", "freshqa"):
         path = os.path.join(BASE_DIR, "evaluation", f"{name}_5_runs_results.json")
@@ -200,7 +200,7 @@ def _latency(name):
 
 
 def _route_outcomes(name):
-    """Claims and correct verdicts per decision route, from the per-claim results of the ten-set run."""
+    """Claims and correct verdicts per decision route, from the per-claim results of the fifteen-set run."""
     path = os.path.join(BASE_DIR, "evaluation", f"{name}_5_runs_claims.jsonl")
     outcomes = {}
     if os.path.exists(path):
@@ -229,7 +229,7 @@ _coverage_pools = None
 @app.route("/api/coverage_demo")
 def coverage_demo():
     """Non-conformity scores at the true label for the coverage animation of the Method tab: the 200 FEVER claims
-    scored on gold evidence (experiments/eval_conformal.py; the first 100 are the calibration set) and the 400
+    scored on gold evidence (experiments/eval_conformal.py; the first 100 are the calibration set) and the 600
     benchmark claims scored on the evidence the pipeline retrieved."""
     global _coverage_pools
     if _coverage_pools is None:
@@ -261,7 +261,7 @@ def coverage_demo():
 
 @app.route("/api/benchmark_claims/<name>")
 def benchmark_claims(name):
-    """Per-claim records of the ten-set run (verdict, evidence, computation trace), for the claim explorer."""
+    """Per-claim records of the fifteen-set run (verdict, evidence, computation trace), for the claim explorer."""
     if name not in ("fever", "freshqa"):
         return _error("Unknown benchmark.", 404)
     path = os.path.join(BASE_DIR, "evaluation", f"{name}_5_runs_claims.jsonl")

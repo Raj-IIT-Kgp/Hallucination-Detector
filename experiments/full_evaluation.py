@@ -1,8 +1,8 @@
 """
 One experiment that re-measures everything pipeline.md reports for the current pipeline.
 
-It runs the ten-set evaluation of FEVER and FreshQA (the same 400 claims as the published run:
-seed 42) with full per-claim records (verdict, computation trace, evidence, LLM-call log), then
+It runs the fifteen-set evaluation of FEVER and FreshQA (the same 600 claims as the published run:
+seed 42; FreshQA's last set is filled with true claims once its false claims run out) with full per-claim records (verdict, computation trace, evidence, LLM-call log), then
 derives every result from those records:
 
   1. accuracy, precision, recall, F1, confusion counts, per set and pooled
@@ -36,6 +36,7 @@ from evaluation.run_5_runs import run_5_sets, run_dir, metrics, EVAL_DIR
 DATASETS = ("fever", "freshqa")
 LABELS = ["contradicted", "unknown", "supported"]      # order of the NLI probability vector
 ALPHA = 0.10
+NUM_SETS = 15
 CURRENT_Q_HAT = 0.898471511900425                      # experiments/conformal_calibration.json
 
 
@@ -304,7 +305,7 @@ def main():
 
     if not args.skip_run:
         for ds in DATASETS:
-            if run_5_sets(ds, 20, 10, 42, fresh=False, tag=args.tag) is None:
+            if run_5_sets(ds, 20, NUM_SETS, 42, fresh=False, tag=args.tag) is None:
                 print("Stopped (LLM quota). Run the same command again to resume.")
                 sys.exit(1)
 

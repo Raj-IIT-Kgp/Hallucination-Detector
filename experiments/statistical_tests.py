@@ -1,5 +1,5 @@
 """
-Statistical tests on the published ten-set evaluation, and a selection-bias check of the corroboration rule.
+Statistical tests on the published fifteen-set evaluation, and a selection-bias check of the corroboration rule.
 
 Everything is derived from the per-claim records (evaluation/<dataset>_5_runs_claims.jsonl, which hold each
 claim's computation trace); no LLM is called unless --shadow is given.
@@ -9,13 +9,14 @@ claim's computation trace); no LLM is called unless --shadow is given.
      difference in accuracy (§3.3, §4.5)
   3. the LLM arbiter: exact McNemar test of the NLI verdict before arbitration against the final verdict (§2.9)
   4. the corroboration rule (§2.5): the minimum number m of decisive contradicting snippets was chosen by
-     looking at these same 400 claims, so the reported accuracy could be optimistic. The verdict every claim
+     looking at these same 600 claims, so the reported accuracy could be optimistic. The verdict every claim
      would have received with m = 1, 2 or 3 is reconstructed from its trace; m is then chosen by
      cross-fitting (on the other folds only) and each claim is scored with the m chosen without it.
      With m = 3, corroborated contradictions would be reviewed by the LLM; those reviews are read from the
      cache of experiments/full_evaluation.py (shadow_reviews.jsonl) and, with --shadow, missing ones are made
      and cached (one call each). Without them, results are reported as a range.
-  5. the first five sets against the five added later, per benchmark (two-proportion z-test and Fisher) (§3.3)
+  5. the three live runs (sets 1-5, 6-10, 11-15), per benchmark: chi-square test of homogeneity of their
+     accuracies (§3.3)
   6. multiple comparisons: Holm (family-wise error) and Benjamini-Hochberg (false discovery rate) adjusted
      p-values over every test above (§4.5)
   7. power and sample size: claims needed for a given interval width, for each comparison to reach 80% power,
@@ -44,7 +45,7 @@ ALPHA = 0.05
 POWER = 0.80
 SIM_REPS = 20000
 SEED = 0
-ORIGINAL_SETS = 5    # as in evaluation/run_5_runs.py (not imported: that module loads the NLI model)
+RUNS = ((1, 5), (6, 10), (11, 15))    # the sets of each live run (the first is ORIGINAL_SETS in evaluation/run_5_runs.py)
 
 
 def load_records(path):
@@ -91,6 +92,33 @@ def newcombe_interval(c1, n1, c2, n2):
     l2, u2 = wilson_interval(c2, n2)
     d = p1 - p2
     return d - math.sqrt((p1 - l1) ** 2 + (u2 - p2) ** 2), d + math.sqrt((u1 - p1) ** 2 + (p2 - l2) ** 2)
+
+
+def chi2_sf(x, df):
+    """Upper tail Pr(X >= x) of the chi-square distribution with an integer number of degrees of freedom:
+    for even df, exp(-x/2) sum_{i < df/2} (x/2)^i / i!; for odd df, erfc(sqrt(x/2)) plus the analogous series."""
+    if x <= 0:
+        return 1.0
+    if df % 2 == 0:
+        term, total = 1.0, 1.0
+        for i in range(1, df // 2):
+            term *= (x / 2) / i
+            total += term
+        return math.exp(-x / 2) * total
+    total, term = math.erfc(math.sqrt(x / 2)), math.sqrt(2 * x / math.pi) * math.exp(-x / 2)
+    for k in range(1, (df + 1) // 2):
+        total += term
+        term *= x / (2 * k + 1)
+    return min(1.0, total)
+
+
+def homogeneity_test(counts):
+    """Chi-square test that k accuracies [(correct, n), ...] are equal: the 2 x k table of right and wrong
+    verdicts against its expected counts under a common accuracy, with k - 1 degrees of freedom."""
+    total_c, total_n = sum(c for c, _ in counts), sum(n for _, n in counts)
+    p = total_c / total_n
+    x2 = sum((c - n * p) ** 2 / (n * p) + ((n - c) - n * (1 - p)) ** 2 / (n * (1 - p)) for c, n in counts)
+    return x2, len(counts) - 1, chi2_sf(x2, len(counts) - 1), min(min(n * p, n * (1 - p)) for _, n in counts)
 
 
 def mcnemar_exact_p(b, c):
@@ -229,9 +257,11 @@ def power_analysis(report, rows):
         "m3_vs_m2": (c["paired_vs_published"][3]["alternative_right_only"], c["paired_vs_published"][3]["published_right_only"], c["claims"]),
     }.items():
         p_b, p_c = b / n, cc / n
-        need = n_mcnemar(p_b + p_c, p_b - p_c)
+        # with no observed difference (b = c) there is no effect to plan for: no sample size reaches 80% power
+        need = n_mcnemar(p_b + p_c, p_b - p_c) if b != cc else None
         paired[name] = {"discordant_better": b, "discordant_worse": cc, "pairs": n, "psi": p_b + p_c, "delta": p_b - p_c,
-                        "pairs_for_80": need, "power_simulated_at_that_n": simulate_mcnemar(p_b, p_c, need, rng),
+                        "pairs_for_80": need,
+                        "power_simulated_at_that_n": simulate_mcnemar(p_b, p_c, need, rng) if need else None,
                         "power_simulated_now": simulate_mcnemar(p_b, p_c, n, rng)}
     out["mcnemar"] = paired
     return out
@@ -372,19 +402,20 @@ def main():
                          "v": {m: verdict_with_m(ds, r, m, reviews) for m in CANDIDATE_M}})
     report["corroboration"] = corroboration_analysis(rows)
 
-    # 5. the original five sets against the five added later
-    report["halves"] = {}
+    # 5. the three live runs: do their accuracies differ more than chance allows?
+    report["runs"] = {}
     for ds, recs in records.items():
-        first = [r for r in recs if r["set"] <= ORIGINAL_SETS]
-        later = [r for r in recs if r["set"] > ORIGINAL_SETS]
-        c1, n1 = sum(r["gold"] == r["prediction"] for r in first), len(first)
-        c2, n2 = sum(r["gold"] == r["prediction"] for r in later), len(later)
-        z, p = two_proportion_test(c1, n1, c2, n2)
-        report["halves"][ds] = {"first": [c1, n1], "later": [c2, n2], "z": z, "p_two_proportion": p,
-                                "p_fisher_exact": fisher_exact_p(c1, n1, c2, n2)}
+        counts = []
+        for lo, hi in RUNS:
+            run = [r for r in recs if lo <= r["set"] <= hi]
+            counts.append([sum(r["gold"] == r["prediction"] for r in run), len(run)])
+        x2, df, p, min_expected = homogeneity_test(counts)
+        report["runs"][ds] = {"sets": [list(r) for r in RUNS], "correct_n": counts, "chi2": x2, "df": df,
+                              "p": p, "min_expected_count": min_expected}
 
-    # 6. multiple comparisons over every test reported (one p-value per hypothesis: the z-test for the
-    #    unpaired comparisons, as reported in §3.3, and the exact McNemar test for the paired ones)
+    # 6. multiple comparisons over every test reported (one p-value per hypothesis: the z-test for FEVER vs
+    #    FreshQA and the chi-square test for the runs, as reported in §3.3, and the exact McNemar test for the
+    #    paired comparisons)
     family = {
         "fever_vs_freshqa": report["fever_vs_freshqa"]["p_two_proportion"],
         "arbiter_pooled": report["arbiter"]["pooled"]["mcnemar_exact_p"],
@@ -392,8 +423,8 @@ def main():
         "arbiter_freshqa": report["arbiter"]["freshqa"]["mcnemar_exact_p"],
         "m2_vs_m1": report["corroboration"]["paired_vs_published"][1]["mcnemar_exact_p"],
         "m2_vs_m3": report["corroboration"]["paired_vs_published"][3]["mcnemar_exact_p"],
-        "halves_fever": report["halves"]["fever"]["p_two_proportion"],
-        "halves_freshqa": report["halves"]["freshqa"]["p_two_proportion"],
+        "runs_fever": report["runs"]["fever"]["p"],
+        "runs_freshqa": report["runs"]["freshqa"]["p"],
     }
     h, bh = holm(family), benjamini_hochberg(family)
     report["multiple_testing"] = {"alpha": ALPHA, "tests": {
@@ -434,10 +465,11 @@ def print_report(rep):
             ms = sorted(set(r["chosen_m"].values()))
             print(f"  cross-fit ({name}, missing reviews {'correct' if case == 'best' else 'wrong'}): m chosen {ms}, "
                   f"{r['correct_known']} correct + {r['unknown']} unknown of {c['claims']}")
-    print("\nFirst five sets vs the five added later")
-    for ds, a in rep["halves"].items():
-        print(f"  {ds:8} {a['first'][0]}/{a['first'][1]} vs {a['later'][0]}/{a['later'][1]}: z = {a['z']:.2f}, "
-              f"p = {a['p_two_proportion']:.4f} (Fisher exact p = {a['p_fisher_exact']:.4f})")
+    print("\nThe three live runs (chi-square test of equal accuracy)")
+    for ds, a in rep["runs"].items():
+        runs = ", ".join(f"sets {lo}-{hi}: {c}/{n}" for (lo, hi), (c, n) in zip(a["sets"], a["correct_n"]))
+        print(f"  {ds:8} {runs}; chi2 = {a['chi2']:.2f} (df {a['df']}), p = {a['p']:.4f}, "
+              f"smallest expected count {a['min_expected_count']:.1f}")
     print(f"\nMultiple comparisons ({len(rep['multiple_testing']['tests'])} tests, alpha = {ALPHA})")
     for k, t in rep["multiple_testing"]["tests"].items():
         mark = lambda b: "yes" if b else "no"
@@ -456,7 +488,8 @@ def print_report(rep):
           f"(simulated power there {pc(o['power_simulated_at_that_n'])})")
     for k, m in pw["mcnemar"].items():
         print(f"  {k}: {m['discordant_better']} vs {m['discordant_worse']} of {m['pairs']} (power now {pc(m['power_simulated_now'])}); "
-              f"pairs for 80%: {m['pairs_for_80']} (simulated power there {pc(m['power_simulated_at_that_n'])})")
+              + (f"pairs for 80%: {m['pairs_for_80']} (simulated power there {pc(m['power_simulated_at_that_n'])})"
+                 if m["pairs_for_80"] else "no difference observed, so no sample size to plan for"))
 
 
 if __name__ == "__main__":

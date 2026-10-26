@@ -1,19 +1,23 @@
 """
-Ten-set benchmark evaluation for FEVER and FreshQA.
+Fifteen-set benchmark evaluation for FEVER and FreshQA.
 
 Each benchmark is split into `num_sets` non-overlapping stratified sets of `samples_per_set`
-claims (half SUPPORTS, half REFUTES), drawn with a fixed seed so every run uses the same claims. Ten sets
-(200 claims) are the default; the first five are the original 100-claim run and are drawn exactly as before.
+claims (half SUPPORTS, half REFUTES), drawn with a fixed seed so every run uses the same claims. Fifteen sets
+(300 claims) are the default; the first five are the original 100-claim run and are drawn exactly as before.
 Per-claim results are appended to evaluation/<dataset>_5_runs_claims.jsonl as they finish, so an
 interrupted run resumes where it stopped. A claim whose verification hit an LLM failure (quota,
 timeout) is not scored as an abstention: it is retried once after a pause, and the run stops if
 it fails again. The summary is written to evaluation/<dataset>_5_runs_results.json.
 
+A set that finds one label's pool exhausted takes the rest of its claims from the other label (on by default;
+--no-fill stops instead), so the last claims of a small pool can still be used: FreshQA has only 147 never- and
+slow-changing REFUTES, so its fifteenth set holds 13 SUPPORTS and 7 REFUTES.
+
 With --tag NAME the run is written to evaluation/runs/NAME/ instead (so earlier results are kept),
 and each per-claim record also holds the claim's full result (verdict, computation trace and
 complete evidence) and its LLM-call log, for analysis by experiments/full_evaluation.py.
 
-usage: python evaluation/run_5_runs.py --dataset fever|freshqa|all [--fresh] [--tag NAME]
+usage: python evaluation/run_5_runs.py --dataset fever|freshqa|all [--sets N] [--no-fill] [--fresh] [--tag NAME]
 """
 import sys
 import os
@@ -55,12 +59,14 @@ def load_items(dataset):
     return load_freshqa(split="all")
 
 
-def make_sets(items, samples_per_set, num_sets, seed):
-    """Non-overlapping stratified sets: each holds samples_per_set // 2 SUPPORTS and the rest REFUTES."""
+def make_sets(items, samples_per_set, num_sets, seed, fill=False):
+    """Non-overlapping stratified sets: each holds samples_per_set // 2 SUPPORTS and the rest REFUTES
+    (with fill, a set beyond the original five takes the rest from the other label once one label runs out)."""
     supported = [x for x in items if x["label"] == "SUPPORTS"]
     refuted = [x for x in items if x["label"] == "REFUTES"]
     half = samples_per_set // 2
-    if len(supported) < half * num_sets or len(refuted) < (samples_per_set - half) * num_sets:
+    short = len(supported) < half * num_sets or len(refuted) < (samples_per_set - half) * num_sets
+    if (short and not fill) or len(supported) + len(refuted) < samples_per_set * num_sets:
         raise ValueError("Not enough samples to construct non-overlapping sets.")
 
     rng = random.Random(seed)
@@ -77,9 +83,11 @@ def make_sets(items, samples_per_set, num_sets, seed):
     pools = [iter(supported[ORIGINAL_SETS * half:]), iter(refuted[ORIGINAL_SETS * (samples_per_set - half):])]
     for s in range(ORIGINAL_SETS, num_sets):
         batch = []
-        for pool, size in zip(pools, (half, samples_per_set - half)):
+        for k, size in enumerate((half, samples_per_set - half)):
             for _ in range(size):
-                item = next((x for x in pool if x["claim"] not in used), None)
+                item = next((x for x in pools[k] if x["claim"] not in used), None)
+                if item is None and fill:
+                    item = next((x for x in pools[1 - k] if x["claim"] not in used), None)
                 if item is None:
                     raise ValueError("Not enough distinct samples to construct non-overlapping sets.")
                 used.add(item["claim"])
@@ -144,7 +152,7 @@ def run_dir(tag=None):
     return path
 
 
-def run_5_sets(dataset, samples_per_set=20, num_sets=10, seed=42, fresh=False, tag=None):
+def run_5_sets(dataset, samples_per_set=20, num_sets=15, seed=42, fresh=False, tag=None, fill=True):
     out_dir = run_dir(tag)
     claims_file = os.path.join(out_dir, f"{dataset}_5_runs_claims.jsonl")
     if fresh and os.path.exists(claims_file):
@@ -156,7 +164,7 @@ def run_5_sets(dataset, samples_per_set=20, num_sets=10, seed=42, fresh=False, t
                 rec = json.loads(line)
                 done[(rec["set"], rec["claim"])] = rec
 
-    sets = make_sets(load_items(dataset), samples_per_set, num_sets, seed)
+    sets = make_sets(load_items(dataset), samples_per_set, num_sets, seed, fill)
     total = samples_per_set * num_sets
     print(f"{dataset.upper()}: {num_sets} sets x {samples_per_set} claims (seed {seed}); {len(done)}/{total} already done")
 
@@ -231,17 +239,19 @@ def run_5_sets(dataset, samples_per_set=20, num_sets=10, seed=42, fresh=False, t
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Ten-set stratified evaluation on FEVER and/or FreshQA.")
+    parser = argparse.ArgumentParser(description="Fifteen-set stratified evaluation on FEVER and/or FreshQA.")
     parser.add_argument("--dataset", choices=["fever", "freshqa", "all"], default="all")
     parser.add_argument("--samples-per-set", type=int, default=20)
-    parser.add_argument("--sets", type=int, default=10)
+    parser.add_argument("--sets", type=int, default=15)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--fresh", action="store_true", help="Discard saved per-claim results and start over")
     parser.add_argument("--tag", default=None, help="Write the run to evaluation/runs/TAG/ with full per-claim details")
+    parser.add_argument("--fill", action=argparse.BooleanOptionalAction, default=True,
+                        help="Once one label runs out, fill sets with the other label (--no-fill stops instead)")
     args = parser.parse_args()
 
     for ds in (["fever", "freshqa"] if args.dataset == "all" else [args.dataset]):
-        if run_5_sets(ds, args.samples_per_set, args.sets, args.seed, args.fresh, args.tag) is None:
+        if run_5_sets(ds, args.samples_per_set, args.sets, args.seed, args.fresh, args.tag, args.fill) is None:
             break
 
     # Exit immediately: interpreter shutdown joins every thread-pool worker, and a

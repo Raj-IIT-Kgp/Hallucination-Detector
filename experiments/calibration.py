@@ -1,8 +1,8 @@
 """
-Calibration of the NLI probabilities on the published ten-set evaluation (no LLM calls).
+Calibration of the NLI probabilities on the published fifteen-set evaluation (no LLM calls).
 
 When the NLI model gives a verdict with probability 0.95, is it right 95% of the time? This script measures it
-on the 400 benchmark claims and fits a temperature T (statistical_layer/calibration.py) that makes it so.
+on the 600 benchmark claims and fits a temperature T (statistical_layer/calibration.py) that makes it so.
 
   population  claims whose final NLI pass gave a definite verdict (SUPPORTED or CONTRADICTED): the benchmarks'
               gold labels are only ever SUPPORTED or CONTRADICTED, so a calibrated "unknown" has no target.

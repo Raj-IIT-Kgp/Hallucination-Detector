@@ -2,12 +2,12 @@
 
 VeriFact checks a text, typically an answer written by a language model, for hallucinations. It splits the text into atomic claims, retrieves evidence for each claim from Wikipedia, the web and arXiv, scores the evidence with a natural language inference (NLI) model, and uses split conformal prediction to decide when that verdict can stand and when the claim must be escalated to a knowledge graph and an LLM arbiter.
 
-| Benchmark (200 claims, ten sets of 20) | Accuracy (Wilson 95% CI) | Precision | Recall | F1 |
+| Benchmark (300 claims, fifteen sets of 20) | Accuracy (Wilson 95% CI) | Precision | Recall | F1 |
 | :--- | :--- | :--- | :--- | :--- |
-| FEVER | 91.0% [86.2%, 94.2%] | 0.95 | 0.89 | 0.92 |
-| FreshQA (never- and slow-changing) | 83.5% [77.7%, 88.0%] | 0.90 | 0.84 | 0.87 |
+| FEVER | 90.7% [86.8%, 93.5%] | 0.94 | 0.89 | 0.91 |
+| FreshQA (never- and slow-changing) | 82.3% [77.6%, 86.2%] | 0.91 | 0.80 | 0.85 |
 
-Mean latency per claim: **8.6 s** on FEVER and **11.4 s** on FreshQA.
+Mean latency per claim: **8.5 s** on FEVER and **11.3 s** on FreshQA.
 
 **The full method, mathematics, evaluation and limitations are documented in [`pipeline.md`](pipeline.md).**
 
@@ -41,22 +41,22 @@ The server runs in production mode by default (waitress, bound to `127.0.0.1`). 
 ## Web interface
 
 - **Verify**: paste text and watch each claim go through the pipeline live, with its verdict, the NLI probabilities and their calibrated confidence, the NLI reading of every evidence snippet (and which one decided), the conformal set, a stage timeline, and a knowledge graph from Wikidata that sets each claim next to what Wikidata records (escalated claims also give these statements to the LLM arbiter).
-- **Benchmarks**: the FEVER and FreshQA ten-set results.
+- **Benchmarks**: the FEVER and FreshQA fifteen-set results.
 - **Method**: the pipeline stages and known limitations.
 - **Docs**: `pipeline.md`, rendered.
 
 ## Evaluation
 
 ```bash
-python evaluation/run_5_runs.py --dataset all      # ten-set evaluation of FEVER and FreshQA (resumable)
+python evaluation/run_5_runs.py --dataset all      # fifteen-set evaluation of FEVER and FreshQA (resumable)
 python evaluation/run_benchmark.py --dataset fever --samples 20
-python experiments/full_evaluation.py              # the full evaluation: ten-set run plus every analysis in pipeline.md §2.5, §2.6, §2.9 and §3
+python experiments/full_evaluation.py              # the full evaluation: fifteen-set run plus every analysis in pipeline.md §2.5, §2.6, §2.9 and §3
 python experiments/eval_conformal.py               # conformal calibration and coverage
 python experiments/statistical_tests.py            # confidence intervals, hypothesis tests, multiple comparisons and power (no LLM call)
 python experiments/calibration.py                  # temperature scaling of the NLI probabilities (no LLM call)
 ```
 
-The ten-set evaluation makes several hundred LLM calls; if the API quota runs out, it stops and resumes where it stopped when started again.
+The fifteen-set evaluation makes several hundred LLM calls; if the API quota runs out, it stops and resumes where it stopped when started again.
 
 ## Project layout
 

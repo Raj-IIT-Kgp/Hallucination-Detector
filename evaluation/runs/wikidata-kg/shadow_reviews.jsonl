@@ -145,3 +145,96 @@
 {"dataset": "freshqa", "claim": "Kendrick Lamar released his most recent studio album on November 22, 2024.", "label": "supported"}
 {"dataset": "freshqa", "claim": "Intel went public in 1971.", "label": "contradicted"}
 {"dataset": "freshqa", "claim": "There are days left until the next season of Atlanta airs.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Easy A is a 2010 food dish.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Recovery is Eminem's first album.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Brian Michael Bendis was turned down for every film job he applied to.", "label": "contradicted"}
+{"dataset": "fever", "claim": "English people are descended from the Angles as a result of migration.", "label": "supported"}
+{"dataset": "fever", "claim": "Colombiana was released in 2001.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Janelle Mon\u00e1e is Mexican.", "label": "contradicted"}
+{"dataset": "fever", "claim": "The United Nations Charter was signed on April 26, 1945.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Giada at Home was an American basic cable channel.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Eric Church is unable to write songs.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Muscarinic acetylcholine receptors are known as DNA.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Shawn Carlson is a squid.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Viola Davis appeared in the novel Law & Order: Special Victims Unit.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "In 2022, inflation in the United States was at its lowest rate since 1982.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "The population of the United States reached 8 billion.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Elon Musk is currently married to his spouse.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Abortion has been illegal in the United States.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Apple's stock price cratered the day after reporting earnings results in the fourth quarter of 2022.", "label": "unknown"}
+{"dataset": "freshqa", "claim": "Jamie Oliver earned his first Michelin Star.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Apple released an iPhone 9.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Argentina has won their fifth FIFA World Cup title.", "label": "contradicted"}
+{"dataset": "fever", "claim": "The debut album of a hip hop recording artist is Excuse My French.", "label": "supported"}
+{"dataset": "fever", "claim": "Rio's only sequel is an American musical comedy show.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Stan Beeman is a fictional setting.", "label": "contradicted"}
+{"dataset": "fever", "claim": "John Deighton experienced swelling in his legs.", "label": "supported"}
+{"dataset": "fever", "claim": "Make It or Break It ended in May 14th, 2012.", "label": "supported"}
+{"dataset": "fever", "claim": "Aristotle spent almost 40 years at the Academy.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Mel B released a song on Virgin Records.", "label": "supported"}
+{"dataset": "fever", "claim": "Speech recognition incorporates knowledge and research in the computer science fields.", "label": "supported"}
+{"dataset": "fever", "claim": "Middle-earth is part of the Lord of the Rings legendarium.", "label": "supported"}
+{"dataset": "fever", "claim": "New Orleans Pelicans compete in the NBA in the Western Conference .", "label": "supported"}
+{"dataset": "fever", "claim": "Marvel vs. Capcom: Infinite is a video game.", "label": "supported"}
+{"dataset": "fever", "claim": "Rabies is a disease.", "label": "supported"}
+{"dataset": "fever", "claim": "Mary of Teck's son abdicated the throne in 1936.", "label": "supported"}
+{"dataset": "fever", "claim": "West Ham United F.C. was created by Arnold Hills and Dave Taylor.", "label": "supported"}
+{"dataset": "fever", "claim": "Osamu Tezuka's mother had to erase pages in his notebook.", "label": "supported"}
+{"dataset": "fever", "claim": "Varsity Blues (film) was filmed with a $16 million budget.", "label": "supported"}
+{"dataset": "fever", "claim": "Chile is a nation.", "label": "supported"}
+{"dataset": "fever", "claim": "Taylor Lautner was a voice actor for \"What's New, Scooby-Doo?\".", "label": "supported"}
+{"dataset": "fever", "claim": "Sean Penn was in crime drama films.", "label": "supported"}
+{"dataset": "fever", "claim": "Winter's Tale is a 1983 novel.", "label": "supported"}
+{"dataset": "fever", "claim": "Rhythm Nation was performed on Britain's Got Talent.", "label": "supported"}
+{"dataset": "fever", "claim": "Larry the Cable Guy series finale aired on the month of July.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Justin Chatwin is an actor.", "label": "supported"}
+{"dataset": "fever", "claim": "The Indian Army is a military force.", "label": "supported"}
+{"dataset": "fever", "claim": "The Republic of Macedonia is in the Balkan Peninsula.", "label": "supported"}
+{"dataset": "fever", "claim": "Camden, New Jersey is in Camden County, New Jersey.", "label": "supported"}
+{"dataset": "fever", "claim": "Ludwig van Beethoven was taught by his father Johann.", "label": "supported"}
+{"dataset": "fever", "claim": "The CONCACAF Champions League is organized.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Tool is a band.", "label": "unknown"}
+{"dataset": "fever", "claim": "The United Kingdom developed Heavy Metal music.", "label": "supported"}
+{"dataset": "fever", "claim": "The Quran is Islamic.", "label": "supported"}
+{"dataset": "fever", "claim": "Chris Kyle was a sniper and a veteran.", "label": "supported"}
+{"dataset": "fever", "claim": "Anushka Sharma is an actress.", "label": "supported"}
+{"dataset": "fever", "claim": "Saturn is larger than Jupiter.", "label": "contradicted"}
+{"dataset": "fever", "claim": "Mel B had a career.", "label": "supported"}
+{"dataset": "fever", "claim": "The Battle of France was fought during the Second World War.", "label": "supported"}
+{"dataset": "fever", "claim": "Edgar Wright is a person who directs.", "label": "supported"}
+{"dataset": "fever", "claim": "One author is Lalla Ward.", "label": "supported"}
+{"dataset": "freshqa", "claim": "The Summer Olympics were most recently held in Paris, France.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Jeff Bezos sold Amazon.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "American Express opened its 25th Centurion Lounge.", "label": "unknown"}
+{"dataset": "freshqa", "claim": "Elon Musk has the most followers on Twitter.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Microsoft has scheduled a date in the future for the release of security updates for Windows 7.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Emperor Wenzong was the emperor of China when the Sweet Dew incident occurred.", "label": "supported"}
+{"dataset": "freshqa", "claim": "A permanent cure for cancer has been developed.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Helen of Troy is the name of Menelaus' wife in Greek mythology.", "label": "supported"}
+{"dataset": "freshqa", "claim": "The Chinese Tang Dynasty ended in 907 AD.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Yugoslavia currently has members of parliament.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Wuhan is the city connected with the earliest cases of COVID-19.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Polish president Lech Kaczy\u0144ski died in a plane crash near Smolensk.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Ivana Zeln\u00ed\u010dkov\u00e1 was the first spouse of the current President of the United States.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "One cyclist has won all three of women's cycling Grand Tours equivalents.", "label": "supported"}
+{"dataset": "freshqa", "claim": "New York City has hosted the Olympic Games.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "The Pokemon Franchise has already celebrated its thirtieth anniversary.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Mario is the best-selling video game franchise of all time.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Lewis Hamilton won the 2020 Formula 1 World Drivers' Championship.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Nata\u0161a Pirc Musar was the first female president of Slovenia.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Drake topped Spotify's list of most-streamed artists for three consecutive years.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "There are days left until the 2022 FIFA World Cup begins.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "There are zero Chinese paddlefish left in the wild.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Hikaru Nakamura became the World Chess Champion.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Maura Healey was the first elected female Governor of Massachusetts.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Santiago is the most populous city in Chile.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Andrew Johnson was elected as President of the United States.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Japan won the latest World Pastry Cup.", "label": "contradicted"}
+{"dataset": "freshqa", "claim": "Maya Angelou was the first African American woman to appear on a quarter in the United States.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Jeff Bezos founded Amazon.", "label": "supported"}
+{"dataset": "freshqa", "claim": "The kanji of the year in 2021 was gold.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Taylor Swift has won a Golden Globe award.", "label": "unknown"}
+{"dataset": "freshqa", "claim": "Ken Jennings is the current host of Jeopardy!.", "label": "supported"}
+{"dataset": "freshqa", "claim": "Lionel Messi was the first player to win more than one FIFA World Cup Golden Ball.", "label": "supported"}
+{"dataset": "freshqa", "claim": "There are 10 University of California schools in the United States.", "label": "supported"}
+{"dataset": "freshqa", "claim": "2024 is the hottest year on record.", "label": "supported"}

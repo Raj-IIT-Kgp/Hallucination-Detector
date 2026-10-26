@@ -3,93 +3,93 @@
   "datasets": {
     "fever": {
       "pooled": {
-        "evaluated_claims": 200,
-        "correct_claims": 182,
-        "accuracy": 0.91,
-        "precision": 0.9468085106382979,
-        "recall": 0.89,
-        "f1": 0.9175257731958764,
-        "tp": 89,
-        "fp": 5,
-        "fn": 11,
-        "tn": 93,
-        "unknown": 3,
-        "mean_latency_sec": 8.571411431683227,
-        "p50_latency_sec": 8.042499999981374,
-        "p90_latency_sec": 11.621775540988892,
-        "mean_llm_calls": 1.04
+        "evaluated_claims": 300,
+        "correct_claims": 272,
+        "accuracy": 0.9066666666666666,
+        "precision": 0.9370629370629371,
+        "recall": 0.8933333333333333,
+        "f1": 0.9146757679180888,
+        "tp": 134,
+        "fp": 9,
+        "fn": 16,
+        "tn": 138,
+        "unknown": 4,
+        "mean_latency_sec": 8.530468371378568,
+        "p50_latency_sec": 7.979978333227336,
+        "p90_latency_sec": 12.144513375125825,
+        "mean_llm_calls": 1.0466666666666666
       },
       "published_pooled": {
-        "evaluated_claims": 200,
-        "correct_claims": 182,
-        "accuracy": 0.91,
-        "precision": 0.9468085106382979,
-        "recall": 0.89,
-        "f1": 0.9175257731958764,
-        "tp": 89,
-        "fp": 5,
-        "fn": 11,
-        "tn": 93,
-        "unknown": 3,
-        "mean_latency_sec": 8.571411431683227,
-        "p50_latency_sec": 8.042499999981374,
-        "p90_latency_sec": 11.621775540988892,
-        "mean_llm_calls": 1.04,
-        "standard_error": 0.02023610634484806,
-        "ci_lower_95": 0.8622332538615106,
-        "ci_upper_95": 0.9423130212854665,
+        "evaluated_claims": 300,
+        "correct_claims": 272,
+        "accuracy": 0.9066666666666666,
+        "precision": 0.9370629370629371,
+        "recall": 0.8933333333333333,
+        "f1": 0.9146757679180888,
+        "tp": 134,
+        "fp": 9,
+        "fn": 16,
+        "tn": 138,
+        "unknown": 4,
+        "mean_latency_sec": 8.530468371378568,
+        "p50_latency_sec": 7.979978333227336,
+        "p90_latency_sec": 12.144513375125825,
+        "mean_llm_calls": 1.0466666666666666,
+        "standard_error": 0.01679506100239217,
+        "ci_lower_95": 0.8684138011961097,
+        "ci_upper_95": 0.9346362090723985,
         "ci_method": "wilson"
       },
       "route_accuracy": {
         "conformal_singleton": {
-          "claims": 157,
-          "correct": 146
+          "claims": 229,
+          "correct": 212
         },
         "contradiction_arbitration": {
-          "claims": 21,
-          "correct": 19
+          "claims": 35,
+          "correct": 30
         },
         "multi_agent_debate": {
-          "claims": 22,
-          "correct": 17
+          "claims": 36,
+          "correct": 30
         }
       },
       "arbiter_effect": {
         "review": {
-          "claims": 21,
-          "fixed": 3,
-          "broken": 1,
-          "both_right": 16,
-          "both_wrong": 1,
+          "claims": 35,
+          "fixed": 4,
+          "broken": 3,
+          "both_right": 26,
+          "both_wrong": 2,
           "llm_unavailable": 0
         },
         "escalation": {
-          "claims": 22,
-          "fixed": 5,
-          "broken": 3,
-          "both_right": 12,
+          "claims": 36,
+          "fixed": 14,
+          "broken": 4,
+          "both_right": 16,
           "both_wrong": 2,
           "llm_unavailable": 0
         }
       },
       "changes_vs_published": [],
       "llm_usage": {
-        "mean_calls_per_claim": 1.04,
+        "mean_calls_per_claim": 1.0466666666666666,
         "mean_calls_by_route": {
-          "conformal_singleton": 0.821656050955414,
-          "contradiction_arbitration": 1.7142857142857142,
-          "multi_agent_debate": 1.9545454545454546
+          "conformal_singleton": 0.7947598253275109,
+          "contradiction_arbitration": 1.7428571428571429,
+          "multi_agent_debate": 1.9722222222222223
         },
         "latency_by_model_and_tier": {
           "gemini-3.5-flash-lite (light)": {
-            "calls": 165,
-            "mean_sec": 1.1757030303030302,
-            "p50_sec": 1.069
+            "calls": 243,
+            "mean_sec": 1.19779012345679,
+            "p50_sec": 1.055
           },
           "gemini-3.5-flash-lite (heavy)": {
-            "calls": 41,
-            "mean_sec": 2.658829268292683,
-            "p50_sec": 2.502
+            "calls": 69,
+            "mean_sec": 2.732014492753623,
+            "p50_sec": 2.627
           },
           "gemini-3.1-flash-lite (heavy)": {
             "calls": 2,
@@ -101,93 +101,93 @@
     },
     "freshqa": {
       "pooled": {
-        "evaluated_claims": 200,
-        "correct_claims": 167,
-        "accuracy": 0.835,
-        "precision": 0.9032258064516129,
-        "recall": 0.84,
-        "f1": 0.8704663212435233,
-        "tp": 84,
-        "fp": 9,
-        "fn": 16,
-        "tn": 83,
-        "unknown": 11,
-        "mean_latency_sec": 11.394602693556807,
-        "p50_latency_sec": 9.834976082667708,
-        "p90_latency_sec": 20.259262999985367,
-        "mean_llm_calls": 1.425
+        "evaluated_claims": 300,
+        "correct_claims": 247,
+        "accuracy": 0.8233333333333334,
+        "precision": 0.9069767441860465,
+        "recall": 0.7959183673469388,
+        "f1": 0.8478260869565216,
+        "tp": 117,
+        "fp": 12,
+        "fn": 30,
+        "tn": 130,
+        "unknown": 15,
+        "mean_latency_sec": 11.326825507073663,
+        "p50_latency_sec": 9.887348958291113,
+        "p90_latency_sec": 19.511006250046194,
+        "mean_llm_calls": 1.45
       },
       "published_pooled": {
-        "evaluated_claims": 200,
-        "correct_claims": 167,
-        "accuracy": 0.835,
-        "precision": 0.9032258064516129,
-        "recall": 0.84,
-        "f1": 0.8704663212435233,
-        "tp": 84,
-        "fp": 9,
-        "fn": 16,
-        "tn": 83,
-        "unknown": 11,
-        "mean_latency_sec": 11.394602693556807,
-        "p50_latency_sec": 9.834976082667708,
-        "p90_latency_sec": 20.259262999985367,
-        "mean_llm_calls": 1.425,
-        "standard_error": 0.02624642832844119,
-        "ci_lower_95": 0.7773410172613647,
-        "ci_upper_95": 0.8800321587733603,
+        "evaluated_claims": 300,
+        "correct_claims": 247,
+        "accuracy": 0.8233333333333334,
+        "precision": 0.9069767441860465,
+        "recall": 0.7959183673469388,
+        "f1": 0.8478260869565216,
+        "tp": 117,
+        "fp": 12,
+        "fn": 30,
+        "tn": 130,
+        "unknown": 15,
+        "mean_latency_sec": 11.326825507073663,
+        "p50_latency_sec": 9.887348958291113,
+        "p90_latency_sec": 19.511006250046194,
+        "mean_llm_calls": 1.45,
+        "standard_error": 0.022019351758211497,
+        "ci_lower_95": 0.7761666509606149,
+        "ci_upper_95": 0.8623239309741828,
         "ci_method": "wilson"
       },
       "route_accuracy": {
         "conformal_singleton": {
-          "claims": 123,
-          "correct": 107
+          "claims": 184,
+          "correct": 156
         },
         "contradiction_arbitration": {
-          "claims": 38,
-          "correct": 32
+          "claims": 54,
+          "correct": 47
         },
         "multi_agent_debate": {
-          "claims": 39,
-          "correct": 28
+          "claims": 62,
+          "correct": 44
         }
       },
       "arbiter_effect": {
         "review": {
-          "claims": 38,
-          "fixed": 13,
+          "claims": 54,
+          "fixed": 18,
           "broken": 2,
-          "both_right": 19,
-          "both_wrong": 4,
+          "both_right": 29,
+          "both_wrong": 5,
           "llm_unavailable": 0
         },
         "escalation": {
-          "claims": 39,
-          "fixed": 15,
-          "broken": 4,
-          "both_right": 13,
-          "both_wrong": 7,
+          "claims": 62,
+          "fixed": 24,
+          "broken": 6,
+          "both_right": 20,
+          "both_wrong": 12,
           "llm_unavailable": 0
         }
       },
       "changes_vs_published": [],
       "llm_usage": {
-        "mean_calls_per_claim": 1.425,
+        "mean_calls_per_claim": 1.45,
         "mean_calls_by_route": {
-          "conformal_singleton": 0.943089430894309,
-          "contradiction_arbitration": 1.9736842105263157,
-          "multi_agent_debate": 2.41025641025641
+          "conformal_singleton": 0.9402173913043478,
+          "contradiction_arbitration": 1.962962962962963,
+          "multi_agent_debate": 2.5161290322580645
         },
         "latency_by_model_and_tier": {
           "gemini-3.5-flash-lite (light)": {
-            "calls": 208,
-            "mean_sec": 1.4158317307692307,
-            "p50_sec": 1.105
+            "calls": 319,
+            "mean_sec": 1.2941316614420062,
+            "p50_sec": 1.062
           },
           "gemini-3.5-flash-lite (heavy)": {
-            "calls": 77,
-            "mean_sec": 3.276012987012987,
-            "p50_sec": 2.809
+            "calls": 116,
+            "mean_sec": 3.066689655172414,
+            "p50_sec": 2.736
           }
         }
       }
@@ -195,43 +195,43 @@
   },
   "corroboration": {
     "3 or more": {
-      "claims": 81,
-      "actually_false": 77,
-      "share_wrong_if_accepted": 0.04938271604938271
+      "claims": 113,
+      "actually_false": 108,
+      "share_wrong_if_accepted": 0.04424778761061943
     },
     "2": {
-      "claims": 42,
-      "actually_false": 37,
-      "share_wrong_if_accepted": 0.11904761904761907
+      "claims": 62,
+      "actually_false": 55,
+      "share_wrong_if_accepted": 0.11290322580645162
     },
     "1": {
-      "claims": 67,
-      "actually_false": 47,
-      "share_wrong_if_accepted": 0.29850746268656714
+      "claims": 99,
+      "actually_false": 70,
+      "share_wrong_if_accepted": 0.29292929292929293
     },
     "decisive support also present": {
-      "claims": 16,
-      "actually_false": 7,
-      "share_wrong_if_accepted": 0.5625
+      "claims": 29,
+      "actually_false": 9,
+      "share_wrong_if_accepted": 0.6896551724137931
     }
   },
   "llm_usage": {
-    "mean_calls_per_claim": 1.2325,
+    "mean_calls_per_claim": 1.2483333333333333,
     "mean_calls_by_route": {
-      "conformal_singleton": 0.875,
-      "contradiction_arbitration": 1.88135593220339,
-      "multi_agent_debate": 2.2459016393442623
+      "conformal_singleton": 0.8595641646489104,
+      "contradiction_arbitration": 1.8764044943820224,
+      "multi_agent_debate": 2.316326530612245
     },
     "latency_by_model_and_tier": {
       "gemini-3.5-flash-lite (light)": {
-        "calls": 373,
-        "mean_sec": 1.3096085790884717,
-        "p50_sec": 1.088
+        "calls": 562,
+        "mean_sec": 1.2524750889679714,
+        "p50_sec": 1.06
       },
       "gemini-3.5-flash-lite (heavy)": {
-        "calls": 118,
-        "mean_sec": 3.0615677966101695,
-        "p50_sec": 2.731
+        "calls": 185,
+        "mean_sec": 2.941864864864865,
+        "p50_sec": 2.725
       },
       "gemini-3.1-flash-lite (heavy)": {
         "calls": 2,
@@ -241,57 +241,64 @@
     }
   },
   "conformal": {
-    "claims": 400,
+    "claims": 600,
     "current_q_hat": 0.898471511900425,
-    "coverage_current_q_hat": 0.8425,
+    "coverage_current_q_hat": 0.8316666666666667,
     "coverage_current_q_hat_wilson95": [
-      0.8035644342063322,
-      0.8749194069828866
+      0.7996383155362444,
+      0.8594749353560427
     ],
-    "mean_set_size_current": 1.17,
-    "q_hat_fold_a": 0.9952644039876759,
-    "q_hat_fold_b": 0.96956817060709,
-    "coverage_cross_fitted": 0.8825,
+    "mean_set_size_current": 1.18,
+    "q_hat_fold_a": 0.9945538444444537,
+    "q_hat_fold_b": 0.9902736619114876,
+    "coverage_cross_fitted": 0.9033333333333333,
     "coverage_cross_fitted_wilson95": [
-      0.847244320271723,
-      0.9104785096695213
+      0.8770582327797792,
+      0.9244764743354643
     ],
-    "mean_set_size_cross_fitted": 1.635,
-    "q_hat_all_retrieved": 0.9906263463199139,
+    "mean_set_size_cross_fitted": 1.7983333333333333,
+    "q_hat_all_retrieved": 0.9934712406247854,
     "per_dataset": {
       "fever": {
-        "claims": 200,
-        "coverage_current_q_hat": 0.91,
-        "coverage_cross_fitted": 0.945
+        "claims": 300,
+        "coverage_current_q_hat": 0.9,
+        "coverage_cross_fitted": 0.95
       },
       "freshqa": {
-        "claims": 200,
-        "coverage_current_q_hat": 0.775,
-        "coverage_cross_fitted": 0.82
+        "claims": 300,
+        "coverage_current_q_hat": 0.7633333333333333,
+        "coverage_cross_fitted": 0.8566666666666667
       }
     }
   },
   "recalibrated_estimate": {
     "fever": {
-      "claims": 200,
-      "correct": 183,
-      "route_changes": 55,
-      "newly_escalated": 47,
+      "claims": 300,
+      "correct": 277,
+      "route_changes": 107,
+      "newly_escalated": 86,
       "newly_accepted": 0,
       "pending": 0,
-      "accuracy": 0.915
+      "accuracy": 0.9233333333333333
     },
     "freshqa": {
-      "claims": 200,
-      "correct": 169,
-      "route_changes": 78,
-      "newly_escalated": 57,
+      "claims": 300,
+      "correct": 253,
+      "route_changes": 134,
+      "newly_escalated": 95,
       "newly_accepted": 0,
       "pending": 0,
-      "accuracy": 0.845
+      "accuracy": 0.8433333333333334
     }
   },
   "recalibration_changes": [
+    {
+      "dataset": "fever",
+      "claim": "On June 1, 2007, Knocked Up was released.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
     {
       "dataset": "fever",
       "claim": "Marco Polo was an Asia.",
@@ -343,6 +350,20 @@
     },
     {
       "dataset": "fever",
+      "claim": "The Hanford Site hosts the Pacific Northwest National Laboratory, managed by the Department of Energy's Office of Science.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Lockhead Martin F-35 Lightning II first flew in 2008.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
       "claim": "Colin Kaepernick is a person.",
       "gold": "supported",
       "route": "accept -> escalate",
@@ -350,24 +371,17 @@
     },
     {
       "dataset": "fever",
-      "claim": "Rage Against the Machine broke up in 1999.",
-      "gold": "contradicted",
-      "route": "accept -> escalate",
-      "verdict": "contradicted -> contradicted"
-    },
-    {
-      "dataset": "fever",
-      "claim": "Tamerlan Tsarnaev had a brother.",
+      "claim": "Underdog features the voice talents of Amy Adams.",
       "gold": "supported",
-      "route": "accept -> escalate",
+      "route": "review -> escalate",
       "verdict": "supported -> supported"
     },
     {
       "dataset": "fever",
-      "claim": "Caroline Kennedy is Ambassador to Japan.",
+      "claim": "Same Old Love is a song.",
       "gold": "supported",
       "route": "accept -> escalate",
-      "verdict": "supported -> contradicted"
+      "verdict": "supported -> supported"
     },
     {
       "dataset": "fever",
@@ -378,21 +392,7 @@
     },
     {
       "dataset": "fever",
-      "claim": "Daggering is a type of dance.",
-      "gold": "supported",
-      "route": "accept -> escalate",
-      "verdict": "supported -> supported"
-    },
-    {
-      "dataset": "fever",
       "claim": "Peter Dinklage acts in Underdog.",
-      "gold": "supported",
-      "route": "accept -> escalate",
-      "verdict": "supported -> supported"
-    },
-    {
-      "dataset": "fever",
-      "claim": "Hot Right Now is a DJ Fresh single.",
       "gold": "supported",
       "route": "accept -> escalate",
       "verdict": "supported -> supported"
@@ -413,10 +413,17 @@
     },
     {
       "dataset": "fever",
-      "claim": "Billboard Dad is a motion picture.",
+      "claim": "Sophia Bush appeared in a teen romantic comedy.",
       "gold": "supported",
       "route": "accept -> escalate",
       "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "The Bahamas is a landlocked state.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
     },
     {
       "dataset": "fever",
@@ -427,7 +434,21 @@
     },
     {
       "dataset": "fever",
+      "claim": "The Republic of Macedonia is in Asia.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
       "claim": "Prescott, Arizona is in northern Yavapai County.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "The Greek language is spoken in Greece.",
       "gold": "supported",
       "route": "accept -> escalate",
       "verdict": "supported -> supported"
@@ -490,7 +511,21 @@
     },
     {
       "dataset": "fever",
+      "claim": "The debut album of a hip hop recording artist is Excuse My French.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
       "claim": "English people are descended from the grass.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Rio's only sequel is an American musical comedy show.",
       "gold": "contradicted",
       "route": "accept -> escalate",
       "verdict": "contradicted -> contradicted"
@@ -504,17 +539,17 @@
     },
     {
       "dataset": "fever",
+      "claim": "Stan Beeman is a fictional setting.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "fever",
       "claim": "Earl Scruggs's middle name is Danny.",
       "gold": "contradicted",
       "route": "review -> escalate",
       "verdict": "contradicted -> contradicted"
-    },
-    {
-      "dataset": "fever",
-      "claim": "Nicholas Brody is a TV character.",
-      "gold": "supported",
-      "route": "review -> escalate",
-      "verdict": "supported -> supported"
     },
     {
       "dataset": "fever",
@@ -532,6 +567,27 @@
     },
     {
       "dataset": "fever",
+      "claim": "John Deighton experienced swelling in his legs.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Make It or Break It ended in May 14th, 2012.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Aristotle spent almost 40 years at the Academy.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "fever",
       "claim": "The Endless River came out in 1995 and is Pink Floyd's fifteenth studio album.",
       "gold": "contradicted",
       "route": "accept -> escalate",
@@ -539,24 +595,24 @@
     },
     {
       "dataset": "fever",
-      "claim": "Saturn is the second-largest moon in the Solar System.",
-      "gold": "contradicted",
-      "route": "accept -> escalate",
-      "verdict": "supported -> contradicted"
-    },
-    {
-      "dataset": "fever",
-      "claim": "Jennifer Lopez created a studio record.",
+      "claim": "Mel B released a song on Virgin Records.",
       "gold": "supported",
       "route": "accept -> escalate",
       "verdict": "supported -> supported"
     },
     {
       "dataset": "fever",
-      "claim": "Fred Armisen is uncreative.",
+      "claim": "Alexandra Daddario was born in the 20th century.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Saturn is the second-largest moon in the Solar System.",
       "gold": "contradicted",
       "route": "accept -> escalate",
-      "verdict": "contradicted -> contradicted"
+      "verdict": "supported -> contradicted"
     },
     {
       "dataset": "fever",
@@ -602,7 +658,7 @@
     },
     {
       "dataset": "fever",
-      "claim": "Aleister Crowley was English.",
+      "claim": "Speech recognition incorporates knowledge and research in the computer science fields.",
       "gold": "supported",
       "route": "accept -> escalate",
       "verdict": "supported -> supported"
@@ -610,6 +666,13 @@
     {
       "dataset": "fever",
       "claim": "Ingushetia was established after Chechen-Ingush ASSR split into two.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Middle-earth is part of the Lord of the Rings legendarium.",
       "gold": "supported",
       "route": "accept -> escalate",
       "verdict": "supported -> supported"
@@ -637,6 +700,13 @@
     },
     {
       "dataset": "fever",
+      "claim": "New Orleans Pelicans compete in the NBA in the Western Conference .",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
       "claim": "The World Trade Center was destroyed in September.",
       "gold": "supported",
       "route": "accept -> escalate",
@@ -658,6 +728,20 @@
     },
     {
       "dataset": "fever",
+      "claim": "Brick (film) is an American adventure film.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Marvel vs. Capcom: Infinite is a video game.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
       "claim": "Pirates of the Caribbean was added to Magic Kingdom.",
       "gold": "supported",
       "route": "accept -> escalate",
@@ -672,10 +756,290 @@
     },
     {
       "dataset": "fever",
+      "claim": "Rabies is a disease.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
       "claim": "Ernest Medina was first acquitted in 1973.",
       "gold": "contradicted",
       "route": "accept -> escalate",
       "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Shane McMahon officially retired on the first day of 2010.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Mary of Teck's son abdicated the throne in 1936.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "West Ham United F.C. was created by Arnold Hills and Dave Taylor.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Osamu Tezuka's mother had to erase pages in his notebook.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Varsity Blues (film) was filmed with a $16 million budget.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Chile is a nation.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Taylor Lautner was a voice actor for \"What's New, Scooby-Doo?\".",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Sean Penn was in crime drama films.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Winter's Tale is a 1983 novel.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "English people are descended from the Angles as a result of migration.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Rhythm Nation was performed on Britain's Got Talent.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Larry the Cable Guy series finale aired on the month of July.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Justin Chatwin is an actor.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Ashley Cole plays Major League Soccer for the Los Angeles Galaxy.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Meteora is a country album.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "The United Nations Charter was signed on April 26, 1945.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Damon Albarn collaborated with Brian Eno on his album Everyday Robots.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Gal Gadot was ranked behind Bar Refaeli for Israel's highest earning actress/models.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "The Indian Army is a military force.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "The Republic of Macedonia is in the Balkan Peninsula.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Harvard University is a research hospital.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Helmand Province has a domestic airport.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Camden, New Jersey is in Camden County, New Jersey.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Ludwig van Beethoven was taught by his father Johann.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Giada at Home was an American basic cable channel.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "The CONCACAF Champions League is organized.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Victoria Palace Theatre is on the same side of Victoria Station.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Tool is a band.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> unknown"
+    },
+    {
+      "dataset": "fever",
+      "claim": "The United Kingdom developed Heavy Metal music.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "The Quran is Islamic.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Heavy Metal music was developed in Europe.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Frozen ranks as the second-highest-grossing original film of all time.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Chris Kyle was a sniper and a veteran.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Anushka Sharma is an actress.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Saturn is larger than Jupiter.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Mel B had a career.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "The Battle of France was fought during the Second World War.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "Edgar Wright is a person who directs.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "fever",
+      "claim": "One author is Lalla Ward.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
     },
     {
       "dataset": "freshqa",
@@ -686,10 +1050,10 @@
     },
     {
       "dataset": "freshqa",
-      "claim": "The University of Konstanz is located in the German state of Baden-W\u00fcrttemberg.",
+      "claim": "The Great Pyramid of Giza is not one of the New 7 Wonders of the World.",
       "gold": "supported",
       "route": "accept -> escalate",
-      "verdict": "supported -> supported"
+      "verdict": "contradicted -> supported"
     },
     {
       "dataset": "freshqa",
@@ -714,10 +1078,24 @@
     },
     {
       "dataset": "freshqa",
+      "claim": "The funeral for Pope Leo XIV was held.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
       "claim": "There are 6 games in the Ace Attorney main series.",
       "gold": "supported",
       "route": "accept -> escalate",
       "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "California has seceded from the United States.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
     },
     {
       "dataset": "freshqa",
@@ -770,9 +1148,30 @@
     },
     {
       "dataset": "freshqa",
+      "claim": "The star of the international series \"It's Me or the Dog\" is married to Van Zeiler.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
       "claim": "There exists a smallest cube number which can be expressed as the sum of two different positive cube numbers in two different ways.",
       "gold": "contradicted",
       "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The USA will host the most matches at the FIFA World Cup 2026.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "A Brazilian president has been elected to a fourth term.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
       "verdict": "contradicted -> contradicted"
     },
     {
@@ -802,6 +1201,20 @@
       "gold": "supported",
       "route": "accept -> escalate",
       "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "No humans have landed on Mars yet.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "All quickly verifiable problems are also quickly solvable.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
     },
     {
       "dataset": "freshqa",
@@ -840,23 +1253,16 @@
     },
     {
       "dataset": "freshqa",
-      "claim": "The largest model size of GPT-3 is 175 billion parameters.",
-      "gold": "supported",
-      "route": "review -> escalate",
+      "claim": "An animal has landed on the moon.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
       "verdict": "supported -> supported"
     },
     {
       "dataset": "freshqa",
-      "claim": "Pele is currently staying in a hospital to receive cancer treatment.",
-      "gold": "contradicted",
-      "route": "accept -> escalate",
-      "verdict": "supported -> contradicted"
-    },
-    {
-      "dataset": "freshqa",
-      "claim": "Naughty Dog released its first game on the PS1 in 1996.",
+      "claim": "Queen Elizabeth II of England was famous for keeping corgis.",
       "gold": "supported",
-      "route": "review -> escalate",
+      "route": "accept -> escalate",
       "verdict": "supported -> supported"
     },
     {
@@ -872,6 +1278,13 @@
       "gold": "contradicted",
       "route": "review -> escalate",
       "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Ales are a class of top-fermenting beer.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
     },
     {
       "dataset": "freshqa",
@@ -903,6 +1316,13 @@
     },
     {
       "dataset": "freshqa",
+      "claim": "The video game Disco Elysium takes place in the city of Revachol.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
       "claim": "There is no total solar eclipse in the continental US this year.",
       "gold": "supported",
       "route": "review -> escalate",
@@ -914,13 +1334,6 @@
       "gold": "contradicted",
       "route": "review -> escalate",
       "verdict": "contradicted -> contradicted"
-    },
-    {
-      "dataset": "freshqa",
-      "claim": "The minimum hourly wage in Massachusetts is $15.",
-      "gold": "supported",
-      "route": "accept -> escalate",
-      "verdict": "supported -> supported"
     },
     {
       "dataset": "freshqa",
@@ -987,10 +1400,31 @@
     },
     {
       "dataset": "freshqa",
+      "claim": "Alphabet's market capitalization reached its highest-ever recorded value during a month in 2025.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The Weeknd's last studio album is titled Hurry Up Tomorrow.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
       "claim": "Sunderland, Massachusetts is located to the north of Amherst, Massachusetts.",
       "gold": "supported",
       "route": "accept -> escalate",
       "verdict": "contradicted -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The Summer Olympics were most recently held in Paris, France.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
     },
     {
       "dataset": "freshqa",
@@ -1008,20 +1442,6 @@
     },
     {
       "dataset": "freshqa",
-      "claim": "Pip is the name of the main character in Great Expectations.",
-      "gold": "supported",
-      "route": "accept -> escalate",
-      "verdict": "supported -> supported"
-    },
-    {
-      "dataset": "freshqa",
-      "claim": "The Houston Astros have won two World Series titles.",
-      "gold": "supported",
-      "route": "accept -> escalate",
-      "verdict": "supported -> supported"
-    },
-    {
-      "dataset": "freshqa",
       "claim": "The USA, Canada, and Mexico are the host countries for the 2026 FIFA World Cup.",
       "gold": "supported",
       "route": "accept -> escalate",
@@ -1029,17 +1449,24 @@
     },
     {
       "dataset": "freshqa",
-      "claim": "BTS released its 11th studio album in 2026.",
+      "claim": "Jeff Bezos sold Amazon.",
       "gold": "contradicted",
       "route": "accept -> escalate",
-      "verdict": "contradicted -> unknown"
+      "verdict": "supported -> contradicted"
     },
     {
       "dataset": "freshqa",
-      "claim": "The Tesla Model Z came out.",
+      "claim": "After anti-COVID measures were further increased in December 2022 to help support China's 'zero COVID' policy, the quarantine time for international travelers to China was extended.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "American Express opened its 25th Centurion Lounge.",
       "gold": "contradicted",
       "route": "accept -> escalate",
-      "verdict": "contradicted -> contradicted"
+      "verdict": "contradicted -> unknown"
     },
     {
       "dataset": "freshqa",
@@ -1078,6 +1505,13 @@
     },
     {
       "dataset": "freshqa",
+      "claim": "Kiwifruit is native to China.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
       "claim": "The film Metropolis entered the public domain in Germany.",
       "gold": "contradicted",
       "route": "review -> escalate",
@@ -1089,13 +1523,6 @@
       "gold": "contradicted",
       "route": "review -> escalate",
       "verdict": "contradicted -> contradicted"
-    },
-    {
-      "dataset": "freshqa",
-      "claim": "Steven Spielberg directed the movie Jaws.",
-      "gold": "supported",
-      "route": "accept -> escalate",
-      "verdict": "supported -> supported"
     },
     {
       "dataset": "freshqa",
@@ -1117,13 +1544,6 @@
       "gold": "contradicted",
       "route": "accept -> escalate",
       "verdict": "contradicted -> contradicted"
-    },
-    {
-      "dataset": "freshqa",
-      "claim": "Canada currently requires arriving travelers to provide proof of COVID vaccination via an app.",
-      "gold": "contradicted",
-      "route": "accept -> escalate",
-      "verdict": "supported -> contradicted"
     },
     {
       "dataset": "freshqa",
@@ -1155,10 +1575,38 @@
     },
     {
       "dataset": "freshqa",
+      "claim": "Elon Musk has the most followers on Twitter.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Microsoft has scheduled a date in the future for the release of security updates for Windows 7.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Emperor Wenzong was the emperor of China when the Sweet Dew incident occurred.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
       "claim": "The oldest planet known to have life on it is 4.54 billion years old.",
       "gold": "supported",
       "route": "review -> escalate",
       "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "A permanent cure for cancer has been developed.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
     },
     {
       "dataset": "freshqa",
@@ -1218,10 +1666,318 @@
     },
     {
       "dataset": "freshqa",
+      "claim": "Helen of Troy is the name of Menelaus' wife in Greek mythology.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The Chinese Tang Dynasty ended in 907 AD.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
       "claim": "There are days left until the next season of Atlanta airs.",
       "gold": "contradicted",
       "route": "accept -> escalate",
       "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "In 2022, inflation in the United States was at its lowest rate since 1982.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Yugoslavia currently has members of parliament.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Dartmouth Law School was founded.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Wuhan is the city connected with the earliest cases of COVID-19.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Polish president Lech Kaczy\u0144ski died in a plane crash near Smolensk.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Ivana Zeln\u00ed\u010dkov\u00e1 was the first spouse of the current President of the United States.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Peru has had four presidents in the last five years.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "One cyclist has won all three of women's cycling Grand Tours equivalents.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Peruvian President Pedro Castillo is scheduled to visit Chile this year.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "New York City has hosted the Olympic Games.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The population of the United States reached 8 billion.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The Pokemon Franchise has already celebrated its thirtieth anniversary.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Bodybuilding is an Olympic sport.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Mario is the best-selling video game franchise of all time.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The eighth book of the Percy Jackson & the Olympians series has been released.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Russia has finished disposing of all of its nuclear weapons.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Lewis Hamilton won the 2020 Formula 1 World Drivers' Championship.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The United States has won the Miss World crown nine times.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Nata\u0161a Pirc Musar was the first female president of Slovenia.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Drake topped Spotify's list of most-streamed artists for three consecutive years.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Portugal won the 2017 Eurovision Song Contest.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "There are days left until the 2022 FIFA World Cup begins.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "There are zero Chinese paddlefish left in the wild.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Hikaru Nakamura became the World Chess Champion.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Maura Healey was the first elected female Governor of Massachusetts.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Santiago is the most populous city in Chile.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Andrew Johnson was elected as President of the United States.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Element 120 was first synthesized.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Japan won the latest World Pastry Cup.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "A cryptocurrency has a higher market cap than Bitcoin.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Maya Angelou was the first African American woman to appear on a quarter in the United States.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": ".NET 10 is the latest major version of .NET.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Jeff Bezos founded Amazon.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Angel Di Maria plays for Rosario Central.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Pandora is the most recently launched NASA space telescope that observes in the visible and near-infrared.",
+      "gold": "supported",
+      "route": "review -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "The kanji of the year in 2021 was gold.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Taylor Swift has won a Golden Globe award.",
+      "gold": "contradicted",
+      "route": "accept -> escalate",
+      "verdict": "supported -> unknown"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Ken Jennings is the current host of Jeopardy!.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Lionel Messi was the first player to win more than one FIFA World Cup Golden Ball.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "Avatar: The Way of Water won the most awards of the night at the 80th Golden Globe Awards.",
+      "gold": "contradicted",
+      "route": "review -> escalate",
+      "verdict": "contradicted -> contradicted"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "There are 10 University of California schools in the United States.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
+    },
+    {
+      "dataset": "freshqa",
+      "claim": "2024 is the hottest year on record.",
+      "gold": "supported",
+      "route": "accept -> escalate",
+      "verdict": "supported -> supported"
     }
   ]
 }

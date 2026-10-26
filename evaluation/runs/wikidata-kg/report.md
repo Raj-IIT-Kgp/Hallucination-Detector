@@ -4,12 +4,12 @@
 
 | | Accuracy | Precision | Recall | F1 | TP | FP | FN | TN | Unknown | Mean latency | LLM calls/claim |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| now | 91.0% | 0.95 | 0.89 | 0.92 | 89 | 5 | 11 | 93 | 3 | 8.6 s | 1.04 |
-| published | 91.0% | 0.95 | 0.89 | 0.92 | 89 | 5 | 11 | 93 | 3 | 8.6 s | 1.04 |
+| now | 90.7% | 0.94 | 0.89 | 0.91 | 134 | 9 | 16 | 138 | 4 | 8.5 s | 1.05 |
+| published | 90.7% | 0.94 | 0.89 | 0.91 | 134 | 9 | 16 | 138 | 4 | 8.5 s | 1.05 |
 
-Routes: conformal_singleton 146/157, contradiction_arbitration 19/21, multi_agent_debate 17/22
+Routes: conformal_singleton 212/229, contradiction_arbitration 30/35, multi_agent_debate 30/36
 
-Arbiter effect: {"review": {"claims": 21, "fixed": 3, "broken": 1, "both_right": 16, "both_wrong": 1, "llm_unavailable": 0}, "escalation": {"claims": 22, "fixed": 5, "broken": 3, "both_right": 12, "both_wrong": 2, "llm_unavailable": 0}}
+Arbiter effect: {"review": {"claims": 35, "fixed": 4, "broken": 3, "both_right": 26, "both_wrong": 2, "llm_unavailable": 0}, "escalation": {"claims": 36, "fixed": 14, "broken": 4, "both_right": 16, "both_wrong": 2, "llm_unavailable": 0}}
 
 Changed vs published (0):
 
@@ -17,12 +17,12 @@ Changed vs published (0):
 
 | | Accuracy | Precision | Recall | F1 | TP | FP | FN | TN | Unknown | Mean latency | LLM calls/claim |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| now | 83.5% | 0.90 | 0.84 | 0.87 | 84 | 9 | 16 | 83 | 11 | 11.4 s | 1.43 |
-| published | 83.5% | 0.90 | 0.84 | 0.87 | 84 | 9 | 16 | 83 | 11 | 11.4 s | 1.43 |
+| now | 82.3% | 0.91 | 0.80 | 0.85 | 117 | 12 | 30 | 130 | 15 | 11.3 s | 1.45 |
+| published | 82.3% | 0.91 | 0.80 | 0.85 | 117 | 12 | 30 | 130 | 15 | 11.3 s | 1.45 |
 
-Routes: conformal_singleton 107/123, contradiction_arbitration 32/38, multi_agent_debate 28/39
+Routes: conformal_singleton 156/184, contradiction_arbitration 47/54, multi_agent_debate 44/62
 
-Arbiter effect: {"review": {"claims": 38, "fixed": 13, "broken": 2, "both_right": 19, "both_wrong": 4, "llm_unavailable": 0}, "escalation": {"claims": 39, "fixed": 15, "broken": 4, "both_right": 13, "both_wrong": 7, "llm_unavailable": 0}}
+Arbiter effect: {"review": {"claims": 54, "fixed": 18, "broken": 2, "both_right": 29, "both_wrong": 5, "llm_unavailable": 0}, "escalation": {"claims": 62, "fixed": 24, "broken": 6, "both_right": 20, "both_wrong": 12, "llm_unavailable": 0}}
 
 Changed vs published (0):
 
@@ -30,39 +30,39 @@ Changed vs published (0):
 
 | Decisive contradicting snippets | Claims | Actually false | Wrong if accepted |
 | :--- | :--- | :--- | :--- |
-| 1 | 67 | 47 | 29.9% |
-| 2 | 42 | 37 | 11.9% |
-| 3 or more | 81 | 77 | 4.9% |
-| decisive support also present | 16 | 7 | 56.2% |
+| 1 | 99 | 70 | 29.3% |
+| 2 | 62 | 55 | 11.3% |
+| 3 or more | 113 | 108 | 4.4% |
+| decisive support also present | 29 | 9 | 69.0% |
 
 ## Conformal layer on retrieved evidence
 
-- claims: 400
-- current q-hat 0.8985: coverage 84.2% (Wilson 95% 80.4%–87.5%), mean set size 1.17
-- cross-fitted q-hat (folds 0.9953 / 0.9696): coverage 88.2% (Wilson 95% 84.7%–91.0%), mean set size 1.64
-- q-hat from all retrieved-evidence claims: 0.9906
+- claims: 600
+- current q-hat 0.8985: coverage 83.2% (Wilson 95% 80.0%–85.9%), mean set size 1.18
+- cross-fitted q-hat (folds 0.9946 / 0.9903): coverage 90.3% (Wilson 95% 87.7%–92.4%), mean set size 1.80
+- q-hat from all retrieved-evidence claims: 0.9935
 
-Estimated accuracy with the recalibrated layer: {"fever": {"claims": 200, "correct": 183, "route_changes": 55, "newly_escalated": 47, "newly_accepted": 0, "pending": 0, "accuracy": 0.915}, "freshqa": {"claims": 200, "correct": 169, "route_changes": 78, "newly_escalated": 57, "newly_accepted": 0, "pending": 0, "accuracy": 0.845}}
+Estimated accuracy with the recalibrated layer: {"fever": {"claims": 300, "correct": 277, "route_changes": 107, "newly_escalated": 86, "newly_accepted": 0, "pending": 0, "accuracy": 0.9233333333333333}, "freshqa": {"claims": 300, "correct": 253, "route_changes": 134, "newly_escalated": 95, "newly_accepted": 0, "pending": 0, "accuracy": 0.8433333333333334}}
 
 ## LLM usage
 
 {
-  "mean_calls_per_claim": 1.2325,
+  "mean_calls_per_claim": 1.2483333333333333,
   "mean_calls_by_route": {
-    "conformal_singleton": 0.875,
-    "contradiction_arbitration": 1.88135593220339,
-    "multi_agent_debate": 2.2459016393442623
+    "conformal_singleton": 0.8595641646489104,
+    "contradiction_arbitration": 1.8764044943820224,
+    "multi_agent_debate": 2.316326530612245
   },
   "latency_by_model_and_tier": {
     "gemini-3.5-flash-lite (light)": {
-      "calls": 373,
-      "mean_sec": 1.3096085790884717,
-      "p50_sec": 1.088
+      "calls": 562,
+      "mean_sec": 1.2524750889679714,
+      "p50_sec": 1.06
     },
     "gemini-3.5-flash-lite (heavy)": {
-      "calls": 118,
-      "mean_sec": 3.0615677966101695,
-      "p50_sec": 2.731
+      "calls": 185,
+      "mean_sec": 2.941864864864865,
+      "p50_sec": 2.725
     },
     "gemini-3.1-flash-lite (heavy)": {
       "calls": 2,
