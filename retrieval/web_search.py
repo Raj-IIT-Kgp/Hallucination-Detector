@@ -14,6 +14,7 @@ from collections import OrderedDict
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 import wikipedia
 import requests
+from dotenv import load_dotenv
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 try:
@@ -49,15 +50,20 @@ _wiki_session.mount("https://", _wiki_adapter)
 _wiki_session.mount("http://", _wiki_adapter)
 
 # ── Ensure Wikipedia uses an academic User-Agent and connection pool ──
+# Wikimedia rate-limits API clients without a User-Agent that names a reachable contact much more
+# tightly; same identity as agents/wikidata_graph.py
+_WIKI_USER_AGENT = "VeriFact/1.0 (academic research prototype; https://github.com/Raj-IIT-Kgp/Hallucination-Detector)"
 try:
-    wikipedia.set_user_agent("VeriFactBot/1.0 (academic research hallucination detection; contact@verifact.org)")
+    wikipedia.set_user_agent(_WIKI_USER_AGENT)
     def _patched_wiki_request(params):
         params['format'] = 'json'
         if 'action' not in params:
             params['action'] = 'query'
-        headers = {'User-Agent': getattr(wikipedia.wikipedia, 'USER_AGENT', 'VeriFactBot/1.0 (academic research hallucination detection; contact@verifact.org)')}
+        headers = {'User-Agent': getattr(wikipedia.wikipedia, 'USER_AGENT', _WIKI_USER_AGENT)}
         try:
-            r = _wiki_session.get(wikipedia.wikipedia.API_URL, params=params, headers=headers, timeout=5.0)
+            # https directly: the library's http:// URL redirects, and the login cookie is https-only
+            r = _wiki_session.get(wikipedia.wikipedia.API_URL.replace("http://", "https://"),
+                                  params=params, headers=headers, timeout=5.0)
             if r.status_code == 200:
                 return r.json()
         except Exception:
@@ -66,6 +72,38 @@ try:
     wikipedia.wikipedia._wiki_request = _patched_wiki_request
 except Exception:
     pass
+
+_WIKI_API = "https://en.wikipedia.org/w/api.php"
+_wiki_logged_in = False
+
+
+def _wiki_login():
+    """
+    Logs the shared Wikipedia session in with the bot password in .env (WIKI_BOT_USER, WIKI_BOT_PASSWORD;
+    created at Special:BotPasswords), so Wikimedia rate-limits it as a logged-in account instead of by IP
+    address. Without those settings, or if the login fails, requests stay anonymous as before.
+    """
+    global _wiki_logged_in
+    if _wiki_logged_in:
+        return True
+    load_dotenv()
+    user, password = os.getenv("WIKI_BOT_USER"), os.getenv("WIKI_BOT_PASSWORD")
+    if not user or not password:
+        return False
+    headers = {"User-Agent": _WIKI_USER_AGENT}
+    try:
+        token = _wiki_session.get(_WIKI_API, params={"action": "query", "meta": "tokens", "type": "login",
+                                                     "format": "json"}, headers=headers, timeout=10.0
+                                  ).json()["query"]["tokens"]["logintoken"]
+        result = _wiki_session.post(_WIKI_API, data={"action": "login", "lgname": user, "lgpassword": password,
+                                                     "lgtoken": token, "format": "json"}, headers=headers, timeout=10.0
+                                    ).json().get("login", {})
+    except Exception as e:
+        print(f"[WebRetriever] Wikipedia login failed ({e}); continuing anonymously")
+        return False
+    _wiki_logged_in = result.get("result") == "Success"
+    print(f"[WebRetriever] Wikipedia login: {'logged in as ' + result.get('lgusername', user) if _wiki_logged_in else result.get('reason', result)}")
+    return _wiki_logged_in
 
 @functools.lru_cache(maxsize=512)
 def _cached_wiki_search(query: str) -> tuple[str, ...]:
@@ -169,9 +207,10 @@ class WebRetriever:
     
     def __init__(self):
         try:
-            wikipedia.set_user_agent("VeriFactBot/1.0 (academic research hallucination detection; contact@verifact.org)")
+            wikipedia.set_user_agent(_WIKI_USER_AGENT)
         except Exception:
             pass
+        _wiki_login()
         print("Loading Semantic Search Model (all-MiniLM-L6-v2)...")
         self.encoder = SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
         # SentenceTransformer uses PyTorch CPU routines, avoiding Apple Metal driver
