@@ -1,0 +1,257 @@
+\documentclass[12pt,a4paper,oneside]{report}
+
+% ---------------------------------------------------------------------------
+%  Student and project details (edit here; used throughout the front matter)
+% ---------------------------------------------------------------------------
+\newcommand{\ReportTitle}{VeriFact: Hallucination Detection in Large Language Model Outputs using Retrieval, Natural Language Inference and Conformal Prediction}
+\newcommand{\ShortTitle}{Hallucination Detection using Retrieval, NLI and Conformal Prediction}
+\newcommand{\StudentName}{Raj Majumder}
+\newcommand{\RollNo}{23CH10050}
+\newcommand{\Degree}{Bachelor of Technology (Hons.)}
+\newcommand{\StudentDept}{Chemical Engineering}
+\newcommand{\ProjectCourse}{B.Tech Project-I}
+\newcommand{\Supervisor}{Professor Somesh Kumar}
+\newcommand{\SupervisorDept}{Department of Mathematics}
+\newcommand{\Semester}{Autumn Semester, 2026--27}
+\newcommand{\SubmissionDate}{November 2026}
+
+% ---------------------------------------------------------------------------
+\usepackage[a4paper,left=1.25in,right=1in,top=1in,bottom=1in,headheight=15pt]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{graphicx}
+\usepackage{booktabs,tabularx,multirow,array}
+\usepackage{setspace}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage[font=small,labelfont=sc]{caption}
+\usepackage{subcaption}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage{float}
+
+\onehalfspacing
+% Let floats sit with text instead of being deferred to sparse float-only pages
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\bottomfraction}{0.7}
+\renewcommand{\textfraction}{0.1}
+\renewcommand{\floatpagefraction}{0.8}
+\setcounter{topnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{5}
+\setlength{\parskip}{0.4em}
+\graphicspath{{figures/}}
+
+% Chapter headings in the style of the IIT Kharagpur thesis template
+\titleformat{\chapter}[display]
+  {\normalfont\huge}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{30pt}{40pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\chaptermark}[1]{\markboth{\chaptername\ \thechapter.\ \textit{#1}}{}}
+\fancyhead[L]{\small\leftmark}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\Con}{\textsc{Contradicted}}
+\newcommand{\Unk}{\textsc{Unknown}}
+\newcommand{\Sup}{\textsc{Supported}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Ind}{\mathbb{I}}
+\newcommand{\code}[1]{\texttt{#1}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+\begin{document}
+
+% =========================== TITLE PAGE ====================================
+\begin{titlepage}
+\begin{center}
+\vspace*{-1cm}
+{\Large\bfseries \ReportTitle\par}
+\vspace{0.8cm}
+{\large \ProjectCourse{} report submitted to\\
+Indian Institute of Technology Kharagpur\\
+in partial fulfilment for the award of the degree of\\[0.2cm]
+\textbf{\Degree}\\[0.2cm]
+in\\[0.2cm]
+\StudentDept\par}
+\vspace{0.6cm}
+{\large by\\[0.2cm]
+\textbf{\StudentName}\\
+(\RollNo)\par}
+\vspace{0.6cm}
+{\large Under the supervision of\\[0.2cm]
+\textbf{\Supervisor}\\
+\SupervisorDept\par}
+\vspace{0.6cm}
+\IfFileExists{figures/iitkgp_logo.png}{\includegraphics[width=0.2\textwidth]{iitkgp_logo.png}}{}
+\vfill
+{\large Department of \StudentDept\\
+Indian Institute of Technology Kharagpur\\
+\Semester\\
+\SubmissionDate\par}
+\end{center}
+\end{titlepage}
+
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+% =========================== DECLARATION ===================================
+\chapter*{Declaration}
+\addcontentsline{toc}{chapter}{Declaration}
+\thispagestyle{plain}
+I certify that
+\begin{enumerate}[label=(\alph*),leftmargin=2em,itemsep=0.6em]
+  \item The work contained in this report has been done by me under the guidance of my supervisor.
+  \item The work has not been submitted to any other Institute for any degree or diploma.
+  \item I have conformed to the norms and guidelines given in the Ethical Code of Conduct of the Institute.
+  \item Whenever I have used materials (data, theoretical analysis, figures, and text) from other sources, I have given due credit to them by citing them in the text of the report and giving their details in the references. Further, I have taken permission from the copyright owners of the sources, whenever necessary.
+\end{enumerate}
+\vspace{3cm}
+\noindent
+\begin{tabular}{@{}l}
+Date: \SubmissionDate\\
+Place: Kharagpur
+\end{tabular}
+\hfill
+\begin{tabular}{r@{}}
+(\StudentName)\\
+(\RollNo)
+\end{tabular}
+
+% =========================== CERTIFICATE ===================================
+\clearpage
+\thispagestyle{plain}
+\addcontentsline{toc}{chapter}{Certificate}
+\begin{center}
+{\large DEPARTMENT OF MATHEMATICS\\
+INDIAN INSTITUTE OF TECHNOLOGY KHARAGPUR\\
+KHARAGPUR -- 721302, INDIA\par}
+\vspace{0.8cm}
+\IfFileExists{figures/iitkgp_logo.png}{\includegraphics[width=0.2\textwidth]{iitkgp_logo.png}}{}\\[0.8cm]
+{\Large\bfseries\itshape CERTIFICATE\par}
+\end{center}
+\vspace{0.6cm}
+This is to certify that the project report entitled ``\textbf{\ReportTitle}'' submitted by \textbf{\StudentName} (Roll No.\ \RollNo) to Indian Institute of Technology Kharagpur towards partial fulfilment of requirements for the award of the degree of \Degree{} in \StudentDept{} is a record of bona fide work carried out by \StudentName{} under my supervision and guidance during the \Semester.
+\vspace{3cm}
+
+\noindent
+\begin{tabular}{@{}l}
+Date: \SubmissionDate\\
+Place: Kharagpur
+\end{tabular}
+\hfill
+\begin{tabular}{r@{}}
+\textbf{\Supervisor}\\
+\SupervisorDept\\
+Indian Institute of Technology Kharagpur
+\end{tabular}
+
+% =========================== ABSTRACT ======================================
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+\thispagestyle{plain}
+\noindent\rule{\textwidth}{0.4pt}
+\begin{tabular}{@{}ll}
+Name of the student: & \textbf{\StudentName} \hfill Roll No: \textbf{\RollNo}\\
+Degree for which submitted: & \textbf{\Degree}\\
+Department: & \textbf{\StudentDept}\\
+Thesis title: & \parbox[t]{0.6\textwidth}{\textbf{\ShortTitle}}\\
+Thesis supervisor: & \textbf{\Supervisor}\\
+Month and year of submission: & \textbf{\SubmissionDate}
+\end{tabular}
+
+\noindent\rule{\textwidth}{0.4pt}
+
+Large language models (LLMs) produce fluent text that frequently contains \emph{hallucinations}: statements that are unsupported or contradicted by real-world evidence. This project designs, implements and statistically evaluates \textbf{VeriFact}, a system that checks a text for hallucinations claim by claim. The input is decomposed into atomic claims; for each claim, evidence is retrieved from Wikipedia, the open web and arXiv and ranked by a hybrid of dense sentence embeddings and BM25 combined through reciprocal rank fusion; a natural language inference (NLI) model (BART-large-MNLI) then scores every evidence snippet separately, and an asymmetric corroboration rule turns the per-snippet scores into a verdict. \textbf{Split conformal prediction} converts the NLI probabilities into prediction sets with a finite-sample coverage guarantee, and claims whose set is ambiguous are escalated, as a cascade, to a Wikidata knowledge graph and an LLM arbiter that argues for and against the claim before judging it.
+
+The system was evaluated end to end, with live retrieval and LLM calls, on 300 claims each from \textbf{FEVER} and \textbf{FreshQA}. It reached an accuracy of \textbf{90.7\%} (Wilson 95\% CI [86.8\%, 93.5\%]; F1 0.91) on FEVER and \textbf{82.3\%} ([77.6\%, 86.2\%]; F1 0.85) on FreshQA, at a mean latency of 8.5\,s and 11.3\,s per claim. The NLI verdict alone settled 413 of the 600 claims, with 89\% accuracy, so the expensive stages ran only on the ambiguous remainder; on the claims it decided, the LLM arbiter fixed 60 NLI verdicts and broke 15 (exact McNemar test, $p = 1.6 \times 10^{-7}$). An exact ablation shows that every stage contributes significantly: the full pipeline gains 7.5 points of accuracy over the NLI verdict for 0.31 extra LLM calls per claim. Against a baseline that lets the LLM decide every claim, the cascade uses 35\% fewer LLM calls for an accuracy that is not significantly lower (88.2\% against 86.5\%, $p = 0.18$). The report places the statistical layer on a rigorous footing: it proves the conformal coverage guarantee, derives the Wilson score interval, the exact McNemar and Fisher tests, the Holm and Benjamini--Hochberg corrections and the power calculations used to compare results, removes the selection bias of a tuned decision parameter by cross-fitting, and calibrates the NLI probabilities by temperature scaling fitted by maximum likelihood, which halves the expected calibration error (11.4\% to 5.7\%) without changing any verdict. It also measures where the guarantees stop holding: on retrieved rather than gold evidence, conformal coverage falls to 83.2\%.
+
+\vspace{0.5em}
+\noindent\textbf{Keywords:} hallucination detection, fact verification, natural language inference, conformal prediction, calibration, hypothesis testing, retrieval-augmented verification, knowledge graphs.
+
+% =========================== ACKNOWLEDGEMENTS ==============================
+\chapter*{Acknowledgements}
+\addcontentsline{toc}{chapter}{Acknowledgements}
+\thispagestyle{plain}
+I would like to sincerely thank my supervisor, \textbf{\Supervisor} of the \SupervisorDept{} at IIT Kharagpur, for the opportunity to work on this project and for the guidance given throughout it. The emphasis on statistical rigour in our discussions shaped the way the system was evaluated, and the feedback received greatly improved both the work and this report.
+
+I am grateful to the Department of \StudentDept{} and the Department of Mathematics, IIT Kharagpur, for the academic environment and support that made this project possible. I also thank the maintainers of the open datasets, models and libraries on which this work builds, in particular FEVER, FreshQA, Wikipedia, Wikidata and the Hugging Face ecosystem. Finally, I thank my friends and family for their encouragement during the course of this work.
+
+\vspace{2cm}
+\hfill \StudentName
+
+% =========================== CONTENTS ======================================
+\clearpage
+{\setlength{\parskip}{0pt}% list entries are paragraphs: no extra space between them
+\tableofcontents
+\clearpage
+\addcontentsline{toc}{chapter}{List of Figures}
+\listoffigures
+\clearpage
+\addcontentsline{toc}{chapter}{List of Tables}
+\listoftables}
+
+% =========================== ABBREVIATIONS =================================
+\chapter*{Abbreviations}
+\addcontentsline{toc}{chapter}{Abbreviations}
+\thispagestyle{plain}
+\begin{tabular}{@{}p{0.18\textwidth}p{0.75\textwidth}}
+\textbf{AUROC} & Area Under the Receiver Operating Characteristic curve\\
+\textbf{BART} & Bidirectional and Auto-Regressive Transformer\\
+\textbf{BH} & Benjamini--Hochberg procedure\\
+\textbf{BM25} & Best Matching 25 (Okapi ranking function)\\
+\textbf{CI} & Confidence Interval\\
+\textbf{ECE} & Expected Calibration Error\\
+\textbf{FDR} & False Discovery Rate\\
+\textbf{FEVER} & Fact Extraction and VERification benchmark\\
+\textbf{FN / FP} & False Negative / False Positive\\
+\textbf{FWER} & Family-Wise Error Rate\\
+\textbf{IDF} & Inverse Document Frequency\\
+\textbf{KG} & Knowledge Graph\\
+\textbf{LLM} & Large Language Model\\
+\textbf{MNLI} & Multi-Genre Natural Language Inference corpus\\
+\textbf{NLI} & Natural Language Inference\\
+\textbf{NLL} & Negative Log-Likelihood\\
+\textbf{RRF} & Reciprocal Rank Fusion\\
+\textbf{TN / TP} & True Negative / True Positive\\
+\end{tabular}
+
+\clearpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\include{chapters/ch1_introduction}
+\include{chapters/ch2_literature}
+\include{chapters/ch3_formulation}
+\include{chapters/ch4_methodology}
+\include{chapters/ch5_statistics}
+\include{chapters/ch6_implementation}
+\include{chapters/ch7_results}
+\include{chapters/ch8_conclusion}
+
+\appendix
+\include{chapters/appendix}
+
+\include{chapters/bibliography}
+
+\end{document}

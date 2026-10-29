@@ -1,0 +1,86 @@
+\chapter{Implementation}
+\label{ch:impl}
+
+This chapter describes how the pipeline is implemented: the software stack, the structure of the code, the LLM backend, concurrency and caching, and the web interface that makes each verdict inspectable.
+
+\section{Technology Stack}
+
+The system is written in Python~3.12. The principal components are listed in Table~\ref{tab:stack}; library versions are pinned to those used for the reported results.
+
+\begin{table}[htbp]
+\centering
+\caption{Main components of the implementation.}
+\label{tab:stack}
+\small
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Component & Technology \\
+\midrule
+NLI model & \code{facebook/bart-large-mnli} via Hugging Face Transformers and PyTorch (GPU via Apple MPS or CUDA when available) \\
+Sentence embeddings & \code{all-MiniLM-L6-v2} via Sentence-Transformers \\
+Lexical ranking & \code{rank\_bm25} (Okapi BM25) \\
+Retrieval & \code{wikipedia}, \code{arxiv}, \code{ddgs} (parallel multi-engine web search), Wikidata API \\
+Text processing & NLTK sentence tokenizer \\
+LLM & Google Gemini (\code{gemini-3.5-flash-lite}, with \code{gemini-3.1-flash-lite} as fallback) via \code{google-genai}; local Ollama (\code{qwen2.5:3b}) as an alternative \\
+Web server & Flask, served by waitress in production \\
+Front end & HTML, CSS and JavaScript with D3.js for the knowledge-graph view \\
+Datasets & Hugging Face \code{datasets} (FEVER), FreshQA public sheet \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Code Organisation}
+
+The code is organised into one package per pipeline stage, so that each stage can be tested and replaced on its own (Table~\ref{tab:layout}). The detector package connects the stages; the evaluation and experiment scripts read the per-claim records that the detector writes.
+
+\begin{table}[H]
+\centering
+\caption{Project layout.}
+\label{tab:layout}
+\small
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+Path & Contents \\
+\midrule
+\code{agents/} & claim extraction, query generation, Wikidata knowledge graph, LLM arbiter \\
+\code{retrieval/} & Wikipedia, web and arXiv retrieval; hybrid re-ranking \\
+\code{verification/} & NLI model \\
+\code{statistical\_layer/} & split conformal prediction; temperature scaling \\
+\code{detector/} & the pipeline connecting the stages, and the report generator \\
+\code{llm/} & Gemini and Ollama clients with model fallback \\
+\code{evaluation/} & benchmark loaders, runners and per-claim result records \\
+\code{experiments/} & conformal calibration, probability calibration, statistical tests and the full evaluation \\
+\code{static/}, \code{server.py} & web interface and server \\
+\code{tests/} & test scripts for scoring, conformal prediction, statistics, retrieval timeouts and the knowledge graph \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{LLM Backend and Fault Tolerance}
+
+Two Gemini models are used, each serving as the other's fallback. By default every call goes to \code{gemini-3.5-flash-lite} and falls back to \code{gemini-3.1-flash-lite} when the first is rate-limited, overloaded or out of daily quota. Each call is tagged as \emph{heavy} (arbitration, absence evaluation, decomposition) or \emph{light} (query generation and rewriting), which allows an alternative tiered routing. A model that returns HTTP 429, 503 or 504, or times out, is skipped for 45 seconds; a model whose daily quota is exhausted is skipped until the quota resets. If both models fail at once with a temporary error, the request is retried after 2\,s and then 5\,s. In the evaluation, 747 of 749 calls were answered by the primary model and none failed.
+
+\section{Concurrency, Warm-up and Caching}
+
+Claims, queries and data sources are processed in thread pools, and all network calls run in parallel; the Wikidata lookup runs in a background thread alongside retrieval and NLI. The NLI model and the embedding model are each protected by a lock, because their native code is not safe to call from several threads at once. At start-up every model is run once on a dummy input, so the first real request does not pay one-off initialisation costs (a cold NLI call took 1.18\,s against 0.22\,s warm). Wikipedia searches and pages, paragraph embeddings, web results, NLI scores per claim--snippet pair and Wikidata entities are cached; every cache returns exactly what recomputation would, so caching changes speed only, never results.
+
+\section{Computation Trace}
+
+For every claim the detector records a trace of its computation without changing any decision: the generated queries; the re-ranking table with cosine similarity, BM25, both ranks and the RRF score; each snippet's NLI logits and probabilities; the decision-rule quantities $S$, $K$, $\lvert D_{\text{sup}} \rvert$, $\lvert D_{\text{con}} \rvert$ and the branch taken; the conformal scores, $\hat{q}$, $p$-values and set; the routing condition term by term; and the arbiter's defence, prosecution and judgement. All the analyses of Chapter~\ref{ch:results} are derived from these traces.
+
+\section{Web Interface}
+
+A Flask server streams newline-delimited JSON events to the browser: the extracted claims, one progress event per stage and claim, each claim's result as soon as it is verified, and the final report. The interface has four tabs.
+
+\begin{itemize}[itemsep=0.3em]
+  \item \textbf{Verify.} A live stepper shows the pipeline stages across the claims in progress. Results show an answer-level verdict; each input sentence next to the claims it was decomposed into, coloured by verdict; one card per claim with its decision path (NLI reading, conformal set, route, final verdict), the NLI posterior with its calibrated confidence, the conformal $p$-values, every evidence snippet with its own NLI reading and source; an ``under the hood'' view of the full computation trace, including a calibration plot placing the claim's non-conformity scores against the histogram of calibration scores and $\hat{q}$; a timeline of the time spent in each phase; and the Wikidata graph of all claims drawn with D3.js.
+  \item \textbf{Benchmarks.} Charts of the fifteen-set results with Wilson intervals and significance tests, and a claim explorer over all 600 benchmark claims, filterable by outcome, route and text, each opening with its evidence and full trace.
+  \item \textbf{Method.} An animation of the cascade, and an interactive demonstration of the conformal coverage argument of Theorem~\ref{thm:coverage}: each trial draws a random calibration split, places a new claim's score among the sorted calibration scores and records its rank. With claims from the calibration distribution the ranks are uniform and coverage converges to $k/(n+1)$; with claims scored on retrieved evidence it settles near the 83.2\% measured in Section~\ref{sec:coverage-retrieved}.
+  \item \textbf{Docs.} The technical documentation of the pipeline.
+\end{itemize}
+
+\paragraph{Server.} In production the server runs under waitress bound to localhost, validates input length (at most 4{,}000 characters), limits live checks per client and in total to protect the API quota, adds standard security headers and logs each request with an identifier. A completed live run is recorded and can be replayed instantly with its original timings; the recordings of the example inputs are kept permanently, so the interface can be demonstrated without network access or API quota.
+
+\section{Testing}
+
+The \code{tests/} directory contains standalone test scripts for the hierarchical NLI scoring rule, the conformal pipeline, the statistical routines, the inference mode of the NLI model, the timeout behaviour of web search, the fast query generator, session and cache behaviour, and the Wikidata graph. The original ``highest confidence wins'' scoring rule is kept as an option for ablation, and a randomised check over 20{,}000 synthetic score configurations confirms that it reproduces the original decisions exactly.

@@ -54,6 +54,9 @@ python experiments/full_evaluation.py              # the full evaluation: fiftee
 python experiments/eval_conformal.py               # conformal calibration and coverage
 python experiments/statistical_tests.py            # confidence intervals, hypothesis tests, multiple comparisons and power (no LLM call)
 python experiments/calibration.py                  # temperature scaling of the NLI probabilities (no LLM call)
+python experiments/ablation_selective.py           # ablations, risk-coverage curves, intervals for precision, recall and F1 (no LLM call)
+python experiments/llm_every_claim.py              # baseline: the LLM arbiter decides every claim (dry run; --run makes the missing calls)
+python experiments/conformal_variants.py           # class-conditional coverage, Mondrian and APS conformal prediction (no LLM call)
 ```
 
 The fifteen-set evaluation makes several hundred LLM calls; if the API quota runs out, it stops and resumes where it stopped when started again.

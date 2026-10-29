@@ -1,0 +1,195 @@
+{
+  "uniform": false,
+  "mean_arbitration_sec": 3.0070427807486633,
+  "sources": {
+    "cached review": 225,
+    "new call": 188,
+    "run (escalation, with Wikidata)": 98,
+    "run (review)": 89
+  },
+  "models": {
+    "gemini-3.5-flash-lite": 187
+  },
+  "by_dataset": {
+    "fever": {
+      "baseline": {
+        "claims": 300,
+        "correct": 274,
+        "accuracy": 0.9133333333333333,
+        "wilson95": [
+          0.8760432544899761,
+          0.940171510045229
+        ],
+        "precision": 0.9448275862068966,
+        "recall": 0.9133333333333333,
+        "f1": 0.9288135593220339,
+        "tp": 137,
+        "fp": 8,
+        "fn": 13,
+        "tn": 137,
+        "unknown": 10,
+        "llm_calls_per_claim": 1.81,
+        "mean_latency_sec_estimated": 10.82584436068338
+      },
+      "full": {
+        "claims": 300,
+        "correct": 272,
+        "accuracy": 0.9066666666666666,
+        "wilson95": [
+          0.8684138011961097,
+          0.9346362090723985
+        ],
+        "precision": 0.9370629370629371,
+        "recall": 0.8933333333333333,
+        "f1": 0.9146757679180887,
+        "tp": 134,
+        "fp": 9,
+        "fn": 16,
+        "tn": 138,
+        "unknown": 4,
+        "llm_calls_per_claim": 1.0466666666666666,
+        "mean_latency_sec": 8.530468371378568
+      },
+      "paired": {
+        "full_right_only": 7,
+        "baseline_right_only": 9,
+        "mcnemar_exact_p": 0.803619384765625,
+        "difference": 0.006666666666666667,
+        "difference95": [
+          -0.01945577550831355,
+          0.03278910884164688
+        ],
+        "claims_for_80pct_power": 9417
+      },
+      "settled_claims": {
+        "claims": 229,
+        "nli_correct": 212,
+        "llm_correct": 214,
+        "nli_right_only": 7,
+        "llm_right_only": 9,
+        "mcnemar_exact_p": 0.803619384765625,
+        "llm_unknown": 6
+      }
+    },
+    "freshqa": {
+      "baseline": {
+        "claims": 300,
+        "correct": 255,
+        "accuracy": 0.85,
+        "wilson95": [
+          0.8051814866362913,
+          0.8859681123652937
+        ],
+        "precision": 0.8951048951048951,
+        "recall": 0.8707482993197279,
+        "f1": 0.8827586206896552,
+        "tp": 128,
+        "fp": 15,
+        "fn": 19,
+        "tn": 127,
+        "unknown": 19,
+        "llm_calls_per_claim": 2.0633333333333335,
+        "mean_latency_sec_estimated": 13.171145079266177
+      },
+      "full": {
+        "claims": 300,
+        "correct": 247,
+        "accuracy": 0.8233333333333334,
+        "wilson95": [
+          0.7761666509606149,
+          0.8623239309741828
+        ],
+        "precision": 0.9069767441860465,
+        "recall": 0.7959183673469388,
+        "f1": 0.8478260869565217,
+        "tp": 117,
+        "fp": 12,
+        "fn": 30,
+        "tn": 130,
+        "unknown": 15,
+        "llm_calls_per_claim": 1.45,
+        "mean_latency_sec": 11.326825507073663
+      },
+      "paired": {
+        "full_right_only": 11,
+        "baseline_right_only": 19,
+        "mcnemar_exact_p": 0.20048842206597328,
+        "difference": 0.02666666666666667,
+        "difference95": [
+          -0.008990412834023211,
+          0.062323746167356545
+        ],
+        "claims_for_80pct_power": 1102
+      },
+      "settled_claims": {
+        "claims": 184,
+        "nli_correct": 156,
+        "llm_correct": 164,
+        "nli_right_only": 11,
+        "llm_right_only": 19,
+        "mcnemar_exact_p": 0.20048842206597328,
+        "llm_unknown": 4
+      }
+    },
+    "pooled": {
+      "baseline": {
+        "claims": 600,
+        "correct": 529,
+        "accuracy": 0.8816666666666667,
+        "wilson95": [
+          0.853361127593803,
+          0.9051159299656631
+        ],
+        "precision": 0.9201388888888888,
+        "recall": 0.8922558922558923,
+        "f1": 0.905982905982906,
+        "tp": 265,
+        "fp": 23,
+        "fn": 32,
+        "tn": 264,
+        "unknown": 29,
+        "llm_calls_per_claim": 1.9366666666666668,
+        "mean_latency_sec_estimated": 11.99849471997478
+      },
+      "full": {
+        "claims": 600,
+        "correct": 519,
+        "accuracy": 0.865,
+        "wilson95": [
+          0.8353226948455217,
+          0.8900330938248847
+        ],
+        "precision": 0.9227941176470589,
+        "recall": 0.8451178451178452,
+        "f1": 0.8822495606326889,
+        "tp": 251,
+        "fp": 21,
+        "fn": 46,
+        "tn": 268,
+        "unknown": 19,
+        "llm_calls_per_claim": 1.2483333333333333,
+        "mean_latency_sec": 9.928646939226116
+      },
+      "paired": {
+        "full_right_only": 18,
+        "baseline_right_only": 28,
+        "mcnemar_exact_p": 0.18392482137699062,
+        "difference": 0.016666666666666666,
+        "difference95": [
+          -0.005448771212620114,
+          0.03878210454595345
+        ],
+        "claims_for_80pct_power": 2164
+      },
+      "settled_claims": {
+        "claims": 413,
+        "nli_correct": 368,
+        "llm_correct": 378,
+        "nli_right_only": 18,
+        "llm_right_only": 28,
+        "mcnemar_exact_p": 0.18392482137699062,
+        "llm_unknown": 10
+      }
+    }
+  }
+}

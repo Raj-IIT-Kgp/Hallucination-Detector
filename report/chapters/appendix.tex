@@ -1,0 +1,53 @@
+\chapter{Reproducibility}
+\label{app:repro}
+
+\section{Requirements and Installation}
+
+The system requires Python~3.12 and about 1.6\,GB of disk space for the models (\code{facebook/bart-large-mnli}, 1.5\,GB, and \code{all-MiniLM-L6-v2}, 87\,MB), downloaded from Hugging Face on the first run. A GPU (Apple MPS or CUDA) is used for NLI when available; otherwise everything runs on the CPU. The reported latencies were measured on an Apple M1 laptop.
+
+\begin{verbatim}
+python3.12 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+\end{verbatim}
+
+A \code{.env} file in the project root selects the LLM provider:
+\begin{verbatim}
+MODEL_PROVIDER=gemini
+GEMINI_API_KEY=<your key>
+\end{verbatim}
+
+\section{Commands}
+
+\begin{verbatim}
+python server.py                         # web UI, port 8080
+python evaluation/run_5_runs.py --dataset all  # 15 sets
+python experiments/full_evaluation.py    # Chapter 7
+python experiments/eval_conformal.py     # conformal
+python experiments/statistical_tests.py  # tests
+python experiments/calibration.py        # calibration
+\end{verbatim}
+
+The fifteen-set evaluation makes several hundred LLM calls; if an API quota runs out, the run stops and resumes where it stopped when started again. Per-claim records, including the full computation trace of every claim, are saved as the run proceeds, and every result in Chapter~\ref{ch:results} is derived from them.
+
+\section{Configuration}
+
+Settings are read from environment variables or from the \code{.env} file. Table~\ref{tab:config} lists the main ones; the server's input and rate limits have further variables, documented in the project README.
+
+\begin{table}[H]
+\centering
+\caption{Main configuration variables.}
+\label{tab:config}
+\small
+\begin{tabularx}{\textwidth}{@{}lXl@{}}
+\toprule
+Variable & Purpose & Default \\
+\midrule
+\code{MODEL\_PROVIDER} & \code{gemini} (used for all reported results) or \code{ollama} & \code{ollama} \\
+\code{LLM\_ROUTING} & \code{primary}, \code{tiered} or \code{alternate} model routing & \code{primary} \\
+\code{NLI\_MODEL} & alternative NLI model (requires recalibrating the conformal layer) & BART-large-MNLI \\
+\code{NLI\_DEVICE} & force the NLI device (\code{cpu}, \code{mps}, \code{cuda}) & automatic \\
+\code{VERIFACT\_WIKIDATA} & \code{0} turns off the Wikidata graph in the interface & \code{1} \\
+\bottomrule
+\end{tabularx}
+\end{table}

@@ -1,0 +1,354 @@
+\chapter{Statistical Framework}
+\label{ch:stats}
+
+This chapter develops the statistical tools on which the system and its evaluation rest: split conformal prediction, which drives the routing of claims; interval estimation and hypothesis tests, which are used to report and compare results; cross-fitting, which removes the bias of a tuned parameter; power analysis, which tells how many claims a conclusive comparison needs; and temperature scaling, which calibrates the NLI probabilities. Each method is stated with its assumptions and derived or proved.
+
+% ==========================================================================
+\section{Split Conformal Prediction}
+\label{sec:conformal}
+
+\subsection{Setting}
+
+Let $(X_1, Y_1), \dots, (X_n, Y_n)$ be a \emph{calibration set} of labelled claims, never used for anything else, and $(X_{n+1}, Y_{n+1})$ a new claim whose label is unknown. The NLI model gives a probability vector $\hat{\bm{\pi}}(X)$ over $\Y$.
+
+\begin{definition}[Exchangeability]
+Random variables $Z_1, \dots, Z_{n+1}$ are \emph{exchangeable} if for every permutation $\sigma$ of $\{1, \dots, n+1\}$ the vector $(Z_{\sigma(1)}, \dots, Z_{\sigma(n+1)})$ has the same joint distribution as $(Z_1, \dots, Z_{n+1})$.
+\end{definition}
+
+Independent and identically distributed variables are exchangeable; the converse need not hold.
+
+\begin{definition}[Non-conformity score]
+The non-conformity score of a labelled example is one minus the probability the model assigns to its label,
+\begin{equation}
+  s(X, Y) = 1 - \hat{\pi}_Y(X) \in [0, 1].
+\end{equation}
+A confident correct prediction has a score near 0; a prediction that gives the true label little probability has a score near 1.
+\end{definition}
+
+\subsection{Calibration and prediction sets}
+
+The calibration scores $s_i = s(X_i, Y_i)$ are sorted, $s_{(1)} \le \dots \le s_{(n)}$, and for a significance level $\alpha \in (0,1)$ the conformal quantile is
+\begin{equation}
+\label{eq:qhat}
+  \hat{q}_\alpha = s_{(k)}, \qquad k = \lceil (n+1)(1-\alpha) \rceil,
+\end{equation}
+with $\hat{q}_\alpha = 1$ if $k > n$. The prediction set of a new claim contains every label whose score would not be unusually high:
+\begin{equation}
+\label{eq:cset}
+  \mathcal{C}(X) = \{ y \in \Y : s(X, y) \le \hat{q}_\alpha \} = \{ y \in \Y : \hat{\pi}_y(X) \ge 1 - \hat{q}_\alpha \}.
+\end{equation}
+The index $k$ is computed exactly rather than by an interpolating quantile function, because interpolation shifts the index and breaks the finite-sample guarantee below.
+
+\begin{theorem}[Marginal coverage]
+\label{thm:coverage}
+If $(X_1, Y_1), \dots, (X_{n+1}, Y_{n+1})$ are exchangeable, then
+\begin{equation}
+  \Pr\bigl( Y_{n+1} \in \mathcal{C}(X_{n+1}) \bigr) \ge 1 - \alpha .
+\end{equation}
+If, in addition, the scores are almost surely distinct, then
+\begin{equation}
+  \Pr\bigl( Y_{n+1} \in \mathcal{C}(X_{n+1}) \bigr) \le 1 - \alpha + \frac{1}{n+1}.
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Let $s_{n+1} = s(X_{n+1}, Y_{n+1})$ be the score of the new claim at its true label. By~\eqref{eq:cset}, $Y_{n+1} \in \mathcal{C}(X_{n+1})$ if and only if $s_{n+1} \le s_{(k)}$.
+
+The scores $s_1, \dots, s_{n+1}$ are obtained by applying the same fixed function $s$ to exchangeable pairs (the model was trained on separate data, so $s$ does not depend on these pairs); hence they are themselves exchangeable. Assume first that they are distinct, and let $R$ be the rank of $s_{n+1}$ among all $n+1$ scores. By exchangeability every ordering of the scores is equally likely, so $R$ is uniformly distributed on $\{1, \dots, n+1\}$.
+
+Now $s_{n+1} \le s_{(k)}$ holds exactly when fewer than $k$ calibration scores are smaller than $s_{n+1}$, that is, when $R \le k$. Therefore
+\[
+  \Pr\bigl( Y_{n+1} \in \mathcal{C}(X_{n+1}) \bigr) = \Pr(R \le k) = \frac{k}{n+1} = \frac{\lceil (n+1)(1-\alpha) \rceil}{n+1}.
+\]
+Since $(n+1)(1-\alpha) \le \lceil (n+1)(1-\alpha) \rceil < (n+1)(1-\alpha) + 1$, dividing by $n+1$ gives both bounds. If ties are possible, breaking them uniformly at random makes $R$ uniform again, and a tie between $s_{n+1}$ and $s_{(k)}$ can only add to the event $s_{n+1} \le s_{(k)}$, so the lower bound still holds.
+\end{proof}
+
+With $n = 100$ and $\alpha = 0.10$ the production calibration has $k = \lceil 101 \times 0.9 \rceil = 91$ and $\hat{q}_{0.10} = s_{(91)} = 0.8985$; coverage lies between $91/101 = 90.1\%$ and $90\% + 1/101 \approx 91.0\%$.
+
+\begin{remark}[What the guarantee does not say]
+The guarantee is \emph{marginal}: it holds on average over claims, not for each claim individually. It concerns the \emph{set}, not the point verdict: a set $\{\Con, \Unk\}$ can contain the truth while the point verdict \Con{} is wrong. Coverage can be lower for a rare class and higher for a common one. Above all, it requires exchangeability. The production calibration uses FEVER claims scored against their \emph{gold} evidence, whereas the live pipeline scores \emph{retrieved} snippets, which are noisier; Section~\ref{sec:coverage-retrieved} measures the consequence.
+\end{remark}
+
+\subsection{Conformal p-values}
+
+For each label $y$ the conformal $p$-value is the proportion of calibration scores at least as large as the score that label would have:
+\begin{equation}
+  p(y) = \frac{1 + \sum_{i=1}^{n} \Ind\bigl( s_i \ge 1 - \hat{\pi}_y(X) \bigr)}{n+1}.
+\end{equation}
+If $y$ were the true label, then by the rank argument above $\Pr(p(Y) \le u) \le u$ for every $u \in [0,1]$, so $p(y)$ is a valid $p$-value for the hypothesis ``$y$ is the true label''. Up to ties, the prediction set~\eqref{eq:cset} is the set of labels with $p(y) > \alpha$. For the vector $(0.9934, 0.0063, 0.0003)$ of the \emph{Bones} example, the $p$-values are $(0.485, 0.050, 0.010)$, so only \Con{} survives at $\alpha = 0.10$.
+
+\subsection{Escalation signal}
+
+A set with more than one label, or one containing \Unk, means that the NLI posterior is spread across labels:
+\begin{equation}
+  \text{escalate}_{\text{conf}}(X) \iff \lvert \mathcal{C}(X) \rvert > 1 \;\vee\; \Unk \in \mathcal{C}(X).
+\end{equation}
+This is the conformal term of the escalation rule~\eqref{eq:escalate}.
+
+\subsection{The choice of conformity score}
+\label{sec:scores}
+
+The proof of Theorem~\ref{thm:coverage} never used the form of the score: it needs only that the same fixed function $s$ is applied to every claim. Any score therefore yields valid coverage, and the choice of score affects only the \emph{efficiency} of the sets, that is, how large they are. The score $s(X, Y) = 1 - \hat{\pi}_Y(X)$ used so far is known as the \emph{least ambiguous set-valued classifier} (LAC); when the probabilities are accurate, it gives the smallest sets on average among procedures with the same coverage~\citep{sadinle2019least}. Two alternatives are standard.
+
+\paragraph{Adaptive prediction sets (APS).} Let $\rho_y(X) = \sum_{y' : \hat{\pi}_{y'}(X) > \hat{\pi}_y(X)} \hat{\pi}_{y'}(X)$ be the probability of the labels ranked above $y$. The APS score~\citep{romano2020classification} is
+\begin{equation}
+  s_{\text{APS}}(X, y) = \rho_y(X) + \hat{\pi}_y(X),
+\end{equation}
+and its randomised form is $s_{\text{APS}}^{U}(X, y) = \rho_y(X) + U\, \hat{\pi}_y(X)$, with $U \sim \text{Uniform}(0, 1)$ drawn once per claim. The set grows from the most probable label down until the accumulated probability reaches the quantile, so its size adapts to how spread out the probabilities are.
+
+\begin{remark}[Non-randomised APS with an over-confident model]
+\label{rem:aps}
+For a claim the model gets right with confidence $\hat{\pi}_{\max}$, the non-randomised score of the true label is $\hat{\pi}_{\max}$. When most calibration claims are classified correctly with confidence close to 1, the quantile $\hat{q}$ is therefore close to 1 as well. A second label $y_2$ enters the set when $\hat{\pi}_{\max} + \hat{\pi}_{y_2} \le \hat{q}$, that is, when the third label has probability at least $1 - \hat{q}$, a condition that almost every probability vector meets once $\hat{q}$ is within a fraction of a percent of 1. Non-randomised APS then returns two or three labels for nearly every claim. The randomisation $U$ removes this conservativeness, at the price of sets, and hence routing decisions, that depend on a random draw.
+\end{remark}
+
+\paragraph{Class-conditional (Mondrian) conformal prediction.} Theorem~\ref{thm:coverage} is a statement about the average over all claims; coverage can be higher for one class and lower for the other. Mondrian conformal prediction~\citep{vovk2005algorithmic} calibrates one quantile per class: with $n_y$ calibration claims of label $y$ and their sorted scores $s^{(y)}_{(1)} \le \dots \le s^{(y)}_{(n_y)}$,
+\begin{equation}
+  \hat{q}_y = s^{(y)}_{(k_y)}, \quad k_y = \lceil (n_y + 1)(1 - \alpha) \rceil, \qquad
+  \mathcal{C}_{\text{M}}(X) = \{ y \in \Y : s(X, y) \le \hat{q}_y \}.
+\end{equation}
+
+\begin{theorem}[Class-conditional coverage]
+\label{thm:mondrian}
+If, conditionally on the label $Y = y$, the $n_y$ calibration claims of that label and the new claim are exchangeable, then
+\begin{equation}
+  \Pr\bigl( Y_{n+1} \in \mathcal{C}_{\text{M}}(X_{n+1}) \mid Y_{n+1} = y \bigr) \ge 1 - \alpha .
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+Condition on $Y_{n+1} = y$. Then $y \in \mathcal{C}_{\text{M}}(X_{n+1})$ exactly when $s(X_{n+1}, y) \le \hat{q}_y$, and $\hat{q}_y$ depends only on the $n_y$ calibration claims of label $y$. These and the new claim are exchangeable, so the rank argument of Theorem~\ref{thm:coverage} applies to the $n_y + 1$ scores of label $y$ and gives $\Pr(s(X_{n+1}, y) \le \hat{q}_y \mid Y_{n+1} = y) \ge k_y / (n_y + 1) \ge 1 - \alpha$.
+\end{proof}
+
+The price is that each quantile is computed from fewer claims, so the coverage of a single calibration varies more (for $n_y = 50$, its standard deviation over calibration draws is about $\sqrt{0.9 \times 0.1 / 52} \approx 4$ points). In the benchmarks no claim has the gold label \Unk, so that label has no calibration claims; it keeps the pooled quantile of the production layer, and only the quantiles of \Con{} and \Sup{} become class-specific.
+
+
+% ==========================================================================
+\section{Interval Estimation for an Accuracy}
+\label{sec:wilson}
+
+An accuracy measured on $N$ claims is an estimate $\hat{p}$ of a binomial proportion. The textbook interval $\hat{p} \pm z \sqrt{\hat{p}(1-\hat{p})/N}$ evaluates the standard error at the estimate. It can extend beyond $[0,1]$, has zero width at $\hat{p} \in \{0, 1\}$, and its actual coverage falls below the nominal level near the boundaries~\citep{brown2001interval}. Every interval in this report is therefore the Wilson score interval~\citep{wilson1927probable}.
+
+\begin{proposition}[Wilson score interval]
+Let $z = z_{1-\alpha/2}$. The set of values $p_0$ not rejected by the score test of $H_0 : p = p_0$ at level $\alpha$ is the interval
+\begin{equation}
+\label{eq:wilson}
+  \frac{\hat{p} + \dfrac{z^2}{2N} \pm z \sqrt{\dfrac{\hat{p}(1-\hat{p})}{N} + \dfrac{z^2}{4N^2}}}{1 + \dfrac{z^2}{N}} .
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Under $H_0$, by the central limit theorem $Z(p_0) = (\hat{p} - p_0) / \sqrt{p_0(1-p_0)/N}$ is approximately standard normal, with the standard error evaluated at the hypothesised value. The test does not reject when $\lvert Z(p_0) \rvert \le z$; squaring,
+\[
+  (\hat{p} - p_0)^2 \le \frac{z^2}{N}\, p_0 (1-p_0)
+  \iff
+  Q(p_0) := \Bigl(1 + \frac{z^2}{N}\Bigr) p_0^2 - \Bigl(2\hat{p} + \frac{z^2}{N}\Bigr) p_0 + \hat{p}^2 \le 0 .
+\]
+$Q$ has a positive leading coefficient, so the solution set is the closed interval between its roots, which the quadratic formula gives as~\eqref{eq:wilson}.
+\end{proof}
+
+The interval has three useful properties. (i) It lies in $[0,1]$: $Q(0) = \hat{p}^2 \ge 0$, $Q(1) = (1-\hat{p})^2 \ge 0$ and the vertex of $Q$ lies in $[0,1]$, so both roots do. (ii) Its centre is a weighted average of $\hat{p}$ and $\tfrac12$,
+\[
+  \frac{\hat{p} + z^2/(2N)}{1 + z^2/N} = \frac{N}{N + z^2}\,\hat{p} + \frac{z^2}{N + z^2} \cdot \frac{1}{2},
+\]
+so it is pulled towards $\tfrac12$, more strongly for small $N$. (iii) It never has zero width: at $\hat{p} = 1$ the roots are $N/(N + z^2)$ and $1$. For a set of 20 claims all classified correctly the normal approximation gives $[100\%, 100\%]$, whereas the Wilson interval is $[83.9\%, 100\%]$.
+
+\paragraph{Example.} For FEVER, 272 of 300 verdicts were correct, $\hat{p} = 0.9067$. The centre is $(0.9067 + 0.0064)/1.0128 = 0.9015$ and the half-width
+\[
+  \frac{1.96 \sqrt{0.000282 + 0.000011}}{1.0128} = 0.0331,
+\]
+giving $[86.8\%, 93.5\%]$.
+
+\subsection{Intervals for precision, recall and \texorpdfstring{$F_1$}{F1}}
+\label{sec:prf-intervals}
+
+Precision and recall are also binomial proportions, but over different denominators. Conditionally on the number of claims flagged \Con, $TP + FP$, each flagged claim is a true hallucination independently with probability equal to the precision, so $TP$ is binomial and the Wilson interval~\eqref{eq:wilson} applies with $N = TP + FP$. Likewise recall is a proportion of the $TP + FN$ false claims. The $F_1$ score,
+\[
+  F_1 = \frac{2\,TP}{2\,TP + FP + FN},
+\]
+is a ratio of correlated counts and has no binomial form, so its interval is obtained by the nonparametric \emph{percentile bootstrap}~\citep{efron1993bootstrap}: the $N$ claims are resampled with replacement $B = 10{,}000$ times, $F_1$ is recomputed on each resample, and the 2.5th and 97.5th percentiles of the $B$ values form the 95\% interval. The bootstrap treats the empirical distribution of the claims as the population; it is reliable here because $N$ is large and $F_1$ is a smooth function of the counts.
+
+% ==========================================================================
+\section{Hypothesis Tests}
+\label{sec:tests}
+
+\subsection{Two independent accuracies}
+
+FEVER and FreshQA share no claims, so their accuracies are independent binomial proportions. With $c_1$ of $n_1$ and $c_2$ of $n_2$ correct and the pooled proportion $\bar{p} = (c_1 + c_2)/(n_1 + n_2)$, the two-proportion $z$-test statistic is
+\begin{equation}
+  z = \frac{\hat{p}_1 - \hat{p}_2}{\sqrt{\bar{p}(1-\bar{p})\left( \frac{1}{n_1} + \frac{1}{n_2} \right)}}, \qquad p = 2\bigl(1 - \Phi(\lvert z \rvert)\bigr).
+\end{equation}
+Independence gives $\operatorname{Var}(\hat{p}_1 - \hat{p}_2) = p_1(1-p_1)/n_1 + p_2(1-p_2)/n_2$; under $H_0 : p_1 = p_2 = p$ this is $p(1-p)(1/n_1 + 1/n_2)$, and $\bar{p}$ is the maximum-likelihood estimate of $p$ under $H_0$.
+
+\paragraph{Fisher's exact test.} Under $H_0$, the probability of $a$ and $b$ correct verdicts is $\binom{n_1}{a}\binom{n_2}{b} p^{a+b}(1-p)^{N-a-b}$ with $N = n_1 + n_2$, and the total $T = C_1 + C_2$ is $\operatorname{Binomial}(N, p)$. Conditioning on $T = t$ the nuisance parameter cancels:
+\begin{equation}
+  \Pr(C_1 = a \mid T = t) = \frac{\binom{n_1}{a}\binom{n_2}{t-a}\, p^t (1-p)^{N-t}}{\binom{N}{t}\, p^t (1-p)^{N-t}} = \frac{\binom{n_1}{a}\binom{n_2}{t-a}}{\binom{N}{t}},
+\end{equation}
+a hypergeometric distribution fully known under $H_0$~\citep{fisher1922interpretation}. The two-sided $p$-value sums the probabilities of all tables with the same margins that are no more probable than the observed one.
+
+\paragraph{Interval for the difference.} Newcombe's hybrid score interval~\citep{newcombe1998interval} combines the Wilson intervals $[l_i, u_i]$ of the two proportions:
+\begin{equation}
+  \left[ \hat{\delta} - \sqrt{(\hat{p}_1 - l_1)^2 + (u_2 - \hat{p}_2)^2},\;\; \hat{\delta} + \sqrt{(u_1 - \hat{p}_1)^2 + (\hat{p}_2 - l_2)^2} \right], \qquad \hat{\delta} = \hat{p}_1 - \hat{p}_2 .
+\end{equation}
+The distances from each estimate to its Wilson limits play the role of $z$ standard errors; since the estimates are independent, their variances add, so the distances add in quadrature. The lower limit of $\delta$ pairs the lower distance of $\hat{p}_1$ with the upper distance of $\hat{p}_2$, because the difference is smallest when $p_1$ is low and $p_2$ high.
+
+\subsection{Several independent accuracies}
+
+To check that the three evaluation runs of a benchmark agree, with $c_j$ of $n_j$ correct in run $j$ and pooled accuracy $\bar{p}$, Pearson's statistic is
+\begin{equation}
+  X^2 = \sum_{j=1}^{k} \left[ \frac{(c_j - n_j \bar{p})^2}{n_j \bar{p}} + \frac{\bigl((n_j - c_j) - n_j(1-\bar{p})\bigr)^2}{n_j(1-\bar{p})} \right] = \sum_{j=1}^{k} \frac{(c_j - n_j \bar{p})^2}{n_j \bar{p}(1-\bar{p})},
+\end{equation}
+where the simplification uses $(n_j - c_j) - n_j(1 - \bar{p}) = -(c_j - n_j\bar{p})$ and $\frac{1}{\bar{p}} + \frac{1}{1-\bar{p}} = \frac{1}{\bar{p}(1-\bar{p})}$. Under $H_0$, $X^2$ is approximately $\chi^2_{k-1}$, one degree of freedom being lost to the estimation of $\bar{p}$. For $k = 3$, $\chi^2_2$ is the exponential distribution with mean 2, so $p = \Pr(\chi^2_2 \ge X^2) = e^{-X^2/2}$ in closed form.
+
+\subsection{Two verdicts on the same claims: McNemar's test}
+
+To compare two verdicts on the same claims (for instance, the NLI verdict against the arbiter's), each claim falls into one of four cells by whether verdict A and verdict B are right, with probabilities $\pi_{11}, \pi_{10}, \pi_{01}, \pi_{00}$. The accuracies are $\pi_{11} + \pi_{10}$ and $\pi_{11} + \pi_{01}$, so equal accuracy means $\pi_{10} = \pi_{01}$, and only the \emph{discordant} claims carry information.
+
+\begin{proposition}[Exact McNemar test]
+Let $b$ be the number of claims right only under A and $c$ the number right only under B, and $d = b + c$. Conditionally on $d$, $b \sim \operatorname{Binomial}\bigl(d, \pi_{10}/(\pi_{10} + \pi_{01})\bigr)$, which under $H_0$ is $\operatorname{Binomial}(d, \tfrac12)$. The two-sided exact $p$-value is
+\begin{equation}
+\label{eq:mcnemar}
+  p = \min\left(1,\; 2 \sum_{i=0}^{\min(b,c)} \binom{d}{i} 2^{-d}\right).
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Claims are independent, and each discordant claim is ``A right only'' with probability $\pi_{10}/(\pi_{10} + \pi_{01})$ independently of the others, which gives the conditional binomial law. Under $H_0$ the success probability is $\tfrac12$; the distribution is then symmetric, so the two-sided $p$-value is twice the smaller tail.
+\end{proof}
+
+\paragraph{Example.} The arbiter fixed 60 NLI verdicts and broke 15, so $d = 75$ and
+\[
+  p = 2 \sum_{i=0}^{15} \binom{75}{i} 2^{-75} = \frac{2 \times 2{,}999{,}267{,}652{,}451{,}776}{37{,}778{,}931{,}862{,}957{,}161{,}709{,}568} = 1.6 \times 10^{-7}.
+\]
+Treating the two sets of verdicts as independent samples would ignore that most claims are decided identically by both and would greatly understate the evidence.
+
+% ==========================================================================
+\section{Multiple Comparisons}
+\label{sec:multiple}
+
+This report presents eight hypothesis tests. If every null hypothesis were true and the tests independent, the chance that at least one falls below $0.05$ would be $1 - 0.95^8 = 34\%$. Two corrections are therefore applied to the whole family. With sorted $p$-values $p_{(1)} \le \dots \le p_{(k)}$, $k = 8$:
+\begin{align}
+  \text{Holm:} \quad & \tilde{p}_{(i)} = \max_{j \le i} \min\bigl(1, (k - j + 1)\, p_{(j)}\bigr), \\
+  \text{Benjamini--Hochberg:} \quad & \tilde{p}_{(i)} = \min_{j \ge i} \min\Bigl(1, \frac{k}{j}\, p_{(j)}\Bigr),
+\end{align}
+and a hypothesis is rejected when $\tilde{p} < 0.05$.
+
+\begin{theorem}[Holm's procedure controls the FWER]
+Under any dependence between the tests, the probability that Holm's procedure rejects at least one true null hypothesis is at most $\alpha$.
+\end{theorem}
+
+\begin{proof}
+Let $I_0$ be the set of true nulls, $k_0 = \lvert I_0 \rvert$. Suppose a true null is rejected, and consider the first true null in the sorted order, at position $j$. Only false nulls precede it, so $j - 1 \le k - k_0$, and it was rejected because $p_{(j)} \le \alpha/(k - j + 1) \le \alpha/k_0$. Hence a family-wise error implies $\min_{i \in I_0} p_i \le \alpha / k_0$, and by the union bound and the validity of each $p$-value, $\Pr(p_i \le u) \le u$,
+\[
+  \text{FWER} \le \Pr\Bigl( \bigcup_{i \in I_0} \{ p_i \le \alpha/k_0 \} \Bigr) \le \sum_{i \in I_0} \Pr(p_i \le \alpha/k_0) \le k_0 \cdot \frac{\alpha}{k_0} = \alpha. \qedhere
+\]
+\end{proof}
+
+The Benjamini--Hochberg procedure~\citep{benjamini1995controlling} controls instead the \emph{false discovery rate}, the expected proportion of false rejections among all rejections, at $\alpha k_0 / k \le \alpha$ when the tests are independent or positively dependent. It is less strict than Holm's: it accepts that a small share of the significant findings may be false, rather than requiring that none is.
+
+% ==========================================================================
+\section{Selection Bias and Cross-Fitting}
+\label{sec:crossfit}
+
+The corroboration parameter $m$ of~\eqref{eq:corroboration} was chosen by looking at Table~\ref{tab:corroboration}, which comes from the same claims on which accuracy is reported. Let $\text{acc}_S(m)$ be the accuracy of the rule with parameter $m$ on a set $S$ of claims and $A(m) = \E[\text{acc}_S(m)]$ its true accuracy. Choosing $\hat{m} = \argmax_m \text{acc}_S(m)$ and reporting $\text{acc}_S(\hat{m})$ is biased upwards~\citep{varma2006bias}: the maximum is convex, so by Jensen's inequality
+\begin{equation}
+  \E\Bigl[ \max_m \text{acc}_S(m) \Bigr] \ge \max_m \E\bigl[ \text{acc}_S(m) \bigr] = \max_m A(m).
+\end{equation}
+
+\emph{Cross-fitting} removes this bias. The claims are split into folds $F_1, \dots, F_K$, and each fold is scored with the parameter $\hat{m}_{-k}$ chosen on the other folds:
+\begin{equation}
+  \widehat{\text{acc}}_{\text{CF}} = \frac{1}{N} \sum_{k=1}^{K} \sum_{i \in F_k} \Ind\bigl( \hat{y}_i^{(\hat{m}_{-k})} = y_i \bigr).
+\end{equation}
+Since claims are sampled independently, $\hat{m}_{-k}$ is independent of the claims in $F_k$, so $\E[\Ind(\hat{y}_i^{(\hat{m}_{-k})} = y_i) \mid \hat{m}_{-k}] = A(\hat{m}_{-k})$, and each term is an unbiased estimate of the true accuracy of the parameter actually chosen. The cross-fitted accuracy thus estimates the accuracy of the whole procedure, ``choose $m$ from data and apply it'', without optimism. Section~\ref{sec:crossfit-results} applies it with the fifteen evaluation sets as folds, and separately with leave-one-out folds.
+
+% ==========================================================================
+\section{Power and Sample Size}
+\label{sec:power}
+
+A test that does not reject may simply have had too few claims. The \emph{power} $1 - \beta$ of a test is the probability that it rejects when a given effect is real; it is used here to plan how many claims a conclusive evaluation needs, not to reinterpret an obtained result (power at the observed effect only restates the $p$-value~\citep{hoenig2001abuse}).
+
+\paragraph{Two independent accuracies.} Under $H_1$, $\hat{p}_1 - \hat{p}_2$ is approximately normal with mean $\delta = p_1 - p_2$ and variance $\sigma_1^2 = (p_1 q_1 + p_2 q_2)/n$, where $q = 1 - p$ and $n$ is the number of claims per group. The $z$-test rejects when $\lvert \hat{p}_1 - \hat{p}_2 \rvert > z_{1-\alpha/2}\,\sigma_0$, with null variance $\sigma_0^2 = 2\bar{p}\bar{q}/n$. Neglecting rejection in the wrong direction,
+\begin{equation}
+  1 - \beta = \Phi\!\left( \frac{\lvert \delta \rvert - z_{1-\alpha/2}\,\sigma_0}{\sigma_1} \right)
+  \quad\Longrightarrow\quad
+  n = \frac{\left( z_{1-\alpha/2}\sqrt{2\bar{p}\bar{q}} + z_{1-\beta}\sqrt{p_1 q_1 + p_2 q_2} \right)^2}{\delta^2}.
+\end{equation}
+
+\paragraph{Paired verdicts.} With $\psi$ the probability that a claim is discordant and $\delta$ the difference of the two discordant probabilities, the number of claims needed for McNemar's test is~\citep{connor1987sample}
+\begin{equation}
+  n = \frac{\left( z_{1-\alpha/2}\sqrt{\psi} + z_{1-\beta}\sqrt{\psi - \delta^2} \right)^2}{\delta^2}.
+\end{equation}
+All power figures in Chapter~\ref{ch:results} use $\alpha = 0.05$ and a target power of 80\%, and each formula was checked by simulating 20{,}000 evaluations.
+
+% ==========================================================================
+\section{Selective Classification}
+\label{sec:selective}
+
+A detector that may abstain is a \emph{selective classifier} $(f, g)$: a predictor $f$ and a gate $g(X) \in \{0, 1\}$ that is 0 when it abstains~\citep{elyaniv2010foundations}. Its \emph{coverage} $\Phi(g) = \E[g(X)]$ is the fraction of claims that receive a verdict, and its \emph{selective risk}
+\begin{equation}
+  R(f, g) = \frac{\E\bigl[ \Ind(f(X) \ne Y)\, g(X) \bigr]}{\Phi(g)}
+\end{equation}
+is the error rate among those claims. Benchmark accuracy mixes the two; separating them shows whether the detector's confidence can tell its likely errors from its likely successes.
+
+\paragraph{Risk--coverage curve.} Let $A$ of $N$ claims receive a definite verdict, with $E$ errors among them, and let a confidence score rank them, most confident first, with error indicators $\epsilon_{(1)}, \dots, \epsilon_{(A)}$. Answering only the $k$ most confident claims gives coverage $k/N$ and selective risk
+\begin{equation}
+  r(k) = \frac{1}{k} \sum_{j=1}^{k} \epsilon_{(j)}, \qquad k = 1, \dots, A,
+\end{equation}
+and the area under the risk--coverage curve is summarised by $\text{AURC} = \frac{1}{A} \sum_{k=1}^{A} r(k)$. A lower AURC means that the errors are concentrated among the less confident verdicts.
+
+\begin{proposition}[Reference rankings]
+\label{prop:aurc}
+(i) For every $k$, every ranking satisfies $r(k) \ge r^*(k) = \max\bigl(0, k - (A - E)\bigr)/k$, with equality for the \emph{oracle} ranking that places all correct verdicts first. (ii) Under a uniformly random ranking, $\E[r(k)] = E/A$ for every $k$, so $\E[\text{AURC}] = E/A$.
+\end{proposition}
+
+\begin{proof}
+(i) Only $A - E$ verdicts are correct, so any $k$ verdicts include at least $k - (A - E)$ errors when $k > A - E$, and at least none otherwise; the oracle ranking attains this bound for every $k$ simultaneously. (ii) The first $k$ claims of a uniformly random ranking are a uniformly random $k$-subset of the $A$ claims, so their number of errors is hypergeometric with mean $kE/A$, and $\E[r(k)] = E/A$. Averaging over $k$ gives $\E[\text{AURC}] = E/A$ by linearity.
+\end{proof}
+
+The oracle AURC is therefore the best attainable for the given verdicts, and $E/A$, the overall error rate among answered claims, is what a confidence score with no information achieves. The difference $\text{AURC} - \text{AURC}^*$ (the \emph{excess} AURC) measures how far the score is from ranking errors perfectly. A bootstrap interval for the AURC is obtained by resampling the answered claims, as for $F_1$.
+
+% ==========================================================================
+\section{Calibration of the NLI Probabilities}
+\label{sec:calibration}
+
+A probability is \emph{calibrated} when it matches the frequency it predicts: among verdicts given with confidence $c$, a fraction $c$ should be right, $\Pr(\hat{Y} = Y \mid \text{confidence} = c) = c$.
+
+\subsection{Metrics}
+
+For $N$ claims with gold labels $y_i$, probability vectors $\bm{\pi}_i$ and confidences $c_i = \max_y \pi_{iy}$:
+\begin{gather}
+  \text{NLL} = -\frac{1}{N}\sum_{i=1}^{N} \ln \pi_{i y_i}, \qquad
+  \text{Brier} = \frac{1}{N}\sum_{i=1}^{N}\sum_{y \in \Y}\bigl(\pi_{iy} - \Ind(y = y_i)\bigr)^2, \\
+  \text{ECE} = \sum_{b=1}^{B} \frac{\lvert B_b \rvert}{N} \bigl\lvert \bar{c}(B_b) - \text{acc}(B_b) \bigr\rvert .
+\end{gather}
+The NLL and the Brier score~\citep{brier1950verification} are \emph{proper scoring rules}: their expectation is minimised by the true probabilities. The expected calibration error~\citep{naeini2015obtaining} sorts claims by confidence into $B = 10$ bins of equal size and averages the gap between mean confidence and accuracy.
+
+\subsection{Temperature scaling}
+
+Temperature scaling~\citep{guo2017calibration} divides all three logits by one constant $T > 0$:
+\begin{equation}
+  \tilde{\pi}_y = \frac{\exp(z_y / T)}{\sum_{y'} \exp(z_{y'}/T)} .
+\end{equation}
+$T > 1$ softens the probabilities and $T < 1$ sharpens them. Since every logit is divided by the same positive number, their order, and so the verdict, never changes; only the stated confidence moves.
+
+\begin{proposition}[Convexity of the temperature likelihood]
+With $\beta = 1/T$, the mean negative log-likelihood
+\begin{equation}
+  L(\beta) = \frac{1}{N}\sum_{i=1}^{N}\Bigl[ \ln \sum_{y} e^{\beta z_{iy}} - \beta z_{i y_i} \Bigr]
+\end{equation}
+has derivatives
+\begin{equation}
+  L'(\beta) = \frac{1}{N}\sum_{i=1}^{N}\bigl( \E_{\tilde{\bm{\pi}}_i}[z_i] - z_{i y_i} \bigr), \qquad
+  L''(\beta) = \frac{1}{N}\sum_{i=1}^{N} \operatorname{Var}_{\tilde{\bm{\pi}}_i}(z_i) \ge 0,
+\end{equation}
+where $z_i$ is treated as a random variable taking the value $z_{iy}$ with probability $\tilde{\pi}_{iy}$. Hence $L$ is convex.
+\end{proposition}
+
+\begin{proof}
+Let $A_i(\beta) = \ln \sum_y e^{\beta z_{iy}}$. Then $A_i'(\beta) = \sum_y z_{iy} e^{\beta z_{iy}} / \sum_{y'} e^{\beta z_{iy'}} = \sum_y z_{iy}\tilde{\pi}_{iy} = \E_{\tilde{\bm{\pi}}_i}[z_i]$. Differentiating again, using $\partial \tilde{\pi}_{iy}/\partial\beta = \tilde{\pi}_{iy}(z_{iy} - \E_{\tilde{\bm{\pi}}_i}[z_i])$,
+\[
+  A_i''(\beta) = \sum_y z_{iy}\,\tilde{\pi}_{iy}\bigl(z_{iy} - \E_{\tilde{\bm{\pi}}_i}[z_i]\bigr) = \E_{\tilde{\bm{\pi}}_i}[z_i^2] - \bigl(\E_{\tilde{\bm{\pi}}_i}[z_i]\bigr)^2 = \operatorname{Var}_{\tilde{\bm{\pi}}_i}(z_i) \ge 0 .
+\]
+The term $-\beta z_{iy_i}$ is linear, so it contributes $-z_{iy_i}$ to the first derivative and nothing to the second.
+\end{proof}
+
+Because $L$ is convex, it has a single minimum, found by Newton's method $\beta \leftarrow \beta - L'(\beta)/L''(\beta)$. Far from the minimum $L$ is not close to quadratic, and from $\beta = 1$ a full Newton step overshoots to a negative $\beta$, so the step is halved until $L$ decreases. The method then converges quadratically, reaching $T = 2.481$ in four iterations. The optimality condition $L'(\beta) = 0$ has a direct reading: at the optimum, the expected logit under the scaled probabilities equals, on average, the logit of the true label.

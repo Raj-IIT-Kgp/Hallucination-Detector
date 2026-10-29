@@ -1,0 +1,104 @@
+\chapter{Problem Formulation and System Overview}
+\label{ch:formulation}
+
+\section{Formal Task Definition}
+
+A \emph{hallucination} is a statement produced by a language model that is not supported by, or is contradicted by, real-world evidence. Let $T$ be an input text. The detector computes
+\begin{equation}
+  T \;\longmapsto\; \bigl( c_i,\; \mathcal{E}(c_i),\; \hat{y}_i,\; \hat{\bm{\pi}}_i,\; \mathcal{C}_i \bigr)_{i=1}^{n},
+\end{equation}
+where $c_1, \dots, c_n$ are the atomic claims of $T$, $\mathcal{E}(c_i)$ the retrieved evidence, $\hat{y}_i \in \Y = \{\Con, \Unk, \Sup\}$ the verdict, $\hat{\bm{\pi}}_i \in \Delta^2$ (the probability simplex over $\Y$) the probability vector behind it, and $\mathcal{C}_i \subseteq \Y$ its conformal prediction set. \Con{} means the claim is a hallucination, \Sup{} that the evidence confirms it, and \Unk{} that the detector abstains.
+
+\paragraph{Asymmetric costs.} The two errors are not equally harmful. A \emph{false accusation} (a true claim marked \Con) undermines the user's trust in correct answers and in the detector itself, whereas a missed hallucination leaves the user no worse off than without the detector. Abstention (\Unk) is preferable to a confident wrong verdict. These preferences are reflected in the decision rules of Chapter~\ref{ch:method}.
+
+\paragraph{Answer-level verdict.} When an answer contains several claims, one contradicted claim makes the whole answer a hallucination:
+\begin{equation}
+  \hat{y}(T) = \begin{cases}
+    \Con & \text{if } \exists\, i : \hat{y}_i = \Con, \\
+    \Unk & \text{else if } \exists\, i : \hat{y}_i = \Unk, \\
+    \Sup & \text{otherwise.}
+  \end{cases}
+\end{equation}
+The summary report also gives the \emph{hallucination rate} $\frac{1}{n} \sum_{i} \Ind(\hat{y}_i = \Con)$.
+
+\section{Notation}
+
+Table~\ref{tab:notation} collects the symbols used in the rest of the report.
+
+\begin{table}[H]
+\centering
+\caption{Notation used in the report.}
+\label{tab:notation}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$c$ & an atomic claim \\
+$e_i$, $\mathcal{E}$ & the $i$-th evidence snippet; the set of snippets for a claim \\
+$\Y$ & the label set $\{\Con, \Unk, \Sup\}$ \\
+$\mathbf{z} \in \mathbb{R}^3$ & NLI logits \\
+$\hat{\pi}_y(e)$ & NLI probability of label $y$ with snippet $e$ as premise and $c$ as hypothesis \\
+$\mathbf{c}, \mathbf{e}$ & sentence embeddings of a claim and a paragraph \\
+$\tau$ & decisiveness threshold for a snippet ($0.80$) \\
+$m$ & number of agreeing contradicting snippets needed to accept a contradiction ($2$) \\
+$\mathcal{C}(X)$ & conformal prediction set for input $X$ \\
+$\alpha$, $\hat{q}_\alpha$ & conformal significance level; calibrated conformal quantile \\
+$T$ & temperature of the calibrated probabilities (also the input text, by context) \\
+$\Ind(\cdot)$ & indicator function \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Design Principle: a Statistically Routed Cascade}
+
+Let $\text{cost}(\cdot)$ denote the time and API cost of a stage. NLI scoring of three snippets costs a fraction of a second on a laptop GPU; an LLM arbitration call costs one to three seconds and a unit of a limited API quota. If $\rho$ is the fraction of claims escalated, the expected cost per claim is
+\begin{equation}
+  \E[\text{cost}] = \text{cost}(\text{retrieval} + \text{NLI}) + \rho \cdot \text{cost}(\text{KG} + \text{LLM}),
+\end{equation}
+so the cascade is worthwhile when $\rho$ is small \emph{and} the claims escalated are those on which NLI is actually unreliable. The second condition is the hard part. Escalating on a hand-picked confidence threshold has no guarantee, because the NLI probabilities are not calibrated (Section~\ref{sec:calibration}). Escalation is instead triggered by the size of a split conformal prediction set (Section~\ref{sec:conformal}), which has a provable coverage property under exchangeability. Section~\ref{sec:routing-results} shows that the claims kept on the fast path are right 89\% of the time.
+
+A single detector configuration serves every input: the web server and every benchmark construct the detector with the same defaults, and no setting depends on the dataset being evaluated.
+
+\section{Pipeline Overview}
+
+Figure~\ref{fig:pipeline} shows the stages and the routing between them. Each claim is processed independently, and the claims of one input are verified concurrently.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  node distance=0.45cm and 0.6cm,
+  box/.style={draw, rounded corners=2pt, minimum width=4.6cm, minimum height=0.75cm, align=center, font=\small, fill=blue!4},
+  dec/.style={draw, diamond, aspect=2.6, inner sep=1pt, align=center, font=\scriptsize, fill=orange!8},
+  outbox/.style={draw, rounded corners=2pt, minimum width=2.6cm, minimum height=0.75cm, align=center, font=\scriptsize, fill=green!6},
+  arr/.style={-{Stealth[length=2mm]}, thick}
+]
+\node[box] (in) {Input text $T$};
+\node[box, below=of in] (dec) {Claim decomposition (\ref{sec:decomp})};
+\node[box, below=of dec] (qg) {Query generation (\ref{sec:querygen})};
+\node[box, below=of qg] (ret) {Evidence retrieval + hybrid re-ranking\\(\ref{sec:retrieval}--\ref{sec:rerank})};
+\node[box, below=of ret] (nli) {NLI evidence scoring (\ref{sec:nli})};
+\node[box, below=of nli] (cp) {Conformal prediction set (\ref{sec:conformal-stage})};
+\node[dec, below=0.55cm of cp] (route) {Routing\\(\ref{sec:routing})};
+\node[outbox, below=1.5cm of route, xshift=-4.2cm] (stand) {NLI verdict\\stands};
+\node[outbox, below=1.5cm of route] (review) {Lightweight\\LLM review};
+\node[outbox, below=1.5cm of route, xshift=4.2cm] (esc) {Wikidata KG (\ref{sec:kg})\\+ LLM arbiter (\ref{sec:arbiter})};
+\node[box, below=1.0cm of review] (rep) {Verdict, evidence, report and UI};
+
+\draw[arr] (in) -- (dec);
+\draw[arr] (dec) -- node[right, font=\scriptsize]{claims $c_1, \dots, c_n$} (qg);
+\draw[arr] (qg) -- (ret);
+\draw[arr] (ret) -- (nli);
+\draw[arr] (nli) -- (cp);
+\draw[arr] (cp) -- (route);
+\draw[arr] (route.west) -| node[pos=0.3, above, font=\scriptsize]{singleton set} (stand.north);
+\draw[arr] (route) -- node[right, font=\scriptsize, align=left]{lone or contested\\contradiction} (review);
+\draw[arr] (route.east) -| node[pos=0.3, above, font=\scriptsize]{ambiguous set} (esc.north);
+\draw[arr] (stand.south) |- (rep.west);
+\draw[arr] (review) -- (rep);
+\draw[arr] (esc.south) |- (rep.east);
+\draw[arr, dashed] (cp.east) -- ++(1.6,0) |- node[pos=0.25, right, font=\scriptsize, align=left]{\Unk{} or no evidence\\on first pass:\\query rewrite (once)} (qg.east);
+\end{tikzpicture}
+\caption{The VeriFact cascade. Cheap deterministic stages run on every claim; the conformal set decides which claims go to the expensive stages.}
+\label{fig:pipeline}
+\end{figure}

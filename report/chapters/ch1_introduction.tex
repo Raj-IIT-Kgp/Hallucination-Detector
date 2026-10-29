@@ -1,0 +1,51 @@
+\chapter{Introduction}
+\label{ch:intro}
+
+\section{Motivation}
+
+Large language models (LLMs) are now used to answer questions, summarise documents, draft reports and assist with research. Their output is fluent and confident regardless of whether it is correct, and a well-documented failure mode is \emph{hallucination}: the model states something that is not supported by, or is contradicted by, real-world evidence~\citep{ji2023survey,huang2023survey}. A hallucinated date, attribution or statistic is hard to spot precisely because it is embedded in otherwise plausible text, and its cost grows with the stakes of the application.
+
+Checking an LLM answer by hand means splitting it into individual facts, searching for each one, reading the sources and judging whether they agree. This project automates that procedure. The resulting system, \textbf{VeriFact}, takes a text, typically an LLM answer, and returns a verdict for each atomic claim it contains (\Sup, \Con{} or \Unk), together with the evidence, the probabilities behind the verdict and a statistically grounded measure of how far that verdict can be trusted.
+
+Two observations shape the design. First, verifying a claim with a large language model is accurate but slow and costly, whereas a small natural language inference (NLI) classifier is fast but makes characteristic mistakes. The system is therefore a \emph{cascade}: every claim passes through cheap deterministic stages, and only claims on which those stages are demonstrably uncertain are escalated to the expensive ones. Second, ``demonstrably uncertain'' must be made precise. The softmax output of a neural network is not a calibrated probability, so the decision to escalate is taken by \emph{split conformal prediction}, a distribution-free method from statistical learning theory that converts the classifier's output into a set of plausible labels with a finite-sample coverage guarantee~\citep{vovk2005algorithmic,angelopoulos2021gentle}.
+
+Because the project was carried out under the Department of Mathematics, particular weight is given to the mathematical and statistical side of the work: the guarantees of the conformal layer are proved, every reported accuracy carries a correctly derived confidence interval, comparisons are made with exact hypothesis tests and corrected for multiple testing, and the limits of each guarantee are measured rather than assumed.
+
+\section{Problem Statement}
+
+Given an input text $T$, the detector must
+\begin{enumerate}[itemsep=0.2em]
+  \item split $T$ into atomic claims $c_1, \dots, c_n$, each expressing one checkable fact;
+  \item for each claim $c$, retrieve an evidence set $\mathcal{E}(c) = \{e_1, \dots, e_k\}$ from external sources;
+  \item assign a verdict $f(c, \mathcal{E}(c)) \in \Y = \{\Con, \Unk, \Sup\}$, where \Con{} marks a hallucination and \Unk{} is an abstention when the evidence is insufficient or genuinely conflicting;
+\end{enumerate}
+while keeping \emph{false accusations} (a true claim marked \Con) rare, keeping the number of LLM calls per claim low, and reporting the uncertainty of every verdict and every measured result honestly.
+
+\section{Objectives}
+
+The objectives of the project were:
+\begin{enumerate}[itemsep=0.2em]
+  \item To build an end-to-end hallucination detection pipeline that decomposes text into atomic claims, retrieves evidence from Wikipedia, the web and arXiv, and verifies each claim against that evidence.
+  \item To combine dense and lexical retrieval signals in a principled way (BM25, sentence embeddings and reciprocal rank fusion) so that the most relevant evidence reaches the verifier.
+  \item To design a decision rule over per-snippet NLI scores that reflects the measured, asymmetric reliability of support and contradiction.
+  \item To use split conformal prediction as a statistically calibrated trigger for escalating uncertain claims to a knowledge graph and an LLM arbiter, and to measure how well its guarantee holds in deployment.
+  \item To evaluate the full system on two public benchmarks, FEVER and FreshQA, with rigorous statistics: Wilson confidence intervals, exact hypothesis tests, multiple-comparison corrections, power analysis, cross-fitting and probability calibration.
+  \item To provide an interactive web interface that exposes every intermediate computation, so that each verdict can be inspected step by step.
+\end{enumerate}
+
+\section{Contributions}
+
+The main contributions of this work are:
+\begin{itemize}[itemsep=0.2em]
+  \item A cascaded verification pipeline in which 413 of 600 benchmark claims are settled by the NLI verdict alone (with 89\% accuracy), and LLM calls are spent only on the remaining ambiguous claims, at about 1.25 LLM calls per claim on average.
+  \item An asymmetric \emph{corroboration rule} for NLI contradictions, derived from measured data: a lone contradicting snippet is wrong 29\% of the time and two agreeing snippets 11\% of the time, so a contradiction is accepted directly only when it is corroborated. Its parameter is validated by cross-fitting, which bounds the resulting optimism at about 0.3 percentage points.
+  \item A complete treatment of split conformal prediction in this setting, including the proof of the coverage guarantee, conformal $p$-values, and an empirical measurement showing that coverage on retrieved evidence (83.2\%) falls below the nominal 90\% because exchangeability with the gold-evidence calibration set does not hold. A comparison with class-conditional (Mondrian) conformal prediction and adaptive prediction sets shows that the shortfall is shared by false and true claims and is not removed by changing the procedure.
+  \item A statistically rigorous evaluation on 600 claims with live retrieval: accuracy 90.7\% on FEVER and 82.3\% on FreshQA, with the significance of every comparison established by exact tests and corrected for the eight tests reported.
+  \item An exact ablation study, reconstructed from the computation traces without new model runs, showing that every stage of the cascade contributes significantly; a comparison with an LLM-only baseline, which the cascade matches within the statistical resolution of the benchmark while making 35\% fewer LLM calls; and a risk--coverage analysis of selective prediction.
+  \item Temperature scaling of the NLI probabilities, fitted by Newton's method on a convex likelihood, which halves the expected calibration error without changing any decision.
+  \item A web application that streams each claim's progress through the pipeline and shows its full computation trace, including a live demonstration of the conformal coverage argument.
+\end{itemize}
+
+\section{Organisation of the Report}
+
+Chapter~\ref{ch:lit} reviews the literature on hallucination, fact verification, retrieval, natural language inference, conformal prediction and calibration. Chapter~\ref{ch:formulation} formalises the problem and gives an overview of the cascade. Chapter~\ref{ch:method} describes each stage of the pipeline with its algorithm and mathematics. Chapter~\ref{ch:stats} develops the statistical framework: conformal prediction, interval estimation, hypothesis testing, multiple comparisons, cross-fitting, power and calibration. Chapter~\ref{ch:impl} covers the implementation and the user interface. Chapter~\ref{ch:results} presents the evaluation protocol, the results and an analysis of the errors. Chapter~\ref{ch:conclusion} summarises the work, its limitations and directions for future work.

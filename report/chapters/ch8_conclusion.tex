@@ -1,0 +1,44 @@
+\chapter{Conclusion and Future Work}
+\label{ch:conclusion}
+
+\section{Summary and Conclusions}
+
+This project built VeriFact, a hallucination detector that checks a text claim by claim against evidence from Wikipedia, the web, arXiv and Wikidata, and evaluated it with statistical rigour. The main conclusions are:
+
+\begin{enumerate}[itemsep=0.3em]
+  \item \textbf{A statistically routed cascade is accurate and economical.} The system reached 90.7\% accuracy (Wilson 95\% CI [86.8\%, 93.5\%], $F_1$ 0.91) on FEVER and 82.3\% ([77.6\%, 86.2\%], $F_1$ 0.85) on FreshQA, with precision above 0.9 on both, so false accusations are rare. Of the 600 claims, 413 were settled by the NLI verdict alone, with 89\% accuracy, and the average cost was about 1.25 LLM calls per claim.
+  \item \textbf{Decision rules should follow measured error rates.} A lone NLI contradiction was wrong 29\% of the time, two agreeing contradictions 11\%. The resulting asymmetric corroboration rule beats the symmetric alternative significantly ($p = 0.002$), and cross-fitting shows that tuning it on the evaluation claims adds at most about 0.3 points of optimism.
+  \item \textbf{The LLM arbiter adds real value where it is used.} On the 187 claims it decided, it fixed 60 NLI verdicts and broke 15 ($p = 1.6 \times 10^{-7}$, significant after correction for all eight tests).
+  \item \textbf{Every stage of the cascade earns its place.} An exact ablation from the computation traces shows that each stage contributes significantly. Removing the LLM stages lowers pooled accuracy from 86.5\% to 79.0\%, and removing the lightweight review alone lowers precision on FreshQA from 0.91 to 0.79. The full pipeline gains 7.5 points over the NLI verdict for 0.31 extra LLM calls per claim. Letting the LLM decide every claim instead would cost 55\% more LLM calls for a gain of 1.7 points that is not significant (95\% CI $-0.5$ to $+3.9$ points, $p = 0.18$), concentrated on FreshQA's false premises and time-dependent claims.
+  \item \textbf{Guarantees must be checked in deployment.} Split conformal prediction delivers its nominal 90\% coverage on the gold evidence it was calibrated on, but on the pipeline's own retrieved evidence coverage falls to 83.2\% because exchangeability fails. Recalibration restores coverage only at the cost of escalating far more claims for a non-significant gain, so the conformal set is used, and described, as a calibrated escalation trigger.
+  \item \textbf{Raw NLI probabilities are over-confident.} Mean confidence was 95.7\% at 84.6\% accuracy. Temperature scaling, fitted by maximum likelihood on a convex objective, halved the expected calibration error without changing any verdict.
+\end{enumerate}
+
+\section{Limitations}
+
+\paragraph{Limitations of the method.}
+\begin{itemize}[itemsep=0.2em]
+  \item \textbf{NLI blind spots.} The NLI model does not reason about time, mishandles some negations and accepts near-matching entities. Because a decisive supporting snippet settles a claim without review, these errors reach the output directly: 41 of the 81 errors.
+  \item \textbf{Missing specific facts and false premises.} When the evidence does not state the specific number or date a claim asserts, or does not state that a presupposed event never happened, the arbiter must decide from silence and abstains; 19 of the 81 errors are abstentions.
+  \item \textbf{Scope of the conformal guarantee.} The guarantee is exact only in the gold-evidence setting; on retrieved evidence the measured coverage is 83.2\%. The shortfall is shared by false and true claims, and neither class-conditional (Mondrian) calibration nor adaptive prediction sets remove it without escalating hundreds more claims (Section~\ref{sec:conformal-variants}).
+  \item \textbf{Dependence on an external LLM.} A different LLM may judge a borderline claim differently, and the arbiter cannot decide if every model is unavailable.
+  \item \textbf{Knowledge-graph coverage.} Wikidata has no property for many claims (252 of the 600 benchmark claims matched none) and can be incomplete or out of date.
+  \item \textbf{Claim-echo filter on short claims.} For a very short claim, an independent paraphrase can reach the 80\% overlap threshold and be removed.
+\end{itemize}
+
+\paragraph{Limitations of the evaluation.}
+\begin{itemize}[itemsep=0.2em]
+  \item \textbf{Sample size.} With 300 claims per benchmark the 95\% intervals are 7 to 9 points wide; differences of a few points between pipeline versions are within noise, and a 5-point difference would need about 730 claims per benchmark to detect with 80\% power.
+  \item \textbf{Reproducibility of live runs.} Retrieval uses live web data and the LLM is not deterministic, so a re-run can differ slightly.
+  \item \textbf{Label quality.} FreshQA gold answers are dated snapshots; 11 of its 53 errors are claims on which current evidence contradicts the gold answer.
+\end{itemize}
+
+\section{Future Work}
+
+\begin{itemize}[itemsep=0.3em]
+  \item \textbf{Learned routing.} Route claims using calibrated probabilities together with further features (the number of agreeing snippets, the source of the deciding snippet), with an explicit trade-off between accuracy and LLM calls. The confidence alone ranks right and wrong verdicts only moderately (AUROC 0.67), and on FreshQA abstaining by confidence does not lower the error rate at 80\% coverage (Section~\ref{sec:selective-results}).
+  \item \textbf{Conformal prediction under distribution shift.} Changing the score does not help (Section~\ref{sec:conformal-variants}): the shortfall comes from the difference between gold and retrieved evidence. Methods designed for shift, such as weighting the calibration claims by their similarity to the test claim, or calibrating conditionally on a measure of evidence quality, are the natural next step towards a 90\% guarantee without many more escalations.
+  \item \textbf{Targeted escalation.} Send negated, time-dependent and false-premise claims to the arbiter, or use an NLI model trained on harder data, to address the main class of fast-path errors. This is also where the LLM-only baseline gains its 1.7 points (Section~\ref{sec:llm-baseline}), so it could close that gap while keeping most of the cascade's saving in LLM calls.
+  \item \textbf{Retrieval of specific facts.} Improve retrieval for numeric and dated facts, the main cause of the remaining abstentions.
+  \item \textbf{A frozen, larger evaluation.} Evaluate on more claims against a frozen evidence snapshot with re-checked labels, so that runs are exactly repeatable and smaller differences can be resolved.
+\end{itemize}

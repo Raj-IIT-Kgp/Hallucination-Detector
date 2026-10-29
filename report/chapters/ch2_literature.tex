@@ -1,0 +1,50 @@
+\chapter{Literature Review}
+\label{ch:lit}
+
+This chapter summarises the work on which the project builds: the study of hallucination in language models, automated fact verification, information retrieval, natural language inference, distribution-free uncertainty quantification, probability calibration, and LLM-based judgement.
+
+\section{Hallucination in Large Language Models}
+
+Surveys by \citet{ji2023survey} and \citet{huang2023survey} distinguish \emph{intrinsic} hallucinations, which contradict the source or prompt, from \emph{extrinsic} ones, which cannot be verified from the source and may be false in the world. For open-ended LLM answers the relevant notion is factuality: whether each statement agrees with real-world knowledge. Detection approaches fall into three families. \emph{Self-consistency} methods sample several answers and flag statements on which the samples disagree; they need no external data but cannot detect a hallucination the model repeats consistently. \emph{Model-internal} methods inspect token probabilities or hidden states, which requires access to the model. \emph{Retrieval-based} methods check each statement against external evidence. This project follows the third family, which works with any model, including closed ones accessed through an API, and produces evidence a user can read.
+
+A recurring step in retrieval-based checking is to decompose a long answer into atomic facts before verifying them, so that each verdict concerns a single proposition; FActScore~\citep{min2023factscore} popularised this for evaluating the factual precision of long-form generation.
+
+\section{Automated Fact Verification}
+
+The FEVER shared task~\citep{thorne2018fever} framed fact verification as a three-way classification of a claim into \textsc{Supports}, \textsc{Refutes} or \textsc{Not Enough Info} against Wikipedia, with a pipeline of document retrieval, sentence selection and claim verification. Its 185{,}445 claims were written by annotators who altered sentences from Wikipedia, which makes it a clean benchmark for encyclopedic facts that do not change over time. FreshQA~\citep{vu2023freshllms} targets the opposite regime: questions whose answers change over time and questions with false premises, with answers maintained by its authors. Together they test stable encyclopedic knowledge and temporally sensitive, open-web knowledge.
+
+\section{Information Retrieval}
+
+\paragraph{Lexical retrieval.} The Okapi BM25 ranking function~\citep{robertson2009bm25} scores a document by the inverse document frequency of the query terms it contains, with saturation in term frequency and normalisation for document length. It remains a strong baseline for exact names, numbers and rare words.
+
+\paragraph{Dense retrieval.} Sentence-BERT~\citep{reimers2019sbert} fine-tunes a Transformer encoder in a siamese setup so that the cosine similarity of pooled embeddings reflects semantic similarity. Small models such as \code{all-MiniLM-L6-v2} make dense similarity cheap enough to compute over hundreds of candidate paragraphs per query, and they recognise paraphrases that share no words with the query.
+
+\paragraph{Rank fusion.} Lexical and dense scores live on incomparable scales. Reciprocal rank fusion (RRF)~\citep{cormack2009rrf} combines rankings rather than scores, summing $1/(\kappa + r)$ over the systems, and was shown to outperform more complex learned fusion methods.
+
+\section{Natural Language Inference}
+
+Natural language inference asks whether a premise entails, contradicts or is neutral towards a hypothesis. The Multi-Genre NLI corpus~\citep{williams2018mnli} provides about 433{,}000 annotated sentence pairs across genres. BART~\citep{lewis2020bart}, a denoising sequence-to-sequence Transformer, fine-tuned on MNLI (\code{facebook/bart-large-mnli}) is a widely used zero-shot verifier: with the evidence as premise and the claim as hypothesis, entailment, neutrality and contradiction map directly onto \Sup, \Unk{} and \Con. NLI models are known to rely on annotation artefacts; for instance, a premise describing a different situation is often read as contradicting the hypothesis, a behaviour this project measures and corrects for (Section~\ref{sec:nli}).
+
+\section{Conformal Prediction}
+
+Conformal prediction~\citep{vovk2005algorithmic} turns the output of any predictive model into prediction \emph{sets} that contain the true label with a user-chosen probability $1-\alpha$, under the sole assumption that the data are exchangeable. The \emph{split} (inductive) variant calibrates a single threshold on a held-out set, which makes it computationally trivial at prediction time. \citet{angelopoulos2021gentle} give an accessible account and discuss the marginal nature of the guarantee, its sensitivity to distribution shift, and the use of set size as a measure of uncertainty. In this project the set size serves as the escalation trigger of the cascade.
+
+\section{Probability Calibration}
+
+A classifier is calibrated when its stated confidence matches its frequency of being right. \citet{guo2017calibration} showed that modern neural networks are systematically over-confident and that \emph{temperature scaling}, dividing the logits by a single scalar fitted by maximum likelihood, is a remarkably effective fix. \citet{platt1999probabilistic} proposed fitting a logistic function to classifier scores. Calibration is measured by proper scoring rules such as the negative log-likelihood and the Brier score~\citep{brier1950verification}, and by the expected calibration error~\citep{naeini2015obtaining}.
+
+\section{Statistical Evaluation of Classifiers}
+
+Reporting an accuracy without its uncertainty invites over-interpretation of small differences. \citet{brown2001interval} showed that the textbook normal-approximation interval for a binomial proportion has poor coverage and recommended the Wilson score interval~\citep{wilson1927probable}. Paired comparisons of two classifiers on the same items are made with McNemar's test~\citep{mcnemar1947note}; independent proportions with the two-proportion $z$-test, Fisher's exact test~\citep{fisher1922interpretation} and Newcombe's interval for the difference~\citep{newcombe1998interval}. When several tests are reported, Holm's procedure~\citep{holm1979simple} controls the family-wise error rate and the Benjamini--Hochberg procedure~\citep{benjamini1995controlling} the false discovery rate. \citet{varma2006bias} documented the optimistic bias that arises when a parameter is tuned and evaluated on the same data, which cross-fitting removes.
+
+\section{LLMs as Judges and Multi-Agent Debate}
+
+LLMs can reason over paraphrase, multi-sentence evidence and dates, which NLI classifiers cannot. \citet{du2023improving} and \citet{liang2023encouraging} showed that letting several LLM agents argue opposing positions before a judgement improves factuality and reduces the tendency of a model to anchor on its first answer. This project adapts the idea into a single-call ``dialectical'' prompt with a defence, a prosecution and a judgement, and keeps a three-agent variant for ablation.
+
+\section{Knowledge Graphs}
+
+Wikidata is a collaboratively edited knowledge graph in which every fact is a typed statement (entity, property, value) with references. Many claims turn on a fact that a knowledge graph records exactly but that an NLI model reads poorly from prose, such as a date of birth, an award or the type of an entity. Structured statements are therefore a natural complement to retrieved passages for the hardest claims.
+
+\section{Research Gap}
+
+Existing retrieval-based checkers either trust a single verifier's output or call an LLM for every claim. The first is cheap but inherits the verifier's systematic errors; the second is accurate but slow and expensive. Few systems decide \emph{when} to escalate on statistical grounds, and fewer still measure whether the statistical guarantee they rely on actually holds on the evidence they retrieve. This project addresses that gap with a cascade whose routing is driven by conformal prediction, whose decision rules are derived from measured error rates, and whose evaluation reports every result with its uncertainty.

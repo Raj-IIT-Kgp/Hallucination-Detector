@@ -1096,6 +1096,9 @@ python experiments/full_evaluation.py              # the full evaluation of §3,
 python experiments/eval_conformal.py               # conformal calibration and coverage (§2.6)
 python experiments/statistical_tests.py            # intervals, hypothesis tests, multiple comparisons, power and the cross-fit of m (§2.5, §4.5); no LLM call (--shadow makes the missing m = 3 reviews)
 python experiments/calibration.py                  # temperature scaling of the NLI probabilities and its evaluation (§4.6); no LLM call
+python experiments/ablation_selective.py           # ablations, risk-coverage curves (§4.3), intervals for precision, recall and F1; no LLM call
+python experiments/llm_every_claim.py              # baseline: the LLM arbiter decides every claim; --run makes the missing calls (cached, resumable)
+python experiments/conformal_variants.py           # class-conditional coverage, Mondrian and APS conformal prediction (§2.6); no LLM call
 python tests/test_hierarchical_scoring.py          # each file in tests/ runs as a standalone script
 ```
 
