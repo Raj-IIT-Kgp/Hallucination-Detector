@@ -184,7 +184,32 @@ def benchmarks():
     if os.path.exists(path):
         with open(path) as f:
             results["multiple_testing"] = json.load(f).get("multiple_testing")
+    results["analyses"] = _analyses()
     return jsonify(results)
+
+
+def _analyses():
+    """Derived analyses of the published run, for the Benchmarks and Method tabs, when their scripts have run:
+    ablations and intervals for precision, recall and F1 (experiments/ablation_selective.py), the LLM-only
+    baseline (experiments/llm_every_claim.py) and the conformal procedures (experiments/conformal_variants.py)."""
+    def load(name):
+        path = os.path.join(BASE_DIR, "experiments", name)
+        if not os.path.exists(path):
+            return None
+        with open(path) as f:
+            return json.load(f)
+    out = {}
+    ablation = load("ablation_selective.json")
+    if ablation:
+        out["ablation"] = ablation["ablation"]
+        out["class_intervals"] = ablation["class_intervals"]
+    baseline = load("llm_every_claim.json")
+    if baseline:
+        out["llm_baseline"] = baseline["by_dataset"]
+    variants = load("conformal_variants.json")
+    if variants:
+        out["conformal_variants"] = {k: variants[k] for k in ("alpha", "gold", "retrieved_gold_calibrated", "retrieved_crossfit")}
+    return out
 
 
 def _latency(name):
@@ -228,19 +253,20 @@ _coverage_pools = None
 
 @app.route("/api/coverage_demo")
 def coverage_demo():
-    """Non-conformity scores at the true label for the coverage animation of the Method tab: the 200 FEVER claims
-    scored on gold evidence (experiments/eval_conformal.py; the first 100 are the calibration set) and the 600
-    benchmark claims scored on the evidence the pipeline retrieved."""
+    """Non-conformity scores at the true label, with the true labels, for the coverage animation of the Method tab:
+    the 200 FEVER claims scored on gold evidence (experiments/eval_conformal.py; the first 100 are the calibration
+    set) and the 600 benchmark claims scored on the evidence the pipeline retrieved."""
     global _coverage_pools
     if _coverage_pools is None:
         cv = detector.conformal_verifier
         labels = list(cv.labels)
-        gold, retrieved = [], []
+        gold, retrieved, gold_labels, retrieved_labels = [], [], [], []
         path = os.path.join(BASE_DIR, "experiments", "fever_200_cache.json")
         if os.path.exists(path):
             with open(path) as f:
                 cache = json.load(f)
             gold = [1 - p[labels.index(y)] for p, y in zip(cache["prob_vectors"], cache["y_true_labels"])]
+            gold_labels = list(cache["y_true_labels"])
         for name in ("fever", "freshqa"):
             path = os.path.join(BASE_DIR, "evaluation", f"{name}_5_runs_claims.jsonl")
             if not os.path.exists(path):
@@ -253,9 +279,12 @@ def coverage_demo():
                     probs = ((record.get("result") or {}).get("verification") or {}).get("probabilities")
                     if probs and record.get("gold") in labels:
                         retrieved.append(1 - probs[labels.index(record["gold"])])
+                        retrieved_labels.append(record["gold"])
+        # the true labels let the Method tab split coverage into false and true claims
         _coverage_pools = {"alpha": cv.alpha, "q_hat": cv.q_hat, "n": len(cv.calibrated_scores),
                            "calibration": [float(s) for s in cv.calibrated_scores],
-                           "gold": gold, "retrieved": retrieved}
+                           "gold": gold, "retrieved": retrieved,
+                           "gold_labels": gold_labels, "retrieved_labels": retrieved_labels}
     return jsonify(_coverage_pools)
 
 

@@ -695,6 +695,21 @@ table.data tr.pooled td { font-weight: 700; border-bottom: 0; }
 .compare { margin-top: 16px; }
 .compare p { margin: 0; color: var(--ink-2); font-size: 0.9rem; }
 
+/* Is the cascade worth it? (Benchmarks) */
+.cost-card { margin-top: 16px; }
+.cost-layout { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 18px; align-items: center; margin-bottom: 12px; }
+.cost-chart svg { width: 100%; height: auto; display: block; }
+.cost-chart .cost-err { stroke-width: 2; }
+.cost-chart .cost-num { font-size: 11px; font-weight: 700; }
+.cost-table td, .cost-table th { white-space: nowrap; }
+.cost-table td:nth-child(2), .cost-table th:nth-child(2) { white-space: normal; text-align: left; }
+.cost-table td:first-child, .cost-table th:first-child { text-align: left; }
+.stat-ci { white-space: nowrap; }
+
+/* Coverage by class (Method, coverage demo) */
+.cov-class { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.cov-class .stat-label { width: 100%; }
+
 /* ---------- claim explorer ---------- */
 .explorer-card { margin-top: 16px; }
 .explorer-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
@@ -862,7 +877,7 @@ table.data tr.pooled td { font-weight: 700; border-bottom: 0; }
 
 /* ---------- responsive ---------- */
 @media (max-width: 860px) {
-    .bench-grid, .detail-grid { grid-template-columns: 1fr; }
+    .bench-grid, .detail-grid, .cost-layout { grid-template-columns: 1fr; }
     .dec-row { grid-template-columns: 1fr; gap: 4px; }
     .dec-arrow { display: none; }
     .dec-claims { padding-left: 14px; }

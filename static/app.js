@@ -1630,20 +1630,24 @@ async function loadBenchmarks() {
             $('benchGrid').innerHTML = '<p class="muted">No benchmark results found. Run <code>python evaluation/run_5_runs.py --dataset all</code>.</p>';
             return;
         }
-        $('benchGrid').innerHTML = keys.map(k => benchCard(k, data[k])).join('');
+        $('benchGrid').innerHTML = keys.map(k => benchCard(k, data[k], data.analyses)).join('');
         keys.forEach(k => {
             drawSetChart(k, data[k]);
             bindRouteTips(k, data[k]);
         });
         if (keys.length === 2) $('benchGrid').insertAdjacentHTML('afterend', compareCard(data.fever.pooled, data.freshqa.pooled, data.multiple_testing));
+        renderCostCard(data.analyses);
         loadExplorer();
     } catch (err) {
         $('benchLoading').textContent = `Could not load benchmark results: ${err.message}`;
     }
 }
 
-function benchCard(key, d) {
+function benchCard(key, d, analyses) {
     const p = d.pooled, meta = BENCH_META[key];
+    // 95% intervals for the hallucination class (experiments/ablation_selective.py), when available
+    const ci = analyses && analyses.class_intervals && analyses.class_intervals[key];
+    const range = (iv, method) => iv ? `<span class="stat-sub stat-ci" title="95% confidence interval (${method})">CI ${iv[0].toFixed(2)}–${iv[1].toFixed(2)}</span>` : '';
     const n = p.evaluated_claims;
     const nTrue = Math.round(n / 2);
     const uTrue = Math.max(0, nTrue - p.tn - p.fp);
@@ -1658,9 +1662,9 @@ function benchCard(key, d) {
         <div class="bench-stats">
             <div class="bench-stat"><span class="stat-label">Accuracy</span><span class="stat-value">${pct(p.accuracy, 0)}</span>
                 <span class="stat-sub">95% CI ${wilsonText(p.correct_claims, p.evaluated_claims)} (Wilson)</span></div>
-            <div class="bench-stat"><span class="stat-label">Precision</span><span class="stat-value">${p.precision.toFixed(2)}</span><span class="stat-sub">of flags correct</span></div>
-            <div class="bench-stat"><span class="stat-label">Recall</span><span class="stat-value">${p.recall.toFixed(2)}</span><span class="stat-sub">of hallucinations caught</span></div>
-            <div class="bench-stat"><span class="stat-label">F1</span><span class="stat-value">${p.f1.toFixed(2)}</span><span class="stat-sub">${p.correct_claims}/${n} correct</span></div>
+            <div class="bench-stat"><span class="stat-label">Precision</span><span class="stat-value">${p.precision.toFixed(2)}</span><span class="stat-sub">of flags correct</span>${range(ci && ci.precision_wilson95, 'Wilson')}</div>
+            <div class="bench-stat"><span class="stat-label">Recall</span><span class="stat-value">${p.recall.toFixed(2)}</span><span class="stat-sub">of hallucinations caught</span>${range(ci && ci.recall_wilson95, 'Wilson')}</div>
+            <div class="bench-stat"><span class="stat-label">F1</span><span class="stat-value">${p.f1.toFixed(2)}</span><span class="stat-sub">${p.correct_claims}/${n} correct</span>${range(ci && ci.f1_bootstrap95, 'percentile bootstrap, 10,000 resamples')}</div>
         </div>
 
         <div class="bench-block">
@@ -1864,6 +1868,135 @@ function compareCard(f, q, multiple) {
     </div>`;
 }
 
+// ---- is the cascade worth it? ------------------------------------------------
+// Accuracy against LLM cost for the ablations (experiments/ablation_selective.py) and for the baseline that lets
+// the LLM decide every claim (experiments/llm_every_claim.py). Every number and sentence comes from those files.
+
+const COST_VARIANTS = [
+    { key: 'always_supported', name: 'Always “supported”', desc: 'never flags a hallucination (floor)', chart: false },
+    { key: 'nli_first_pass', name: 'NLI only, first pass', desc: 'first NLI verdict; no query rewrite, no LLM verdict' },
+    { key: 'nli_only', name: 'NLI only', desc: 'NLI verdict after the query rewrite; no LLM verdict' },
+    { key: 'no_review', name: 'No lightweight review', desc: 'lone and contested contradictions accepted unreviewed' },
+    { key: 'no_escalation', name: 'No full escalation', desc: 'escalated claims keep their NLI verdict' },
+    { key: 'full', name: 'Full pipeline', desc: 'the cascade as run', color: 'var(--series-1)' },
+    { key: 'llm_every_claim', name: 'LLM on every claim', desc: 'one arbitration call per claim on the same evidence', color: 'var(--series-2)' },
+];
+const COST_GROUPS = { pooled: 'Pooled (600)', fever: 'FEVER', freshqa: 'FreshQA' };
+let costKey = 'pooled';
+let costAnalyses = null;
+
+function costRows(a, g) {
+    const ab = a.ablation && a.ablation[g], base = a.llm_baseline && a.llm_baseline[g];
+    if (!ab) return [];
+    return COST_VARIANTS.map((v, i) => {
+        if (v.key === 'llm_every_claim') {
+            if (!base) return null;
+            const b = base.baseline, pr = base.paired;
+            return { ...v, num: i, accuracy: b.accuracy, wilson95: b.wilson95, f1: b.f1, precision: b.precision, recall: b.recall,
+                     calls: b.llm_calls_per_claim, b: pr.full_right_only, c: pr.baseline_right_only, p: pr.mcnemar_exact_p, holm: null };
+        }
+        const s = ab[v.key];
+        if (!s) return null;
+        return { ...v, num: i, accuracy: s.accuracy, wilson95: s.wilson95, f1: s.f1, precision: s.precision, recall: s.recall,
+                 calls: s.llm_calls_per_claim, b: s.vs_full.full_right_only, c: s.vs_full.variant_right_only,
+                 p: v.key === 'full' ? null : s.vs_full.mcnemar_exact_p, holm: s.vs_full.holm_within_ablation ?? null };
+    }).filter(Boolean);
+}
+
+const pText = p => p == null ? '–' : p < 0.001 ? p.toExponential(1).replace('e-', ' × 10⁻').replace(/⁻(\d+)/, (_, e) => '⁻' + [...e].map(c => '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]).join('')) : p.toFixed(p < 0.01 ? 3 : 2);
+
+function renderCostCard(a) {
+    if (!a || !a.ablation) return;
+    costAnalyses = a;
+    const anchor = document.querySelector('#view-benchmarks .compare') || $('benchGrid');
+    anchor.insertAdjacentHTML('afterend', `<div class="card cost-card" id="costCard">
+        <div class="card-head">
+            <div>
+                <h2>Is the cascade worth it?</h2>
+                <span class="muted">Accuracy against LLM cost when stages of the cascade are removed, and when the LLM decides every claim instead. Reconstructed from the recorded runs; hover a point for details.</span>
+            </div>
+            <div class="seg-toggle" role="group" aria-label="Benchmark">
+                ${Object.entries(COST_GROUPS).map(([k, name]) => `<button type="button" class="seg-btn${k === costKey ? ' active' : ''}" data-cost="${k}">${name}</button>`).join('')}
+            </div>
+        </div>
+        <div class="cost-layout">
+            <div class="chart cost-chart" id="costChart"></div>
+            <p class="cascade-insight" id="costInsight"></p>
+        </div>
+        <div class="table-wrap">
+            <table class="data cost-table">
+                <thead><tr><th>#</th><th>Variant</th><th>Accuracy (95% CI)</th><th>F1</th><th>LLM calls / claim</th><th title="claims right only with the full pipeline / only with the variant">vs full: b / c</th><th>McNemar p</th><th title="Holm-adjusted within the ablation family (pooled only)">Holm p</th></tr></thead>
+                <tbody id="costBody"></tbody>
+            </table>
+        </div>
+    </div>`);
+    document.querySelectorAll('[data-cost]').forEach(btn => btn.addEventListener('click', () => {
+        costKey = btn.dataset.cost;
+        document.querySelectorAll('[data-cost]').forEach(b => b.classList.toggle('active', b === btn));
+        drawCost();
+    }));
+    drawCost();
+}
+
+function drawCost() {
+    const a = costAnalyses, rows = costRows(a, costKey);
+    const full = rows.find(r => r.key === 'full'), base = rows.find(r => r.key === 'llm_every_claim');
+    const fmtCi = r => `${pct(r.accuracy, 1)} <span class="muted">[${pct(r.wilson95[0], 1)}, ${pct(r.wilson95[1], 1)}]</span>`;
+    const sign = x => `${x < 0 ? '−' : '+'}${Math.abs(x).toFixed(1)}`;
+    $('costBody').innerHTML = rows.map(r => `<tr${r.key === 'full' ? ' class="pooled"' : ''}>
+        <td>${r.chart === false ? '' : r.num}</td><td><b>${escapeHtml(r.name)}</b> <span class="muted">· ${escapeHtml(r.desc)}</span></td>
+        <td>${fmtCi(r)}</td><td>${r.f1.toFixed(2)}</td><td>${r.calls.toFixed(2)}</td>
+        <td>${r.key === 'full' ? '–' : `${r.b} / ${r.c}`}</td><td>${pText(r.p)}</td><td>${pText(r.holm)}</td></tr>`).join('');
+
+    // ---- chart: accuracy (Wilson 95% CI) against mean LLM calls per claim
+    const pts = rows.filter(r => r.chart !== false);
+    const W = 620, H = 270, m = { t: 14, r: 24, b: 40, l: 46 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const xs = pts.map(r => r.calls), lo = Math.min(...pts.map(r => r.wilson95[0])), hi = Math.max(...pts.map(r => r.wilson95[1]));
+    const x = d3.scaleLinear().domain([Math.floor(Math.min(...xs) * 10 - 1) / 10, Math.ceil(Math.max(...xs) * 10 + 1) / 10]).range([0, iw]);
+    const y = d3.scaleLinear().domain([Math.floor(lo * 20) / 20, Math.min(1, Math.ceil(hi * 20) / 20)]).range([ih, 0]);
+    $('costChart').innerHTML = '';
+    const svg = d3.select('#costChart').append('svg').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img')
+        .attr('aria-label', 'Accuracy of each variant against its mean number of LLM calls per claim');
+    const g = svg.append('g').attr('transform', `translate(${m.l},${m.t})`);
+    y.ticks(5).forEach(t => {
+        g.append('line').attr('class', 'grid-line').attr('x1', 0).attr('x2', iw).attr('y1', y(t)).attr('y2', y(t));
+        g.append('text').attr('class', 'tick').attr('x', -8).attr('y', y(t)).attr('dy', '0.32em').attr('text-anchor', 'end').text(`${Math.round(t * 100)}%`);
+    });
+    x.ticks(6).forEach(t => g.append('text').attr('class', 'tick').attr('x', x(t)).attr('y', ih + 16).attr('text-anchor', 'middle').text(t.toFixed(1)));
+    g.append('line').attr('class', 'axis-line').attr('x1', 0).attr('x2', iw).attr('y1', ih).attr('y2', ih);
+    g.append('text').attr('class', 'tick').attr('x', iw / 2).attr('y', ih + 34).attr('text-anchor', 'middle').text('mean LLM calls per claim · bars: Wilson 95% CI');
+    const color = r => r.color || cssVar('--ink-3');
+    const pt = g.selectAll('g.cost-pt').data(pts).enter().append('g').attr('class', 'cost-pt')
+        .attr('transform', r => `translate(${x(r.calls)},0)`);
+    pt.append('line').attr('class', 'cost-err').attr('y1', r => y(r.wilson95[0])).attr('y2', r => y(r.wilson95[1])).style('stroke', color);
+    pt.append('circle').attr('cy', r => y(r.accuracy)).attr('r', r => r.color ? 6.5 : 5).style('fill', color);
+    pt.append('text').attr('class', 'cost-num').attr('x', 9).attr('y', r => y(r.accuracy)).attr('dy', '0.32em').text(r => r.num).style('fill', color);
+    pt.append('rect').attr('x', -14).attr('width', 28).attr('y', 0).attr('height', ih).attr('fill', 'transparent')
+        .on('mouseenter', (e, r) => showTip(`<div class="tt-title">${r.num} · ${escapeHtml(r.name)}</div>
+            <div class="tt-row"><span>Accuracy</span><span>${pct(r.accuracy, 1)} [${pct(r.wilson95[0], 1)}, ${pct(r.wilson95[1], 1)}]</span></div>
+            <div class="tt-row"><span>Precision · Recall · F1</span><span>${r.precision == null ? '–' : r.precision.toFixed(2)} · ${r.recall.toFixed(2)} · ${r.f1.toFixed(2)}</span></div>
+            <div class="tt-row"><span>LLM calls per claim</span><span>${r.calls.toFixed(2)}</span></div>
+            ${r.key === 'full' ? '' : `<div class="tt-row"><span>vs full pipeline</span><span>${r.b} / ${r.c}, p = ${pText(r.p)}</span></div>`}`, e))
+        .on('mousemove', moveTip).on('mouseleave', hideTip);
+
+    // ---- what the numbers say, written from the numbers
+    const parts = [];
+    if (full && base) {
+        const pr = a.llm_baseline[costKey].paired, d = pr.difference, [dlo, dhi] = pr.difference95;
+        const more = base.calls / full.calls - 1;
+        const sig = pr.mcnemar_exact_p < 0.05;
+        parts.push(`The full pipeline reaches <strong>${pct(full.accuracy, 1)}</strong> with ${full.calls.toFixed(2)} LLM calls per claim. Letting the LLM decide every claim reaches <strong>${pct(base.accuracy, 1)}</strong> with ${base.calls.toFixed(2)} calls (${more >= 0 ? '+' : ''}${pct(more, 0)}): a difference of ${sign(100 * d)} points (95% CI ${sign(100 * dlo)} to ${sign(100 * dhi)}), ${sig ? `significant (exact McNemar p = ${pText(pr.mcnemar_exact_p)})` : `not significant (exact McNemar p = ${pText(pr.mcnemar_exact_p)}); resolving a difference of this size would take about ${pr.claims_for_80pct_power ? pr.claims_for_80pct_power.toLocaleString() : '–'} claims`}.`);
+    }
+    const abl = rows.filter(r => !['full', 'llm_every_claim', 'always_supported'].includes(r.key));
+    if (abl.length) {
+        const useHolm = abl.every(r => r.holm != null);
+        const worse = abl.filter(r => r.accuracy < full.accuracy && (useHolm ? r.holm : r.p) < 0.05);
+        parts.push(`${worse.length === abl.length ? `All ${abl.length}` : `${worse.length} of the ${abl.length}`} ablations ${worse.length === 1 ? 'is' : 'are'} significantly less accurate than the full pipeline (${useHolm ? 'Holm-corrected' : 'uncorrected p < 0.05'})${worse.length < abl.length ? `; ${abl.length - worse.length === 1 ? 'the other differs' : 'the others differ'} by too few claims to be resolved on one benchmark alone` : ''}.`);
+    }
+    $('costInsight').innerHTML = parts.join(' ');
+}
+
 // ---- claim explorer ----------------------------------------------------------
 
 const ROUTE_LABEL = {
@@ -1979,7 +2112,8 @@ const LIMITS = [
     ['Missing specific facts', 'When the evidence does not contain the specific number, date or ranking a claim asserts, the arbiter abstains: 19 of the 81 errors across both benchmarks are such abstentions.'],
     ['NLI blind spots', 'The NLI model does not reason about time ("currently"), mishandles negations and accepts near-matching names; a decisive snippet settles a claim without LLM review, so these errors reach the output (24 of the 53 FreshQA errors).'],
     ['Drifting labels', 'Even slow-changing FreshQA answers go out of date: on 11 of the 53 FreshQA errors, current evidence contradicts the gold answer (e.g. Lewandowski has left Barcelona).'],
-    ['Scope of the conformal guarantee', 'The conformal layer is calibrated on FEVER claims with gold evidence; on the pipeline\'s own retrieved evidence its measured coverage is 83.2%, below 90%, so the prediction set acts as a calibrated escalation trigger. Recalibrating brings coverage to 90% but escalates 181 more claims for an accuracy gain that is not significant.'],
+    ['Scope of the conformal guarantee', 'The conformal layer is calibrated on FEVER claims with gold evidence; on the pipeline\'s own retrieved evidence its measured coverage is 83.2%, below 90%, so the prediction set acts as a calibrated escalation trigger. The shortfall is shared by false (84.5%) and true (81.8%) claims, and neither recalibration, class-conditional (Mondrian) calibration nor adaptive prediction sets reach 90% without escalating 339 to 388 of the 600 claims instead of 98, for accuracy gains that are not significant.'],
+    ['Cost against accuracy', 'Letting the LLM decide every claim would be 1.7 points more accurate (88.2% against 86.5%, 95% CI −0.5 to +3.9 points, not significant) for 55% more LLM calls; the gap lies in FreshQA\'s false premises and time-dependent claims, which the NLI verdict settles without review.'],
     ['Echo filter on short claims', 'Web sentences containing 80% of the claim\'s words are removed as quotes of it; on a short claim an independent paraphrase can be removed too, as for one true claim that then ended Uncertain.'],
     ['Dependence on a hosted LLM', 'Rate limits are absorbed by switching Gemini models, but another model may judge a borderline claim differently, and the arbiter abstains if every model fails.'],
     ['Evaluation size and repeatability', '300 claims per benchmark give ±3 (FEVER) and ±4 (FreshQA) point confidence intervals, and live retrieval and a non-deterministic LLM mean a re-run can differ slightly.'],
@@ -2131,6 +2265,8 @@ async function loadCoverage() {
             k: Math.ceil((d.n + 1) * (1 - d.alpha)),
             measured: d.retrieved.filter(s => s <= d.q_hat).length / d.retrieved.length,
         };
+        // the conformal procedures compared offline (experiments/conformal_variants.py), for the insight text
+        try { cov.variants = ((await fetchBenchmarks()).analyses || {}).conformal_variants || null; } catch (e) { cov.variants = null; }
         covReset();
     } catch (err) {
         $('covMain').innerHTML = `<p class="muted">Could not load the calibration scores: ${escapeHtml(err.message)}</p>`;
@@ -2152,9 +2288,11 @@ function covTrial() {
         [idx[i], idx[j]] = [idx[j], idx[i]];
     }
     const cal = idx.slice(0, n).map(i => gold[i]).sort((a, b) => a - b);
-    const s = cov.mode === 'gold' ? gold[idx[n]] : retrieved[Math.floor(Math.random() * retrieved.length)];
+    const r = Math.floor(Math.random() * retrieved.length);
+    const s = cov.mode === 'gold' ? gold[idx[n]] : retrieved[r];
+    const label = cov.mode === 'gold' ? (cov.data.gold_labels || [])[idx[n]] : (cov.data.retrieved_labels || [])[r];
     const q = cal[k - 1];
-    return { s, q, cal, rank: 1 + cal.filter(v => v < s).length, covered: s <= q };
+    return { s, q, cal, label, rank: 1 + cal.filter(v => v < s).length, covered: s <= q };
 }
 
 function covStart(t, dur) {
@@ -2168,6 +2306,10 @@ function covCommit(tr) {
     cov.counts[tr.rank - 1] += 1;
     cov.trials += 1;
     cov.covered += tr.covered;
+    if (cov.byClass[tr.label]) {
+        cov.byClass[tr.label].t += 1;
+        cov.byClass[tr.label].c += tr.covered;
+    }
     cov.hit = tr.rank;
     const prev = cov.history[cov.history.length - 1];
     if (!prev || cov.trials < 40 || cov.trials >= prev.t * 1.025) cov.history.push({ t: cov.trials, c: cov.covered });
@@ -2201,7 +2343,8 @@ function covSetPlaying(on) {
 
 function covReset() {
     covSetPlaying(false);
-    Object.assign(cov, { trials: 0, covered: 0, counts: new Array(cov.data.n + 1).fill(0), history: [], falling: null, last: null, hit: null, debt: 0 });
+    Object.assign(cov, { trials: 0, covered: 0, counts: new Array(cov.data.n + 1).fill(0), history: [], falling: null, last: null, hit: null, debt: 0,
+                         byClass: { contradicted: { t: 0, c: 0 }, supported: { t: 0, c: 0 } } });
     covBuild();
     covPaint(performance.now(), true);
 }
@@ -2245,9 +2388,23 @@ function covBuild() {
     cov.bars = [...$('covMain').querySelectorAll('.cov-bar')];
 
     const d = cov.data, n1 = d.n + 1;
-    $('covInsight').innerHTML = cov.mode === 'gold'
+    $('covInsight').innerHTML = (cov.mode === 'gold'
         ? `Each trial draws a fresh random split of the ${d.gold.length} FEVER claims scored against their gold evidence: ${d.n} calibrate ${tex('\\hat q', false)} and one of the others is the new claim. Because the split is random, the ${n1} scores are <strong>exchangeable</strong>: the new score is equally likely to take any of the ${n1} ranks, so the histogram flattens towards the dotted uniform line. It is covered exactly when it lands among the first k = ${k}, which happens with probability <strong>${k}/${n1} = ${pct(k / n1, 1)}</strong>, whatever the NLI model and whatever the score distribution.`
-        : `The new claim now comes from the ${d.retrieved.length} benchmark claims scored on the evidence the pipeline retrieved, while ${tex('\\hat q', false)} is still calibrated on gold evidence. Retrieved snippets are noisier, so the new scores run larger than the calibration scores and pile up beyond ${tex('\\hat q', false)}: coverage settles near the <strong>${pct(d.measured, 2)}</strong> measured with the production ${tex('\\hat q = ' + fx(d.q_hat, 4), false)}, below the nominal ${pct(1 - d.alpha, 0)}. The guarantee rests on exchangeability, which is why the pipeline treats the prediction set as a calibrated escalation trigger rather than a 90% guarantee (§2.6).`;
+        : `The new claim now comes from the ${d.retrieved.length} benchmark claims scored on the evidence the pipeline retrieved, while ${tex('\\hat q', false)} is still calibrated on gold evidence. Retrieved snippets are noisier, so the new scores run larger than the calibration scores and pile up beyond ${tex('\\hat q', false)}: coverage settles near the <strong>${pct(d.measured, 2)}</strong> measured with the production ${tex('\\hat q = ' + fx(d.q_hat, 4), false)}, below the nominal ${pct(1 - d.alpha, 0)}. The guarantee rests on exchangeability, which is why the pipeline treats the prediction set as a calibrated escalation trigger rather than a 90% guarantee (§2.6).`)
+        + covVariantsHtml();
+}
+
+// What the offline comparison of conformal procedures adds to the current mode, written from its numbers
+function covVariantsHtml() {
+    const v = cov.variants;
+    if (!v) return '';
+    if (cov.mode === 'gold') {
+        const lac = v.gold.lac, mon = v.gold.mondrian;
+        return ` <br><br>The guarantee is <strong>marginal</strong>, an average over all claims: on the ${lac.claims} gold-evidence test claims the production layer covers ${pct(lac.contradicted.coverage, 1)} of false and ${pct(lac.supported.coverage, 1)} of true claims. Class-conditional (Mondrian) calibration gives each class its own guarantee by calibrating one ${tex('\\hat q', false)} per class (${pct(mon.contradicted.coverage, 1)} and ${pct(mon.supported.coverage, 1)} on the same claims, within the variation expected with ${lac.contradicted.claims} and ${lac.supported.claims} test claims).`;
+    }
+    const dep = v.retrieved_gold_calibrated.lac, cf = v.retrieved_crossfit;
+    const esc = k => cf[k] ? cf[k].escalated : '–';
+    return ` <br><br>The shortfall is <strong>shared by both classes</strong>: with the production ${tex('\\hat q', false)}, ${pct(dep.contradicted.coverage, 1)} of false and ${pct(dep.supported.coverage, 1)} of true claims are covered. Changing the procedure does not repair it: recalibrated on retrieved evidence, the production score, class-conditional (Mondrian) calibration and randomised adaptive prediction sets all reach about ${pct(1 - v.alpha, 0)}, but only by escalating ${esc('lac')}, ${esc('mondrian')} and ${esc('aps_rand')} of the 600 claims instead of ${dep.escalated}. The gap comes from the evidence, not from the procedure.`;
 }
 
 function covPaint(t, force = false) {
@@ -2310,6 +2467,10 @@ function covPaint(t, force = false) {
     $('covTarget').textContent = cov.mode === 'gold'
         ? `theory: k/(n + 1) = ${pct(k / (n + 1), 1)}`
         : `measured on retrieved evidence: ${pct(d.measured, 2)}`;
+    const bc = cov.byClass, classPct = c => c.t ? pct(c.c / c.t, 1) : '–';
+    $('covClass').innerHTML = `<span class="stat-label">Coverage by class</span>
+        <span><b>${classPct(bc.contradicted)}</b> <span class="muted">false claims (${bc.contradicted.t.toLocaleString()})</span></span>
+        <span><b>${classPct(bc.supported)}</b> <span class="muted">true claims (${bc.supported.t.toLocaleString()})</span></span>`;
     $('covConv').innerHTML = covConvSvg();
     $('covMath').innerHTML = covMathHtml();
 }
