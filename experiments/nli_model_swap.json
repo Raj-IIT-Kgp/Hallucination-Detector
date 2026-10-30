@@ -1,0 +1,306 @@
+{
+  "models": {
+    "bart": "facebook/bart-large-mnli",
+    "deberta": "cross-encoder/nli-deberta-v3-large"
+  },
+  "q_hat": {
+    "bart_deployed": 0.898471511900425,
+    "bart_seeded_draw": 0.970097653567791,
+    "deberta_seeded_draw": 0.9997959591419203
+  },
+  "calibration_claims": 100,
+  "by_dataset": {
+    "fever": {
+      "nli_only": {
+        "bart": {
+          "claims": 300,
+          "correct": 261,
+          "accuracy": 0.87,
+          "wilson95": [
+            0.827218699236838,
+            0.9034251625648376
+          ],
+          "precision": 0.8940397350993378,
+          "recall": 0.9,
+          "f1": 0.8970099667774086,
+          "unknown": 12
+        },
+        "deberta": {
+          "claims": 300,
+          "correct": 233,
+          "accuracy": 0.7766666666666666,
+          "wilson95": [
+            0.7262079303436672,
+            0.8201293717242524
+          ],
+          "precision": 0.8835616438356164,
+          "recall": 0.86,
+          "f1": 0.8716216216216216,
+          "unknown": 46
+        },
+        "deberta_vs_bart": {
+          "bart_right_only": 40,
+          "new_right_only": 12,
+          "mcnemar_exact_p": 0.0001275387838557407
+        }
+      },
+      "cascade": {
+        "bart": {
+          "claims": 300,
+          "correct": 272,
+          "accuracy": 0.9066666666666666,
+          "wilson95": [
+            0.8684138011961097,
+            0.9346362090723985
+          ],
+          "precision": 0.9370629370629371,
+          "recall": 0.8933333333333333,
+          "f1": 0.9146757679180887,
+          "unknown": 4,
+          "routes": {
+            "accept": 229,
+            "review": 35,
+            "escalate": 36
+          },
+          "llm_calls_per_claim": 1.0466666666666666,
+          "accepted_errors": 17,
+          "conformal_coverage": {
+            "coverage": 0.9,
+            "wilson95": [
+              0.8608327216490345,
+              0.9290525343527771
+            ]
+          }
+        },
+        "deberta": {
+          "claims": 300,
+          "correct": 277,
+          "accuracy": 0.9233333333333333,
+          "wilson95": [
+            0.8875891334382622,
+            0.9483727624969883
+          ],
+          "precision": 0.9459459459459459,
+          "recall": 0.9333333333333333,
+          "f1": 0.9395973154362416,
+          "unknown": 7,
+          "routes": {
+            "accept": 84,
+            "review": 6,
+            "escalate": 210
+          },
+          "llm_calls_per_claim": 1.6533333333333333,
+          "accepted_errors": 2,
+          "conformal_coverage": {
+            "coverage": 0.97,
+            "wilson95": [
+              0.9439768490080931,
+              0.9841383267940353
+            ]
+          }
+        },
+        "deberta_vs_bart": {
+          "bart_right_only": 5,
+          "new_right_only": 10,
+          "mcnemar_exact_p": 0.3017578125
+        }
+      }
+    },
+    "freshqa": {
+      "nli_only": {
+        "bart": {
+          "claims": 300,
+          "correct": 213,
+          "accuracy": 0.71,
+          "wilson95": [
+            0.6562534723961281,
+            0.7584362870048229
+          ],
+          "precision": 0.7883211678832117,
+          "recall": 0.7346938775510204,
+          "f1": 0.7605633802816901,
+          "unknown": 28
+        },
+        "deberta": {
+          "claims": 300,
+          "correct": 173,
+          "accuracy": 0.5766666666666667,
+          "wilson95": [
+            0.5201322236304367,
+            0.6312624504365772
+          ],
+          "precision": 0.7419354838709677,
+          "recall": 0.6258503401360545,
+          "f1": 0.6789667896678967,
+          "unknown": 72
+        },
+        "deberta_vs_bart": {
+          "bart_right_only": 55,
+          "new_right_only": 15,
+          "mcnemar_exact_p": 1.652519847797991e-06
+        }
+      },
+      "cascade": {
+        "bart": {
+          "claims": 300,
+          "correct": 247,
+          "accuracy": 0.8233333333333334,
+          "wilson95": [
+            0.7761666509606149,
+            0.8623239309741828
+          ],
+          "precision": 0.9069767441860465,
+          "recall": 0.7959183673469388,
+          "f1": 0.8478260869565217,
+          "unknown": 15,
+          "routes": {
+            "accept": 184,
+            "review": 54,
+            "escalate": 62
+          },
+          "llm_calls_per_claim": 1.45,
+          "accepted_errors": 28,
+          "conformal_coverage": {
+            "coverage": 0.7633333333333333,
+            "wilson95": [
+              0.7120957448699481,
+              0.8079120486645778
+            ]
+          }
+        },
+        "deberta": {
+          "claims": 300,
+          "correct": 257,
+          "accuracy": 0.8566666666666667,
+          "wilson95": [
+            0.8124985303950185,
+            0.8918158228732634
+          ],
+          "precision": 0.8843537414965986,
+          "recall": 0.8843537414965986,
+          "f1": 0.8843537414965986,
+          "unknown": 15,
+          "routes": {
+            "accept": 38,
+            "review": 16,
+            "escalate": 246
+          },
+          "llm_calls_per_claim": 2.0866666666666664,
+          "accepted_errors": 2,
+          "conformal_coverage": {
+            "coverage": 0.9233333333333333,
+            "wilson95": [
+              0.8875891334382622,
+              0.9483727624969883
+            ]
+          }
+        },
+        "deberta_vs_bart": {
+          "bart_right_only": 9,
+          "new_right_only": 19,
+          "mcnemar_exact_p": 0.08715855330228806
+        }
+      }
+    },
+    "pooled": {
+      "nli_only": {
+        "bart": {
+          "claims": 600,
+          "correct": 474,
+          "accuracy": 0.79,
+          "wilson95": [
+            0.7556150851399188,
+            0.8206949935297192
+          ],
+          "precision": 0.84375,
+          "recall": 0.8181818181818182,
+          "f1": 0.8307692307692308,
+          "unknown": 40
+        },
+        "deberta": {
+          "claims": 600,
+          "correct": 406,
+          "accuracy": 0.6766666666666666,
+          "wilson95": [
+            0.6382173507845877,
+            0.7128680994394445
+          ],
+          "precision": 0.8185185185185185,
+          "recall": 0.7441077441077442,
+          "f1": 0.7795414462081128,
+          "unknown": 118
+        },
+        "deberta_vs_bart": {
+          "bart_right_only": 95,
+          "new_right_only": 27,
+          "mcnemar_exact_p": 4.563546874350736e-10
+        }
+      },
+      "cascade": {
+        "bart": {
+          "claims": 600,
+          "correct": 519,
+          "accuracy": 0.865,
+          "wilson95": [
+            0.8353226948455217,
+            0.8900330938248847
+          ],
+          "precision": 0.9227941176470589,
+          "recall": 0.8451178451178452,
+          "f1": 0.8822495606326889,
+          "unknown": 19,
+          "routes": {
+            "accept": 413,
+            "review": 89,
+            "escalate": 98
+          },
+          "llm_calls_per_claim": 1.2483333333333333,
+          "accepted_errors": 45,
+          "conformal_coverage": {
+            "coverage": 0.8316666666666667,
+            "wilson95": [
+              0.7996383155362444,
+              0.8594749353560427
+            ]
+          }
+        },
+        "deberta": {
+          "claims": 600,
+          "correct": 534,
+          "accuracy": 0.89,
+          "wilson95": [
+            0.8624391849597586,
+            0.9125985070442373
+          ],
+          "precision": 0.9152542372881356,
+          "recall": 0.9090909090909091,
+          "f1": 0.9121621621621622,
+          "unknown": 22,
+          "routes": {
+            "accept": 122,
+            "review": 22,
+            "escalate": 456
+          },
+          "llm_calls_per_claim": 1.87,
+          "accepted_errors": 4,
+          "conformal_coverage": {
+            "coverage": 0.9466666666666667,
+            "wilson95": [
+              0.9256788741411774,
+              0.9619711320856212
+            ]
+          }
+        },
+        "deberta_vs_bart": {
+          "bart_right_only": 14,
+          "new_right_only": 29,
+          "mcnemar_exact_p": 0.03153949735315109
+        }
+      }
+    }
+  },
+  "primary_holm": {
+    "nli_only": 9.127093748701472e-10,
+    "cascade": 0.03153949735315109
+  }
+}

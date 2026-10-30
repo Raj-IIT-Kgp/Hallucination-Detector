@@ -215,6 +215,7 @@ function logEvent(message, ms = performance.now() - run.start) {
 function setRunMessage(msg) { $('runMessage').textContent = msg; }
 
 function resetRun() {
+    run.finished = false;
     run.claims = [];
     run.results = [];
     run.claimStart = [];
@@ -256,7 +257,9 @@ function startTimer() {
 }
 
 function stopTimer() {
+    if (!run.timer) return;   // already stopped at the report; late graphs do not extend the time
     clearInterval(run.timer);
+    run.timer = null;
     $('runTimer').textContent = `${((performance.now() - run.start) / 1000).toFixed(1)} s`;
 }
 
@@ -806,6 +809,7 @@ function handleEvent(data, text) {
         paintStepper();
         renderMainGraph();
         renderTimeline();
+        finishRun();
     } else if (data.status === 'error') {
         throw new Error(data.message);
     }
@@ -833,6 +837,29 @@ async function errorMessage(response) {
     return `Server returned ${response.status} ${response.statusText}`;
 }
 
+// The run is complete at the report; Wikidata graphs still being built may arrive after it, so the
+// button is released here too (a new run cancels the old stream, whose late graphs are then dropped)
+function finishRun() {
+    if (run.finished) return;
+    run.finished = true;
+    stopTimer();
+    if (run.replay) $('runTimer').textContent += ` · live ${Number(run.replay.duration_sec).toFixed(1)} s`;
+    $('runTitle').textContent = run.replay ? 'Replay complete' : 'Verification complete';
+    $('runClaim').textContent = '';
+    $('liveDot').className = run.replay ? 'live-dot replay done' : 'live-dot done';
+    setRunMessage(`Verified ${run.claims.length} claim${run.claims.length === 1 ? '' : 's'}.`);
+    releaseButton();
+}
+
+function releaseButton() {
+    const btn = $('analyzeBtn');
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.querySelector('.btn-label').textContent = 'Verify';
+}
+
+let runSeq = 0, activeReader = null;
+
 async function verify(live = false) {
     const text = $('inputText').value.trim();
     if (!text) {
@@ -844,6 +871,8 @@ async function verify(live = false) {
     btn.disabled = true;
     btn.classList.add('loading');
     btn.querySelector('.btn-label').textContent = 'Verifying…';
+    if (activeReader) activeReader.cancel().catch(() => {});   // a previous run still receiving late graphs
+    const seq = ++runSeq;
     resetRun();
     run.text = text;
     $('runPanel').classList.remove('hidden');
@@ -857,12 +886,12 @@ async function verify(live = false) {
         });
         if (!response.ok) throw new Error(await errorMessage(response));
 
-        const reader = response.body.getReader();
+        const reader = activeReader = response.body.getReader();
         const decoder = new TextDecoder('utf-8');
         let buffer = '';
         while (true) {
             const { value, done } = await reader.read();
-            if (done) break;
+            if (done || seq !== runSeq) break;
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split('\n');
             buffer = lines.pop();
@@ -870,24 +899,24 @@ async function verify(live = false) {
                 if (line.trim()) handleEvent(JSON.parse(line), text);
             }
         }
+        if (seq !== runSeq) return;
         if (buffer.trim()) handleEvent(JSON.parse(buffer), text);
-        $('runTitle').textContent = run.replay ? 'Replay complete' : 'Verification complete';
-        $('runClaim').textContent = '';
-        $('liveDot').className = run.replay ? 'live-dot replay done' : 'live-dot done';
-        setRunMessage(`Verified ${run.claims.length} claim${run.claims.length === 1 ? '' : 's'}.`);
+        finishRun();
     } catch (err) {
+        if (seq !== runSeq) return;
+        if (run.finished) { logEvent(`Wikidata graphs: ${err.message}`); return; }   // the verdicts and report are complete
         $('runTitle').textContent = 'Verification failed';
         $('liveDot').className = 'live-dot failed';
         showError(err.message.startsWith('Rate limit') || err.message.startsWith('The server is busy') || err.message.startsWith('Text is too long')
             ? err.message : `Verification failed: ${err.message}`);
         logEvent(`Error: ${err.message}`);
     } finally {
-        stopTimer();
-        if (run.replay) $('runTimer').textContent += ` · live ${Number(run.replay.duration_sec).toFixed(1)} s`;
-        loadSamples();   // a completed live run of an example becomes replayable
-        btn.disabled = false;
-        btn.classList.remove('loading');
-        btn.querySelector('.btn-label').textContent = 'Verify';
+        if (seq === runSeq) {
+            activeReader = null;
+            stopTimer();
+            loadSamples();   // a completed live run of an example becomes replayable (recorded when the stream ends)
+            releaseButton();
+        }
     }
 }
 
@@ -1352,8 +1381,8 @@ let graphData = null;
 // Edge kinds, strongest first: a statement shown for several claims keeps its strongest role
 const EDGE_RANK = { claim: 0, record: 1, link: 2, context: 3 };
 const WD_STATUS = {
-    agrees: 'agrees with the claim',
-    differs: 'differs from the claim',
+    agrees: 'matches the value the claim states',
+    differs: 'differs from the value the claim states',
     not_listed: 'claimed value not listed',
     not_in_wikidata: 'no such statement in Wikidata',
     unclear: 'claimed value not identified',
@@ -1473,7 +1502,7 @@ function drawGraph({ nodes, edges }) {
             role = `<div class="tt-row"><span>As stated in claim ${d.claim + 1} · verdict ${VERDICT[claimLabel(d.claim)].text}</span></div>
                 ${status ? `<div class="tt-row"><span>Wikidata: ${escapeHtml(status)}</span></div>` : ''}`;
         } else {
-            role = `<div class="tt-row"><span>Wikidata statement${d.kind === 'record' ? ' for the claim\'s property' : ''}${d.agrees ? ' · agrees with the claim' : ''}</span></div>
+            role = `<div class="tt-row"><span>Wikidata statement${d.kind === 'record' ? ' for the claim\'s property' : ''}${d.agrees ? ' · the value the claim states' : ''}</span></div>
                 <div class="tt-row"><span>${d.refs ? `${d.refs} reference${d.refs === 1 ? '' : 's'} in Wikidata` : 'no reference in Wikidata'}</span></div>
                 ${d.url ? '<div class="tt-row"><span>Click to open the statement ↗</span></div>' : ''}`;
         }
@@ -1577,7 +1606,7 @@ function wikidataSummaryHtml(g, result) {
     const claimed = m.claimed ? `<strong>${escapeHtml(m.claimed)}</strong>` : '';
     let text;
     switch (m.status) {
-        case 'agrees': text = `Wikidata records the ${prop} of ${escapeHtml(subject)} as <strong>${escapeHtml(m.agreeing)}</strong>, which agrees with the claim.`; break;
+        case 'agrees': text = `Wikidata records the ${prop} of ${escapeHtml(subject)} as <strong>${escapeHtml(m.agreeing)}</strong>, the value the claim states.`; break;
         case 'differs': text = `Wikidata records the ${prop} of ${escapeHtml(subject)} as ${vals}; the claim states ${claimed}.`; break;
         case 'not_listed': text = `Wikidata lists ${prop}: ${vals}${more}; ${claimed} is not among them.`; break;
         case 'unclear': text = `Wikidata records ${prop}: ${vals}${more}.`; break;

@@ -360,14 +360,15 @@ def analyze_stream_endpoint():
     def generate():
         started = time.perf_counter()
         failures_before = get_failure_count()
-        lines, completed, failed = [], False, False
+        lines, completed, failed, done_at = [], False, False, None
         try:
             for update in detector.analyze_stream(text, force_kg=force_kg):
                 event = json.loads(update)
                 event["t"] = round(time.perf_counter() - started, 3)   # time since the request started
                 line = json.dumps(event) + "\n"
                 lines.append(line)
-                completed = event.get("status") == "done"
+                if event.get("status") == "done":     # late Wikidata graphs may follow the report
+                    completed, done_at = True, time.perf_counter()
                 yield line
         except Exception as e:
             failed = True
@@ -375,7 +376,7 @@ def analyze_stream_endpoint():
             yield json.dumps({"status": "error", "message": str(e)}) + "\n"
         finally:
             _live_slots.release()
-            duration = time.perf_counter() - started
+            duration = (done_at or time.perf_counter()) - started
             # Only clean, complete runs are recorded: an LLM failure can turn a verdict into UNKNOWN
             llm_failed = get_failure_count() != failures_before
             if completed and not failed and not llm_failed:

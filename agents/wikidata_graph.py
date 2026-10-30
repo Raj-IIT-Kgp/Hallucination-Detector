@@ -124,6 +124,8 @@ VALUES_PER_PROPERTY = 3
 TYPE_VALUES = 2             # "instance of" values of the subject, always included
 CANDIDATE_PROPERTIES = 10   # per entity, before value labels are fetched
 DISAMBIGUATION_PAGE = "Q4167410"
+# Many items keep their name as a language-independent ("mul") label instead of an English one
+LABEL_LANGUAGES = "en|mul"
 
 _MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August",
            "September", "October", "November", "December"]
@@ -180,8 +182,22 @@ def _remember(cache, key, value):
         cache[key] = value
 
 
+def _label(data):
+    labels = data.get("labels") or {}
+    return (labels.get("en") or labels.get("mul") or {}).get("value")
+
+
+def _value_key(value):
+    """What makes two values the same value (their references aside)."""
+    return tuple(v for k, v in sorted(value.items()) if k != "refs")
+
+
 def _entity_from_api(data):
-    """Keeps what the graph needs from a wbgetentities entity."""
+    """
+    Keeps what the graph needs from a wbgetentities entity. Statements whose value is the entity itself
+    (a country recorded as its own country) are dropped, and a value recorded in several statements
+    (a couple married twice) is kept once, with the largest number of references.
+    """
     if not data or "missing" in data:
         return None
     claims = data.get("claims", {})
@@ -197,13 +213,18 @@ def _entity_from_api(data):
             if s.get("rank") == "deprecated" or snak.get("snaktype") != "value":
                 continue
             value = _parse_value(snak.get("datavalue", {}))
-            if value:
-                value["refs"] = len(s.get("references", []))
+            if not value or (value["type"] == "item" and value["id"] == data["id"]):
+                continue
+            value["refs"] = len(s.get("references", []))
+            same = next((v for v in values if _value_key(v) == _value_key(value)), None)
+            if same:
+                same["refs"] = max(same["refs"], value["refs"])
+            else:
                 values.append(value)
         if values:
             statements[pid] = values
     title = data.get("sitelinks", {}).get("enwiki", {}).get("title")
-    label = data.get("labels", {}).get("en", {}).get("value") or title or data["id"]
+    label = _label(data) or title or data["id"]
     return {
         "id": data["id"],
         "label": label,
@@ -245,7 +266,7 @@ def resolve_entity(name):
     props = "labels|descriptions|claims|sitelinks"
     entity = None
     data = _api({"action": "wbgetentities", "sites": "enwiki", "titles": name, "normalize": 1,
-                 "redirects": "yes", "props": props, "languages": "en", "sitefilter": "enwiki"})
+                 "redirects": "yes", "props": props, "languages": LABEL_LANGUAGES, "sitefilter": "enwiki"})
     found = [e for e in (data.get("entities") or {}).values() if "missing" not in e]
     if found:
         entity = _entity_from_api(found[0])
@@ -259,7 +280,7 @@ def resolve_entity(name):
             description_words = _content_words(hit.get("description", ""))
             if words & _content_words(hit.get("label", "")) and (not qualifier_words or qualifier_words & description_words):
                 data = _api({"action": "wbgetentities", "ids": hit["id"], "props": props,
-                             "languages": "en", "sitefilter": "enwiki"})
+                             "languages": LABEL_LANGUAGES, "sitefilter": "enwiki"})
                 entity = _entity_from_api((data.get("entities") or {}).get(hit["id"]))
                 break
     _remember(_entity_cache, key, entity)
@@ -267,15 +288,22 @@ def resolve_entity(name):
 
 
 def _fetch_labels(qids):
-    """English labels for item values and units, 50 per request."""
-    missing = [q for q in dict.fromkeys(qids) if q and q not in _label_cache]
+    """Labels for item values and units, 50 per request (the cache may be cleared meanwhile, so the
+    answer is built from what was looked up, not read back from the cache)."""
+    found = {}
+    with _cache_lock:
+        for q in dict.fromkeys(qids):
+            if q and q in _label_cache:
+                found[q] = _label_cache[q]
+    missing = [q for q in dict.fromkeys(qids) if q and q not in found]
     for i in range(0, len(missing), 50):
         batch = missing[i:i + 50]
-        data = _api({"action": "wbgetentities", "ids": "|".join(batch), "props": "labels", "languages": "en"})
+        data = _api({"action": "wbgetentities", "ids": "|".join(batch), "props": "labels",
+                     "languages": LABEL_LANGUAGES})
         for q in batch:
-            e = (data.get("entities") or {}).get(q, {})
-            _remember(_label_cache, q, e.get("labels", {}).get("en", {}).get("value") or q)
-    return {q: _label_cache.get(q, q) for q in qids if q}
+            found[q] = _label((data.get("entities") or {}).get(q, {})) or q
+            _remember(_label_cache, q, found[q])
+    return {q: found.get(q, q) for q in qids if q}
 
 
 def _format_time(value):
@@ -313,8 +341,10 @@ def _format_value(value, labels):
     return value.get("text", "")
 
 
-def _value_node_id(v, labels):
-    return v["id"] if v["type"] == "item" else f"value:{_format_value(v, labels)}"
+def _value_node_id(v, labels, owner):
+    """An item is one node wherever it appears; a literal (a date, a number) is a node of the entity whose
+    statement it is, so two entities that share a date are not drawn as linked through it."""
+    return v["id"] if v["type"] == "item" else f"value:{owner}:{_format_value(v, labels)}"
 
 
 def _get_encoder():
@@ -547,18 +577,16 @@ def build_graph(claim, entity_names):
         nodes.setdefault(e["id"], {"id": e["id"], "label": e["label"], "kind": "entity", "url": e["url"],
                                    "summary_snippet": e["description"], "qid": e["id"]})
         return e["id"]
-    def value_node(pid, v):
+    def value_node(e, v):
+        node_id = _value_node_id(v, labels, e["id"])
         if v["type"] == "item":
-            node_id = v["id"]
             nodes.setdefault(node_id, {"id": node_id, "label": labels.get(node_id, node_id), "kind": "item",
                                        "url": f"https://www.wikidata.org/wiki/{node_id}", "qid": node_id})
         else:
-            text = _format_value(v, labels)
-            node_id = f"value:{text}"
-            nodes.setdefault(node_id, {"id": node_id, "label": text, "kind": "value"})
+            nodes.setdefault(node_id, {"id": node_id, "label": _format_value(v, labels), "kind": "value"})
         return node_id
     def statement_edge(e, pid, v, role, agrees=False):
-        edges.append({"source": entity_node(e), "target": value_node(pid, v), "relationship": PROPERTIES[pid][0],
+        edges.append({"source": entity_node(e), "target": value_node(e, v), "relationship": PROPERTIES[pid][0],
                       "pid": pid, "kind": role, "refs": v["refs"], "agrees": agrees,
                       "url": f"https://www.wikidata.org/wiki/{e['id']}#{pid}"})
     for e in entities:
@@ -614,7 +642,7 @@ def build_graph(claim, entity_names):
             shown.add((e["id"], v["id"], pid))
     context, keys = [], set()
     for e, pid, v in candidates:
-        key = (e["id"], _value_node_id(v, labels), pid)
+        key = (e["id"], _value_node_id(v, labels, e["id"]), pid)
         if pid != "P31" and key not in shown and key not in keys:
             keys.add(key)
             context.append((e, pid, v))
@@ -649,9 +677,18 @@ def build_graph(claim, entity_names):
             added += 1
 
     for v in type_values:
-        if (holder["id"], _value_node_id(v, labels), "P31") not in shown:
+        if (holder["id"], _value_node_id(v, labels, holder["id"]), "P31") not in shown:
             statement_edge(holder, "P31", v, "context")
 
+    # Keep the picture connected: drop statements not joined to the subject (a link between two other entities)
+    connected, grew = {holder["id"]}, True
+    while grew:
+        grew = False
+        for edge in edges:
+            if (edge["source"] in connected) != (edge["target"] in connected):
+                connected |= {edge["source"], edge["target"]}
+                grew = True
+    edges = [edge for edge in edges if edge["source"] in connected]
     used = {holder["id"]} | {edge["source"] for edge in edges} | {edge["target"] for edge in edges}
     return {"source": "wikidata", "claim": claim, "subject": holder["id"],
             "nodes": [n for n in nodes.values() if n["id"] in used],

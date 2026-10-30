@@ -98,35 +98,80 @@ def test_statement_stored_on_the_other_entity():
 
 
 def test_stream_sends_graph_after_verdict():
-    """The stream sends each claim's Wikidata graph after its verdict, and the verdict is unchanged."""
+    """Each claim's Wikidata graph follows its verdict; one not ready by then follows the report, so it never
+    delays it. The verdicts are unchanged."""
     import time
     import detector.hallucination_detector as hd
+    from concurrent.futures import ThreadPoolExecutor
 
     det = hd.HallucinationDetector.__new__(hd.HallucinationDetector)
     det.wikidata_enabled = True
-    result = {"claim": "c", "verification": {"label": "contradicted"}, "graph": {"nodes": [], "edges": []}}
+    pool = ThreadPoolExecutor(2)
+    delays = {"Albert Einstein was born in 1950.": 0.0, "Marie Curie was born in 1867.": 0.3}
 
-    class SlowFuture:
-        def result(self, timeout=None):
-            time.sleep(0.05)
-            return {"source": "wikidata", "nodes": [{"id": "Q937"}], "edges": []}
+    def build(sec):
+        time.sleep(sec)
+        return {"source": "wikidata", "nodes": [{"id": "Q937"}], "edges": []}
 
     def fake_process(claim, answer, progress=None, force_kg=False, on_wikidata=None):
-        on_wikidata(SlowFuture())
-        return dict(result, claim=claim)
+        on_wikidata(pool.submit(build, delays[claim]))
+        time.sleep(0.1)
+        return {"claim": claim, "verification": {"label": "contradicted"}, "graph": {"nodes": [], "edges": []}}
 
     det._process_claim = fake_process
     original = hd.extract_claims_with_route
-    hd.extract_claims_with_route = lambda text: (["Albert Einstein was born in 1950."], "fast_path")
+    hd.extract_claims_with_route = lambda text: (list(delays), "fast_path")
     try:
-        events = [json.loads(e) for e in det.analyze_stream("Albert Einstein was born in 1950.")]
+        events = [json.loads(e) for e in det.analyze_stream("text")]
     finally:
         hd.extract_claims_with_route = original
-    statuses = [e["status"] for e in events]
-    assert statuses.index("claim_result") < statuses.index("claim_wikidata") < statuses.index("done")
-    verdict = next(e for e in events if e["status"] == "claim_result")["result"]["verification"]["label"]
-    assert verdict == "contradicted"
+    order = [(e["status"], e.get("index")) for e in events if e["status"] in ("claim_result", "claim_wikidata", "done")]
+    done = order.index(("done", None))
+    assert order.index(("claim_result", 0)) < order.index(("claim_wikidata", 0)) < done   # ready: sent with the verdict
+    assert order.index(("claim_result", 1)) < done < order.index(("claim_wikidata", 1))   # still building: after the report
+    assert all(e["result"]["verification"]["label"] == "contradicted" for e in events if e["status"] == "claim_result")
     print("Stream ordering test passed!")
+
+
+def test_graph_consistency():
+    """Names stored as "mul" labels are used; a statement whose value is its own entity is dropped; a value recorded
+    twice is one edge; entities sharing a date are not joined through it; every edge joins the subject's graph."""
+    setup()
+    ENTITIES["Q41"] = {"id": "Q41", "labels": {"mul": {"value": "Greece"}}, "sitelinks": {"enwiki": {"title": "Greece"}},
+                       "claims": {"P31": [item("Q6256")], "P17": [item("Q41")], "P36": [item("Q1524")],
+                                  "P571": [date("+1830-02-03T00:00:00Z")], "P463": [item("Q458"), item("Q458")]}}
+    ENTITIES["Q9142"] = {"id": "Q9142", "labels": {"en": {"value": "Greek"}}, "sitelinks": {"enwiki": {"title": "Greek language"}},
+                         "claims": {"P571": [date("+1830-02-03T00:00:00Z")]}}
+    TITLES.update({"greece": "Q41", "greek language": "Q9142"})
+    LABELS["Q6256"] = "country"
+    wg._label_cache.clear()
+    def api(params):
+        out = fake_api(params)
+        if params.get("ids"):   # the capital and the union are named only in the language-independent label
+            for qid, name in (("Q1524", "Athens"), ("Q458", "European Union")):
+                if qid in out["entities"]:
+                    out["entities"][qid] = {"id": qid, "labels": {"mul": {"value": name}}}
+        return out
+    wg._api = api
+    g = wg.build_graph("Greece is a member of the European Union, and Greek is spoken there.", ["Greece", "Greek language"])
+    labels = {n["id"]: n["label"] for n in g["nodes"]}
+    assert labels["Q41"] == "Greece" and labels.get("Q458") == "European Union"
+    assert not any(n["label"].startswith("Q") and n["label"][1:].isdigit() for n in g["nodes"])
+    assert all(e["source"] != e["target"] for e in g["edges"])
+    keys = [(e["source"], e["target"], e["pid"]) for e in g["edges"]]
+    assert len(keys) == len(set(keys))
+    dates = [e for e in g["edges"] if e["target"].startswith("value:") and e["pid"] == "P571"]
+    assert len({e["target"] for e in dates}) == len(dates)
+    adjacent, seen, todo = {}, {g["subject"]}, [g["subject"]]
+    for e in g["edges"]:
+        adjacent.setdefault(e["source"], set()).add(e["target"])
+        adjacent.setdefault(e["target"], set()).add(e["source"])
+    while todo:
+        for nxt in adjacent.get(todo.pop(), set()) - seen:
+            seen.add(nxt)
+            todo.append(nxt)
+    assert seen >= {n["id"] for n in g["nodes"]}
+    print("Graph consistency test passed!")
 
 
 def test_arbiter_reads_wikidata_statements():
@@ -172,4 +217,5 @@ if __name__ == "__main__":
     test_no_matching_property()
     test_statement_stored_on_the_other_entity()
     test_stream_sends_graph_after_verdict()
+    test_graph_consistency()
     test_arbiter_reads_wikidata_statements()

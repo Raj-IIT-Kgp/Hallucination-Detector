@@ -11,7 +11,7 @@ import re
 import inspect
 import datetime
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError as FuturesTimeout
 
 _SHARED_ROLES = [
     "co-founder", "co founder", "cofounder",
@@ -591,11 +591,13 @@ class HallucinationDetector:
           {"status": "claim_result", "index", "result"}              as soon as a claim is verified
           {"status": "claim_wikidata", "index", "graph", "error"}    the claim's Wikidata graph
           {"status": "done", "report", "final_text"}
+          {"status": "claim_wikidata", ...}                          graphs not ready by the report
         Claims are verified concurrently with the same per-claim code as analyze(), so verdicts are
         identical; events from different claims interleave and carry claim_index.
         The Wikidata graph (agents/wikidata_graph.py) is built in the background from the claim's
-        entities while the claim is verified and sent after the verdict; an escalated claim's
-        arbiter has already read its statements.
+        entities while the claim is verified and sent after the verdict, or after the report if it
+        is still being built then, so it never delays the run; an escalated claim's arbiter has
+        already read its statements.
         """
         import json
         import queue
@@ -629,14 +631,23 @@ class HallucinationDetector:
                 result = self._failed_result(claim, e)
             results[i] = result
             events.put({"status": "claim_result", "index": i, "result": result})
+            # The graph is display only once the verdict is in: send it now if it is ready, otherwise
+            # after the report, so a slow Wikidata lookup never holds up the run
             if graph_future:
-                try:
-                    graph = graph_future[0].result(timeout=_WIKIDATA_WAIT_SEC)
-                    events.put({"status": "claim_wikidata", "index": i, "graph": graph})
-                except Exception as e:
-                    print(f"[HallucinationDetector] Wikidata graph for claim {i} failed: {e}")
-                    events.put({"status": "claim_wikidata", "index": i, "graph": None, "error": str(e)[:200]})
+                if graph_future[0].done():
+                    events.put(graph_event(i, graph_future[0]))
+                else:
+                    pending_graphs[graph_future[0]] = i
             events.put(finished)
+
+        def graph_event(i, future):
+            try:
+                return {"status": "claim_wikidata", "index": i, "graph": future.result(timeout=0)}
+            except Exception as e:
+                print(f"[HallucinationDetector] Wikidata graph for claim {i} failed: {e}")
+                return {"status": "claim_wikidata", "index": i, "graph": None, "error": str(e)[:200] or "timed out"}
+
+        pending_graphs = {}
 
         with ThreadPoolExecutor(max_workers=max(1, min(len(claims), 5))) as executor:
             for i, claim in enumerate(claims):
@@ -652,3 +663,11 @@ class HallucinationDetector:
         yield event({"status": "progress", "message": "Generating final report...", "stage": "report", "claim_index": None})
         report = generate_report(results)
         yield event({"status": "done", "report": report, "final_text": answer})
+
+        # Graphs still being built, as they arrive (each waits at most _WIKIDATA_WAIT_SEC from here)
+        try:
+            for future in as_completed(pending_graphs, timeout=_WIKIDATA_WAIT_SEC):
+                yield event(graph_event(pending_graphs.pop(future), future))
+        except FuturesTimeout:
+            for future, i in pending_graphs.items():
+                yield event({"status": "claim_wikidata", "index": i, "graph": None, "error": "timed out"})

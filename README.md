@@ -57,6 +57,8 @@ python experiments/calibration.py                  # temperature scaling of the 
 python experiments/ablation_selective.py           # ablations, risk-coverage curves, intervals for precision, recall and F1 (no LLM call)
 python experiments/llm_every_claim.py              # baseline: the LLM arbiter decides every claim (dry run; --run makes the missing calls)
 python experiments/conformal_variants.py           # class-conditional coverage, Mondrian and APS conformal prediction (no LLM call)
+python experiments/learned_routing.py              # a learned escalation rule against the conformal trigger at equal LLM budget (no LLM call)
+python experiments/nli_model_swap.py               # the cascade with DeBERTa-v3-large NLI on the saved evidence (no LLM call; downloads the model unless its scores are cached)
 ```
 
 The fifteen-set evaluation makes several hundred LLM calls; if the API quota runs out, it stops and resumes where it stopped when started again.
@@ -75,4 +77,4 @@ The fifteen-set evaluation makes several hundred LLM calls; if the API quota run
 | `experiments/` | conformal calibration, probability calibration, statistical tests and the full evaluation report |
 | `static/`, `server.py`, `run_cache.py` | web interface, server and recorded runs |
 | `demo_runs/` | recorded runs of the example inputs |
-| `tests/` | test scripts, each run directly, e.g. `python tests/test_hierarchical_scoring.py` |
+| `tests/` | test scripts, each run directly, e.g. `python tests/test_wikidata_graph.py` (offline); `test_conformal_pipeline.py` and `test_hierarchical_scoring.py` run the pipeline with the configured LLM, so they use API quota |
